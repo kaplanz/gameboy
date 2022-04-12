@@ -2495,6 +2495,7 @@ pub mod srl {
 pub mod stop {
     use super::*;
 
+    #[allow(unreachable_code)]
     pub fn start(inst: Instruction, _: &mut Cpu) -> Option<Instruction> {
         // Check opcode
         if inst.opcode != 0x10 {
@@ -2502,7 +2503,7 @@ pub mod stop {
         }
 
         // Execute STOP
-        // TODO: implement this mess of an instruction
+        todo!("implement this mess of an instruction");
 
         // Finish
         None
