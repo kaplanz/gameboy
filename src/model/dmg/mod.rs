@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use remus::bus::adapters::View;
 use remus::bus::Bus;
 use remus::dev::Device;
 use remus::mem::Ram;
@@ -21,33 +22,28 @@ mod boot;
 
 const PALETTE: [u32; 4] = [0xe9efec, 0xa0a08b, 0x555568, 0x211e20];
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct GameBoy {
-    cart: Cartridge,
+    // State
     cycle: usize,
+    // Devices
+    cart: Cartridge,
     cpu: Cpu,
-    io: InOut,
     joypad: Joypad,
-    mem: Memory,
-    mmu: Rc<RefCell<Bus>>,
     pic: Rc<RefCell<Pic>>,
     ppu: Ppu,
     timer: Timer,
+    // Memory
+    mem: Memory,
+    mmio: InOut,
+    mmu: Rc<RefCell<Bus>>,
 }
 
 impl GameBoy {
     pub fn new(cart: Cartridge) -> Self {
         let mut this = Self {
             cart,
-            cycle: Default::default(),
-            cpu: Default::default(),
-            io: Default::default(),
-            joypad: Default::default(),
-            mem: Default::default(),
-            mmu: Default::default(),
-            pic: Default::default(),
-            ppu: Default::default(),
-            timer: Default::default(),
+            ..Default::default()
         };
         this.reset();
         this
@@ -55,67 +51,82 @@ impl GameBoy {
 
     #[rustfmt::skip]
     fn memmap(&mut self) {
-        // Map MMU
-        self.mmu.take();                          // ┌──────────┬────────────┬─────┐
-        let mut mmu = self.mmu.borrow_mut();      // │   SIZE   │    NAME    │ DEV │
-        let pic = self.pic.borrow();              // ├──────────┼────────────┼─────┤
-        mmu.map(0x0000, self.mem.boot.clone());   // │    256 B │       Boot │ ROM │
-        mmu.map(0x0000, self.cart.rom().clone()); // │  32 Ki B │  Cartridge │ ROM │
-        mmu.map(0x8000, self.ppu.vram.clone());   // │   8 Ki B │      Video │ RAM │
-        mmu.map(0xa000, self.cart.ram().clone()); // │   8 Ki B │   External │ RAM │
-        mmu.map(0xc000, self.mem.wram.clone());   // │   8 Ki B │       Work │ RAM │
-        mmu.map(0xe000, self.mem.wram.clone());   // │   7680 B │       Echo │ RAM │
-        mmu.map(0xfe00, self.ppu.oam.clone());    // │    160 B │        OAM │ RAM │
-                                                  // │     96 B │     Unused │ --- │
-        mmu.map(0xff00, self.io.bus.clone());     // │    128 B │        I/O │ Bus │
-        mmu.map(0xff80, self.mem.hram.clone());   // │    127 B │       High │ RAM │
-        mmu.map(0xffff, pic.enable.clone());      // │      1 B │  Interrupt │ Reg │
-                                                  // └──────────┴────────────┴─────┘
-        // Use an `Unmapped` as a fallback
-        mmu.map(0x0000, Rc::new(RefCell::new(Unmapped::new())));
-        drop(mmu); // release mutable borrow
+        // Prepare MMU
+        self.mmu.take();
+        let mut mmu = self.mmu.borrow_mut();
+
+        // Prepare devices
+        let boot = self.mem.boot.clone();
+        let rom  = self.cart.rom().clone();
+        let vram = self.ppu.vram.clone();
+        let eram = self.cart.ram().clone();
+        let wram = self.mem.wram.clone();
+        let echo = Rc::new(RefCell::new(View::new(wram.clone(), 0x0000..=0x1dff)));
+        let oam  = self.ppu.oam.clone();
+        let mmio = self.mmio.bus.clone();
+        let hram = self.mem.hram.clone();
+        let pic  = self.pic.borrow().enable.clone();
+        let unmapped = Rc::new(RefCell::new(Unmapped::new()));
+
+        // Map devices in MMU  // ┌──────────┬────────────┬─────┐
+                               // │   SIZE   │    NAME    │ DEV │
+                               // ├──────────┼────────────┼─────┤
+        mmu.map(0x0000, boot); // │    256 B │       Boot │ ROM │
+        mmu.map(0x0000, rom);  // │  32 Ki B │  Cartridge │ ROM │
+        mmu.map(0x8000, vram); // │   8 Ki B │      Video │ RAM │
+        mmu.map(0xa000, eram); // │   8 Ki B │   External │ RAM │
+        mmu.map(0xc000, wram); // │   8 Ki B │       Work │ RAM │
+        mmu.map(0xe000, echo); // │   7680 B │       Echo │ RAM │
+        mmu.map(0xfe00, oam);  // │    160 B │        OAM │ RAM │
+                               // │     96 B │   Unmapped │ --- │
+        mmu.map(0xff00, mmio); // │    128 B │        I/O │ Bus │
+        mmu.map(0xff80, hram); // │    127 B │       High │ RAM │
+        mmu.map(0xffff, pic);  // │      1 B │  Interrupt │ Reg │
+                               // └──────────┴────────────┴─────┘
+        // NOTE: use `Unmapped` as a fallback to report reads as `0xff`
+        mmu.map(0x0000, unmapped);
     }
 }
 
 impl Block for GameBoy {
+    #[rustfmt::skip]
     fn reset(&mut self) {
         // Reset CPU
         self.cpu.reset();
-        self.cpu.set_bus(self.mmu.clone()); // link CPU bus
+        self.cpu.set_bus(self.mmu.clone()); // link MMU to CPU
 
         // Reset cartridge
         self.cart.reset();
 
-        // Reset I/O
-        self.io.reset();
-        self.io.con = self.joypad.p1.clone(); // link joypad
-        self.io.timer = self.timer.regs.clone(); // link timer registers
-        self.io.iflag = self.pic.borrow().active.clone(); // link IF register
-        self.io.lcd = self.ppu.ctl.clone(); // link LCD controller
-        self.io.boot = self.mem.boot.borrow().ctl.clone(); // link BOOT controller
+        // Re-map I/O
+        self.mmio.con = self.joypad.p1.clone();              // link I/O to joypad
+        self.mmio.timer = self.timer.regs.clone();           // link I/O to timer registers
+        self.mmio.iflag = self.pic.borrow().active.clone();  // link I/O to IF register
+        self.mmio.lcd = self.ppu.ctl.clone();                // link I/O to LCD controller
+        self.mmio.boot = self.mem.boot.borrow().ctl.clone(); // link I/O to BOOT controller
+        self.mmio.reset();
 
         // Reset memory
         self.mem.reset();
 
         // Reset interrupts
         self.pic.borrow_mut().reset();
-        self.cpu.set_pic(self.pic.clone()); // link PIC
-        self.joypad.set_pic(self.pic.clone()); // link PIC
-        self.timer.set_pic(self.pic.clone()); // link PIC
+        self.cpu.set_pic(self.pic.clone());    // link PIC to CPU
+        self.joypad.set_pic(self.pic.clone()); // link PIC to joypad
+        self.ppu.set_pic(self.pic.clone());    // link PIC to PPU
+        self.timer.set_pic(self.pic.clone());  // link PIC to timer
 
         // Reset joypad
         self.joypad.reset();
 
         // Reset PPU
         self.ppu.reset();
-        self.ppu.set_pic(self.pic.clone()); // link PIC
 
         // Reset timer
         self.timer.reset();
 
         // Re-map MMU
         self.memmap();
-        self.io.memmap();
     }
 }
 
@@ -228,27 +239,46 @@ struct InOut {
 impl InOut {
     #[rustfmt::skip]
     fn memmap(&mut self) {
-        // Map bus                            // ┌────────┬─────────────────┬─────┐
-        self.bus.take();                      // │  SIZE  │      NAME       │ DEV │
-        let mut bus = self.bus.borrow_mut();  // ├────────┼─────────────────┼─────┤
-        bus.map(0x00, self.con.clone());      // │    1 B │      Controller │ Reg │
-        bus.map(0x01, self.com.clone());      // │    2 B │   Communication │ Reg │
-                                              // │    1 B │          Unused │ --- │
-        bus.map(0x04, self.timer.clone());    // │    4 B │ Divider & Timer │ Reg │
-                                              // │    7 B │          Unused │ --- │
-        bus.map(0x0f, self.iflag.clone());    // │    1 B │  Interrupt Flag │ Reg │
-        bus.map(0x10, self.sound.clone());    // │   23 B │           Sound │ RAM │
-                                              // │    9 B │          Unused │ --- │
-        bus.map(0x30, self.wave.clone());     // │   16 B │        Waveform │ RAM │
-        bus.map(0x40, self.lcd.clone());      // │   12 B │             LCD │ Ppu │
-                                              // │    4 B │          Unused │ --- │
-        bus.map(0x50, self.boot.clone());     // │    1 B │   Boot ROM Bank │ Reg │
-                                              // │   47 B │          Unused │ --- │
-        drop(bus); // release mutable borrow  // └────────┴─────────────────┴─────┘
+        // Prepare bus
+        self.bus.take();
+        let mut bus = self.bus.borrow_mut();
+
+        // Prepare devices
+        let con = self.con.clone();
+        let com = self.com.clone();
+        let timer = self.timer.clone();
+        let iflag = self.iflag.clone();
+        let sound = self.sound.clone();
+        let wave = self.wave.clone();
+        let lcd = self.lcd.clone();
+        let boot = self.boot.clone();
+
+        // Map devices in I/O // ┌────────┬─────────────────┬─────┐
+                              // │  SIZE  │      NAME       │ DEV │
+                              // ├────────┼─────────────────┼─────┤
+        bus.map(0x00, con);   // │    1 B │      Controller │ Reg │
+        bus.map(0x01, com);   // │    2 B │   Communication │ Reg │
+                              // │    1 B │        Unmapped │ --- │
+        bus.map(0x04, timer); // │    4 B │ Divider & Timer │ Reg │
+                              // │    7 B │        Unmapped │ --- │
+        bus.map(0x0f, iflag); // │    1 B │  Interrupt Flag │ Reg │
+        bus.map(0x10, sound); // │   23 B │           Sound │ RAM │
+                              // │    9 B │        Unmapped │ --- │
+        bus.map(0x30, wave);  // │   16 B │        Waveform │ RAM │
+        bus.map(0x40, lcd);   // │   12 B │             LCD │ Ppu │
+                              // │    4 B │        Unmapped │ --- │
+        bus.map(0x50, boot);  // │    1 B │   Boot ROM Bank │ Reg │
+                              // │   47 B │        Unmapped │ --- │
+                              // └────────┴─────────────────┴─────┘
     }
 }
 
-impl Block for InOut {}
+impl Block for InOut {
+    fn reset(&mut self) {
+        // Re-map bus
+        self.memmap();
+    }
+}
 
 impl Device for InOut {
     fn contains(&self, index: usize) -> bool {
@@ -273,6 +303,7 @@ mod tests {
     use super::*;
 
     fn setup() -> GameBoy {
+        // Define cartridge ROM
         let rom: [u8; 0x150] = [
             0xc3, 0x8b, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc3, 0x8b, 0x02, 0xff, 0xff, 0xff,
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -299,11 +330,75 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x02, 0x01, 0x00, 0x00, 0xdc, 0x31, 0xbb,
         ];
-        GameBoy::new(Cartridge::new(&rom).unwrap())
+        let cart = Cartridge::new(&rom).unwrap();
+        // Create a default GameBoy instance
+        GameBoy::new(cart)
     }
 
     #[test]
-    fn mmu_works() {
+    fn boot_disable_works() {
+        let gb = setup();
+
+        // Ensure boot ROM starts enabled:
+        // - Perform comparison against boot ROM contents
+        (0x0000..=0x0100)
+            .map(|addr| gb.mmu.borrow().read(addr))
+            .zip([
+                0x31, 0xfe, 0xff, 0xaf, 0x21, 0xff, 0x9f, 0x32, 0xcb, 0x7c, 0x20, 0xfb, 0x21, 0x26,
+                0xff, 0x0e, 0x11, 0x3e, 0x80, 0x32, 0xe2, 0x0c, 0x3e, 0xf3, 0xe2, 0x32, 0x3e, 0x77,
+                0x77, 0x3e, 0xfc, 0xe0, 0x47, 0x11, 0x04, 0x01, 0x21, 0x10, 0x80, 0x1a, 0xcd, 0x95,
+                0x00, 0xcd, 0x96, 0x00, 0x13, 0x7b, 0xfe, 0x34, 0x20, 0xf3, 0x11, 0xd8, 0x00, 0x06,
+                0x08, 0x1a, 0x13, 0x22, 0x23, 0x05, 0x20, 0xf9, 0x3e, 0x19, 0xea, 0x10, 0x99, 0x21,
+                0x2f, 0x99, 0x0e, 0x0c, 0x3d, 0x28, 0x08, 0x32, 0x0d, 0x20, 0xf9, 0x2e, 0x0f, 0x18,
+                0xf3, 0x67, 0x3e, 0x64, 0x57, 0xe0, 0x42, 0x3e, 0x91, 0xe0, 0x40, 0x04, 0x1e, 0x02,
+                0x0e, 0x0c, 0xf0, 0x44, 0xfe, 0x90, 0x20, 0xfa, 0x0d, 0x20, 0xf7, 0x1d, 0x20, 0xf2,
+                0x0e, 0x13, 0x24, 0x7c, 0x1e, 0x83, 0xfe, 0x62, 0x28, 0x06, 0x1e, 0xc1, 0xfe, 0x64,
+                0x20, 0x06, 0x7b, 0xe2, 0x0c, 0x3e, 0x87, 0xe2, 0xf0, 0x42, 0x90, 0xe0, 0x42, 0x15,
+                0x20, 0xd2, 0x05, 0x20, 0x4f, 0x16, 0x20, 0x18, 0xcb, 0x4f, 0x06, 0x04, 0xc5, 0xcb,
+                0x11, 0x17, 0xc1, 0xcb, 0x11, 0x17, 0x05, 0x20, 0xf5, 0x22, 0x23, 0x22, 0x23, 0xc9,
+                0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0c,
+                0x00, 0x0d, 0x00, 0x08, 0x11, 0x1f, 0x88, 0x89, 0x00, 0x0e, 0xdc, 0xcc, 0x6e, 0xe6,
+                0xdd, 0xdd, 0xd9, 0x99, 0xbb, 0xbb, 0x67, 0x63, 0x6e, 0x0e, 0xec, 0xcc, 0xdd, 0xdc,
+                0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e, 0x3c, 0x42, 0xb9, 0xa5, 0xb9, 0xa5, 0x42, 0x3c,
+                0x21, 0x04, 0x01, 0x11, 0xa8, 0x00, 0x1a, 0x13, 0xbe, 0x20, 0xfe, 0x23, 0x7d, 0xfe,
+                0x34, 0x20, 0xf5, 0x06, 0x19, 0x78, 0x86, 0x23, 0x05, 0x20, 0xfb, 0x86, 0x20, 0xfe,
+                0x3e, 0x01, 0xe0, 0x50,
+            ])
+            .for_each(|(read, rom)| assert_eq!(read, rom));
+
+        // Disable boot ROM
+        gb.mmu.borrow_mut().write(0xff50, 0x01);
+
+        // Check if disable was successful:
+        // - Perform comparison against cartridge ROM contents
+        (0x0000..=0x0100)
+            .map(|addr| gb.mmu.borrow().read(addr))
+            .zip([
+                0xc3, 0x8b, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc3, 0x8b, 0x02, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x87, 0xe1,
+                0x5f, 0x16, 0x00, 0x19, 0x5e, 0x23, 0x56, 0xd5, 0xe1, 0xe9, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc3, 0xfd, 0x01, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xc3, 0x12, 0x27, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc3, 0x12, 0x27, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xc3, 0x7e, 0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff,
+            ])
+            .for_each(|(read, rom)| assert_eq!(read, rom));
+    }
+
+    #[test]
+    fn mmu_all_works() {
         // NOTE: Test reads (and writes) for each component separately
         let gb = setup();
 
@@ -333,34 +428,34 @@ mod tests {
             (0xff00..=0xff00).for_each(|addr| gb.mmu.borrow_mut().write(addr, 0x61));
             // NOTE: Only bits 0x30 are writable
             (0x00..=0x00)
-                .map(|addr| gb.io.bus.borrow().read(addr))
+                .map(|addr| gb.mmio.bus.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0xef));
             (0x0..=0x0)
-                .map(|addr| gb.io.con.borrow().read(addr))
+                .map(|addr| gb.mmio.con.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0xef));
             // Communication
             (0xff01..=0xff02).for_each(|addr| gb.mmu.borrow_mut().write(addr, 0x62));
             (0x01..=0x02)
-                .map(|addr| gb.io.bus.borrow().read(addr))
+                .map(|addr| gb.mmio.bus.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x62));
             (0x00..=0x01)
-                .map(|addr| gb.io.com.borrow().read(addr))
+                .map(|addr| gb.mmio.com.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x62));
             // Divider & Timer
             (0xff04..=0xff07).for_each(|addr| gb.mmu.borrow_mut().write(addr, 0x63));
             (0x04..=0x07)
-                .map(|addr| gb.io.bus.borrow().read(addr))
+                .map(|addr| gb.mmio.bus.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x63));
             (0x00..=0x03)
-                .map(|addr| gb.io.timer.borrow().read(addr))
+                .map(|addr| gb.mmio.timer.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x63));
             // Interrupt Flag
             (0xff0f..=0xff0f).for_each(|addr| gb.mmu.borrow_mut().write(addr, 0x64));
             (0x0f..=0x0f)
-                .map(|addr| gb.io.bus.borrow().read(addr))
+                .map(|addr| gb.mmio.bus.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x64));
             (0x0..=0x0)
-                .map(|addr| gb.io.iflag.borrow().read(addr))
+                .map(|addr| gb.mmio.iflag.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x64));
             (0x0..=0x0)
                 .map(|addr| gb.pic.borrow().active.borrow().read(addr))
@@ -368,26 +463,26 @@ mod tests {
             // Sound
             (0xff10..=0xff26).for_each(|addr| gb.mmu.borrow_mut().write(addr, 0x65));
             (0x10..=0x26)
-                .map(|addr| gb.io.bus.borrow().read(addr))
+                .map(|addr| gb.mmio.bus.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x65));
             (0x00..=0x16)
-                .map(|addr| gb.io.sound.borrow().read(addr))
+                .map(|addr| gb.mmio.sound.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x65));
             // Waveform RAM
             (0xff30..=0xff3f).for_each(|addr| gb.mmu.borrow_mut().write(addr, 0x66));
             (0x30..=0x3f)
-                .map(|addr| gb.io.bus.borrow().read(addr))
+                .map(|addr| gb.mmio.bus.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x66));
             (0x00..=0x0f)
-                .map(|addr| gb.io.wave.borrow().read(addr))
+                .map(|addr| gb.mmio.wave.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x66));
             // LCD
             (0xff40..=0xff4b).for_each(|addr| gb.mmu.borrow_mut().write(addr, 0x67));
             (0x40..=0x4b)
-                .map(|addr| gb.io.bus.borrow().read(addr))
+                .map(|addr| gb.mmio.bus.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x67));
             (0x00..=0x0b)
-                .map(|addr| gb.io.lcd.borrow().read(addr))
+                .map(|addr| gb.mmio.lcd.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x67));
             (0x00..=0x0b)
                 .map(|addr| gb.ppu.ctl.borrow().read(addr))
@@ -395,10 +490,10 @@ mod tests {
             // Boot ROM Disable
             (0xff50..=0xff50).for_each(|addr| gb.mmu.borrow_mut().write(addr, 0x68));
             (0x50..=0x50)
-                .map(|addr| gb.io.bus.borrow().read(addr))
+                .map(|addr| gb.mmio.bus.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x68));
             (0x00..=0x00)
-                .map(|addr| gb.io.boot.borrow().read(addr))
+                .map(|addr| gb.mmio.boot.borrow().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x68));
             (0x00..=0x00)
                 .map(|addr| gb.mem.boot.borrow().ctl.borrow().read(addr))
@@ -417,105 +512,32 @@ mod tests {
     }
 
     #[test]
-    fn mmu_read_write_works() {
-        let gb = setup();
-
-        // Disable boot ROM
-        gb.mmu.borrow_mut().write(0xff50, 0x01);
-
-        // Read from every address
-        (0x0000..=0xffff).for_each(|addr| {
-            gb.mmu.borrow().read(addr);
-        });
-
-        // Write to every address
-        (0x0000..=0xffff).for_each(|addr| {
-            gb.mmu.borrow_mut().write(addr, 0xaa);
-        });
-
-        // Ensure ROMs didn't get overwritten
-        assert!((0x0000..=0x7fff)
-            .map(|addr| gb.mmu.borrow().read(addr))
-            .any(|byte| byte != 0xaa));
-
-        // Ensure RAM, registers did get overwritten
-        (0x8000..=0xffff)
-            .filter(|addr| ![0xff00].contains(addr))
-            .map(|addr| gb.mmu.borrow().read(addr))
-            .for_each(|byte| assert_eq!(byte, 0xaa));
-    }
-
-    #[test]
     #[should_panic]
-    fn mmu_rom_write_boot_panics() {
+    fn mmu_boot_write_panics() {
         let gb = setup();
 
-        // Perform a write to the boot ROM
+        // Write to boot ROM (should panic)
         gb.mmu.borrow_mut().write(0x0000, 0xaa);
     }
 
     #[test]
-    fn boot_disable_works() {
+    fn mmu_unmapped_works() {
         let gb = setup();
-
-        // Ensure boot ROM starts enabled
-        (0x0000..=0x0100)
-            .map(|addr| gb.mmu.borrow().read(addr))
-            .zip([
-                0x31, 0xfe, 0xff, 0xaf, 0x21, 0xff, 0x9f, 0x32, 0xcb, 0x7c, 0x20, 0xfb, 0x21, 0x26,
-                0xff, 0x0e, 0x11, 0x3e, 0x80, 0x32, 0xe2, 0x0c, 0x3e, 0xf3, 0xe2, 0x32, 0x3e, 0x77,
-                0x77, 0x3e, 0xfc, 0xe0, 0x47, 0x11, 0x04, 0x01, 0x21, 0x10, 0x80, 0x1a, 0xcd, 0x95,
-                0x00, 0xcd, 0x96, 0x00, 0x13, 0x7b, 0xfe, 0x34, 0x20, 0xf3, 0x11, 0xd8, 0x00, 0x06,
-                0x08, 0x1a, 0x13, 0x22, 0x23, 0x05, 0x20, 0xf9, 0x3e, 0x19, 0xea, 0x10, 0x99, 0x21,
-                0x2f, 0x99, 0x0e, 0x0c, 0x3d, 0x28, 0x08, 0x32, 0x0d, 0x20, 0xf9, 0x2e, 0x0f, 0x18,
-                0xf3, 0x67, 0x3e, 0x64, 0x57, 0xe0, 0x42, 0x3e, 0x91, 0xe0, 0x40, 0x04, 0x1e, 0x02,
-                0x0e, 0x0c, 0xf0, 0x44, 0xfe, 0x90, 0x20, 0xfa, 0x0d, 0x20, 0xf7, 0x1d, 0x20, 0xf2,
-                0x0e, 0x13, 0x24, 0x7c, 0x1e, 0x83, 0xfe, 0x62, 0x28, 0x06, 0x1e, 0xc1, 0xfe, 0x64,
-                0x20, 0x06, 0x7b, 0xe2, 0x0c, 0x3e, 0x87, 0xe2, 0xf0, 0x42, 0x90, 0xe0, 0x42, 0x15,
-                0x20, 0xd2, 0x05, 0x20, 0x4f, 0x16, 0x20, 0x18, 0xcb, 0x4f, 0x06, 0x04, 0xc5, 0xcb,
-                0x11, 0x17, 0xc1, 0xcb, 0x11, 0x17, 0x05, 0x20, 0xf5, 0x22, 0x23, 0x22, 0x23, 0xc9,
-                0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0c,
-                0x00, 0x0d, 0x00, 0x08, 0x11, 0x1f, 0x88, 0x89, 0x00, 0x0e, 0xdc, 0xcc, 0x6e, 0xe6,
-                0xdd, 0xdd, 0xd9, 0x99, 0xbb, 0xbb, 0x67, 0x63, 0x6e, 0x0e, 0xec, 0xcc, 0xdd, 0xdc,
-                0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e, 0x3c, 0x42, 0xb9, 0xa5, 0xb9, 0xa5, 0x42, 0x3c,
-                0x21, 0x04, 0x01, 0x11, 0xa8, 0x00, 0x1a, 0x13, 0xbe, 0x20, 0xfe, 0x23, 0x7d, 0xfe,
-                0x34, 0x20, 0xf5, 0x06, 0x19, 0x78, 0x86, 0x23, 0x05, 0x20, 0xfb, 0x86, 0x20, 0xfe,
-                0x3e, 0x01, 0xe0, 0x50,
-            ])
-            .for_each(|(read, rom)| assert_eq!(read, rom));
 
         // Disable boot ROM
         gb.mmu.borrow_mut().write(0xff50, 0x01);
 
-        // Check if disable was successful
-        (0x0000..=0x0100)
-            .map(|addr| gb.mmu.borrow().read(addr))
-            .zip([
-                0xc3, 0x8b, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc3, 0x8b, 0x02, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x87, 0xe1,
-                0x5f, 0x16, 0x00, 0x19, 0x5e, 0x23, 0x56, 0xd5, 0xe1, 0xe9, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc3, 0xfd, 0x01, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xc3, 0x12, 0x27, 0xff, 0xff, 0xff, 0xff, 0xff, 0xc3, 0x12, 0x27, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xc3, 0x7e, 0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0x00, 0xc3, 0x50, 0x01, 0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d,
-                0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0c, 0x00, 0x0d, 0x00, 0x08, 0x11, 0x1f,
-                0x88, 0x89, 0x00, 0x0e, 0xdc, 0xcc, 0x6e, 0xe6, 0xdd, 0xdd, 0xd9, 0x99, 0xbb, 0xbb,
-                0x67, 0x63, 0x6e, 0x0e, 0xec, 0xcc, 0xdd, 0xdc, 0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x02, 0x01, 0x00, 0x00, 0xdc, 0x31, 0xbb,
-            ])
-            .for_each(|(read, rom)| assert_eq!(read, rom));
+        // Define unmapped addresses
+        let unmapped = [0xfea0..=0xfeff, 0xff03..=0xff03, 0xff27..=0xff2f];
+
+        // Test unmapped addresses
+        for gap in unmapped {
+            for addr in gap {
+                // Write to every unmapped address
+                gb.mmu.borrow_mut().write(addr, 0xaa);
+                // Check the write didn't work
+                assert_eq!(gb.mmu.borrow().read(addr), 0xff);
+            }
+        }
     }
 }
