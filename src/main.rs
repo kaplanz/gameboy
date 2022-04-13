@@ -4,8 +4,8 @@ use std::path::PathBuf;
 
 use clap::{Parser, ValueHint};
 use color_eyre::eyre::{Result, WrapErr};
-use gameboy::emu::Button;
 use gameboy::{Cartridge, Emulator, GameBoy, SCREEN};
+use gameboy_core::emu::Button;
 use log::info;
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use remus::Machine;

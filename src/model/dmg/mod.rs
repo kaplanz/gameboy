@@ -1,24 +1,25 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use gameboy_core::cart::Cartridge;
+use gameboy_core::cpu::sm83::Cpu;
+use gameboy_core::emu::Button;
+use gameboy_core::hw::joypad::Joypad;
+use gameboy_core::hw::pic::Pic;
+use gameboy_core::hw::ppu::Ppu;
+use gameboy_core::hw::timer::Timer;
+use gameboy_core::mem::Unmapped;
+use gameboy_core::Emulator;
 use remus::bus::adapters::View;
 use remus::bus::Bus;
-use remus::dev::Device;
-use remus::mem::Ram;
-use remus::reg::Register;
 use remus::{Block, Machine};
 
-use crate::cart::Cartridge;
-use crate::cpu::sm83::Cpu;
-use crate::emu::Button;
-use crate::hw::joypad::{self, Joypad};
-use crate::hw::pic::Pic;
-use crate::hw::ppu::{self, Ppu};
-use crate::hw::timer::{self, Timer};
-use crate::mem::Unmapped;
-use crate::Emulator;
+use self::io::InOut;
+use self::mem::Memory;
 
 mod boot;
+mod io;
+mod mem;
 
 const PALETTE: [u32; 4] = [0xe9efec, 0xa0a08b, 0x555568, 0x211e20];
 
@@ -189,117 +190,10 @@ impl Machine for GameBoy {
     }
 }
 
-#[derive(Debug, Default)]
-struct Memory {
-    // ┌────────┬──────┬─────┬───────┐
-    // │  SIZE  │ NAME │ DEV │ ALIAS │
-    // ├────────┼──────┼─────┼───────┤
-    // │  256 B │ Boot │ ROM │       │
-    // │ 8 Ki B │ Work │ RAM │ WRAM  │
-    // │  127 B │ High │ RAM │ HRAM  │
-    // └────────┴──────┴─────┴───────┘
-    boot: Rc<RefCell<boot::Rom>>,
-    wram: Rc<RefCell<Ram<0x2000>>>,
-    hram: Rc<RefCell<Ram<0x007f>>>,
-}
-
-impl Block for Memory {
-    fn reset(&mut self) {
-        // Reset boot ROM
-        self.boot.borrow_mut().reset();
-    }
-}
-
-#[rustfmt::skip]
-#[derive(Debug, Default)]
-struct InOut {
-    pub bus: Rc<RefCell<Bus>>,
-    // ┌────────┬──────────────────┬─────┐
-    // │  SIZE  │       NAME       │ DEV │
-    // ├────────┼──────────────────┼─────┤
-    // │    1 B │       Controller │ Reg │
-    // │    2 B │    Communication │ Reg │
-    // │    4 B │  Divider & Timer │ Reg │
-    // │    1 B │   Interrupt Flag │ Reg │
-    // │   23 B │            Sound │ RAM │
-    // │   16 B │         Waveform │ RAM │
-    // │   16 B │              LCD │ PPU │
-    // │    1 B │ Boot ROM Disable │ Reg │
-    // └────────┴──────────────────┴─────┘
-    con:   Rc<RefCell<joypad::Register>>,
-    com:   Rc<RefCell<Register<u16>>>,
-    timer: Rc<RefCell<timer::Registers>>,
-    iflag: Rc<RefCell<Register<u8>>>,
-    sound: Rc<RefCell<Ram<0x17>>>,
-    wave:  Rc<RefCell<Ram<0x10>>>,
-    lcd:   Rc<RefCell<ppu::Registers>>,
-    boot:  Rc<RefCell<boot::RomDisable>>,
-}
-
-impl InOut {
-    #[rustfmt::skip]
-    fn memmap(&mut self) {
-        // Prepare bus
-        self.bus.take();
-        let mut bus = self.bus.borrow_mut();
-
-        // Prepare devices
-        let con = self.con.clone();
-        let com = self.com.clone();
-        let timer = self.timer.clone();
-        let iflag = self.iflag.clone();
-        let sound = self.sound.clone();
-        let wave = self.wave.clone();
-        let lcd = self.lcd.clone();
-        let boot = self.boot.clone();
-
-        // Map devices in I/O // ┌────────┬─────────────────┬─────┐
-                              // │  SIZE  │      NAME       │ DEV │
-                              // ├────────┼─────────────────┼─────┤
-        bus.map(0x00, con);   // │    1 B │      Controller │ Reg │
-        bus.map(0x01, com);   // │    2 B │   Communication │ Reg │
-                              // │    1 B │        Unmapped │ --- │
-        bus.map(0x04, timer); // │    4 B │ Divider & Timer │ Reg │
-                              // │    7 B │        Unmapped │ --- │
-        bus.map(0x0f, iflag); // │    1 B │  Interrupt Flag │ Reg │
-        bus.map(0x10, sound); // │   23 B │           Sound │ RAM │
-                              // │    9 B │        Unmapped │ --- │
-        bus.map(0x30, wave);  // │   16 B │        Waveform │ RAM │
-        bus.map(0x40, lcd);   // │   12 B │             LCD │ Ppu │
-                              // │    4 B │        Unmapped │ --- │
-        bus.map(0x50, boot);  // │    1 B │   Boot ROM Bank │ Reg │
-                              // │   47 B │        Unmapped │ --- │
-                              // └────────┴─────────────────┴─────┘
-    }
-}
-
-impl Block for InOut {
-    fn reset(&mut self) {
-        // Re-map bus
-        self.memmap();
-    }
-}
-
-impl Device for InOut {
-    fn contains(&self, index: usize) -> bool {
-        self.bus.borrow().contains(index)
-    }
-
-    fn len(&self) -> usize {
-        self.bus.borrow().len()
-    }
-
-    fn read(&self, index: usize) -> u8 {
-        self.bus.borrow().read(index)
-    }
-
-    fn write(&mut self, index: usize, value: u8) {
-        self.bus.borrow_mut().write(index, value);
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use remus::Device;
+
     use super::*;
 
     fn setup() -> GameBoy {
