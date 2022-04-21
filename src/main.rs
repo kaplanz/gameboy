@@ -11,7 +11,9 @@ use log::info;
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use remus::Machine;
 
-const PALETTE: [u32; 4] = [0xe9efec, 0xa0a08b, 0x555568, 0x211e20];
+use crate::pal::Palette;
+
+mod pal;
 
 /// Game Boy emulator written in Rust.
 #[derive(Parser)]
@@ -21,6 +23,11 @@ struct Args {
     #[clap(parse(from_os_str))]
     #[clap(value_hint = ValueHint::FilePath)]
     rom: PathBuf,
+
+    /// Color palette
+    #[clap(default_value_t)]
+    #[clap(long = "palette")]
+    pal: Palette,
 }
 
 fn main() -> Result<()> {
@@ -84,7 +91,7 @@ fn main() -> Result<()> {
         gb.redraw(|screen: &Screen| {
             let buf: Vec<_> = screen
                 .iter()
-                .map(|&pix| PALETTE[usize::from(pix)])
+                .map(|&pix| args.pal[usize::from(pix)])
                 .collect();
             win.update_with_buffer(&buf, RES.width, RES.height).unwrap()
         });
