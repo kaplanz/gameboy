@@ -1,3 +1,5 @@
+//! Programmable interrupt controller.
+
 use std::cell::RefCell;
 use std::fmt::Display;
 use std::rc::Rc;
@@ -8,11 +10,12 @@ use thiserror::Error;
 
 use crate::util::Bitflags;
 
+/// PIC model.
 #[derive(Debug, Default)]
 pub struct Pic {
-    // Interrupt Enable (IE)
+    /// Interrupt enable (IE) register.
     pub enable: Rc<RefCell<Register<u8>>>,
-    // Interrupt Flag (IF)
+    /// Interrupt flag (IF) register.
     pub active: Rc<RefCell<Register<u8>>>,
 }
 
@@ -40,6 +43,7 @@ impl Block for Pic {
     }
 }
 
+/// Interrupt type.
 #[rustfmt::skip]
 #[derive(Copy, Clone, Debug)]
 pub enum Interrupt {
@@ -112,6 +116,7 @@ impl From<Interrupt> for u8 {
     }
 }
 
+/// A type specifying general categories of [`Pic`] error.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("unknown interrupt")]

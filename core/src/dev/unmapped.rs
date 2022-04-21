@@ -6,15 +6,15 @@ use remus::{Block, Device};
 ///
 /// # Usage
 ///
-/// The [`Unmapped`] device ignores all writes, and always yields the same
-/// "garbage" values when read. This can be useful to allow memory accesses to
-/// an unmapped region of memory without causing a panic.
+/// The `Unmapped` device ialways yields the same "garbage" values when read,
+/// and ignores all writes. This can be useful to warn of unmapped accesses
+/// instead of causing a panic.
 ///
-/// Additionally, it behaves differently from [`Null`](remus::dev::Null) in that
-/// its scope is the entirety of the 16-bit address space. Furthermore, any
-/// reads or writes are logged as a warning.
+/// It behaves differently from [`Null`](remus::dev::Null) in that reads and
+/// writes are logged, instead of completely ignored. Furthermore, it has a
+/// default domain of the entire 16-bit address space.
 #[derive(Debug)]
-pub struct Unmapped(Null<0x10000>);
+pub struct Unmapped<const N: usize = 0x10000>(Null<N>);
 
 impl Unmapped {
     pub fn new() -> Self {
@@ -22,7 +22,11 @@ impl Unmapped {
     }
 }
 
-impl Block for Unmapped {}
+impl Block for Unmapped {
+    fn reset(&mut self) {
+        self.0.reset();
+    }
+}
 
 impl Default for Unmapped {
     fn default() -> Self {
@@ -40,12 +44,12 @@ impl Device for Unmapped {
     }
 
     fn read(&self, index: usize) -> u8 {
-        warn!("called `Device::read({index:#06x})` on a `Unmapped`");
+        warn!("called `Device::read({index:#06x})` on an `Unmapped`");
         self.0.read(index)
     }
 
     fn write(&mut self, index: usize, value: u8) {
-        warn!("called `Device::write({index:#06x}, {value:#04x})` on a `Unmapped`");
+        warn!("called `Device::write({index:#06x}, {value:#04x})` on an `Unmapped`");
     }
 }
 

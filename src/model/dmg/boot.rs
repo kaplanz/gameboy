@@ -1,11 +1,14 @@
+//! Boot ROM.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use remus::bus::adapters::Bank;
+use remus::bus::adapt::Bank;
 use remus::dev::Device;
 use remus::reg::Register;
 use remus::{mem, Block};
 
+/// Boot ROM raw bytes.
 const BOOTROM: [u8; 0x100] = [
     0x31, 0xfe, 0xff, 0xaf, 0x21, 0xff, 0x9f, 0x32, 0xcb, 0x7c, 0x20, 0xfb, 0x21, 0x26, 0xff, 0x0e,
     0x11, 0x3e, 0x80, 0x32, 0xe2, 0x0c, 0x3e, 0xf3, 0xe2, 0x32, 0x3e, 0x77, 0x77, 0x3e, 0xfc, 0xe0,
@@ -25,6 +28,7 @@ const BOOTROM: [u8; 0x100] = [
     0xf5, 0x06, 0x19, 0x78, 0x86, 0x23, 0x05, 0x20, 0xfb, 0x86, 0x20, 0xfe, 0x3e, 0x01, 0xe0, 0x50,
 ];
 
+/// Boot ROM management [`Device`](Device).
 #[derive(Debug)]
 pub struct Rom {
     pub ctl: Rc<RefCell<RomDisable>>,
@@ -39,8 +43,8 @@ impl Block for Rom {
         self.ctl.borrow_mut().bank = self.bank.clone();
         // Reset bank
         self.bank.borrow_mut().reset();
-        self.bank.borrow_mut().banks.push(self.rom.clone());
-        self.bank.borrow_mut().active = 0;
+        self.bank.borrow_mut().add(self.rom.clone());
+        self.bank.borrow_mut().set(0);
     }
 }
 
@@ -72,6 +76,7 @@ impl Device for Rom {
     }
 }
 
+/// Boot ROM disable [`Register`](Register).
 #[derive(Debug, Default)]
 pub struct RomDisable {
     reg: Register<u8>,
@@ -83,7 +88,7 @@ impl Block for RomDisable {
         // Reset controller
         self.reg.reset();
         // Reset bank
-        self.bank.borrow_mut().active = *self.reg as usize;
+        self.bank.borrow_mut().set(*self.reg as usize);
     }
 }
 
@@ -102,6 +107,6 @@ impl Device for RomDisable {
 
     fn write(&mut self, index: usize, value: u8) {
         self.reg.write(index, value);
-        self.bank.borrow_mut().active = value as usize;
+        self.bank.borrow_mut().set(value as usize);
     }
 }

@@ -1,8 +1,13 @@
-pub use crate::emu::{Emulator, SCREEN};
+//! # Game Boy Core
+//!
+//! This library implements the core behaviour of the various hardware
+//! components of the Nintendo Game Boy family of consoles.
 
-pub mod cart;
-pub mod cpu;
-pub mod emu;
+pub use crate::emu::Emulator;
+
+pub mod dev;
+mod emu;
 pub mod hw;
-pub mod mem;
+pub mod io;
+pub mod spec;
 pub mod util;

@@ -1,3 +1,5 @@
+//! Picture processing unit.
+
 use std::cell::RefCell;
 use std::fmt::Display;
 use std::rc::Rc;
@@ -8,16 +10,15 @@ use remus::mem::Ram;
 use remus::reg::Register;
 use remus::{Block, Device, Machine};
 
-use self::lcd::Screen;
 use self::pixel::{Fetch, Fifo};
 use self::sprite::Sprite;
 use super::pic::{Interrupt, Pic};
-use crate::SCREEN;
+use crate::spec::dmg::screen::{Screen, RES};
 
-mod lcd;
 mod pixel;
 mod sprite;
 
+/// PPU model.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
 pub struct Ppu {
@@ -43,7 +44,7 @@ impl Ppu {
         self.pic = pic;
     }
 
-    /// Get a reference to the ppu's lcd.
+    /// Get a reference to the ppu's screen.
     #[must_use]
     pub fn screen(&self) -> &Screen {
         &self.lcd
@@ -86,6 +87,7 @@ impl Machine for Ppu {
     }
 }
 
+/// Control registers.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
 pub struct Registers {
@@ -340,8 +342,8 @@ impl Draw {
             let ly = **regs.ly.borrow();
 
             // Push the pixel into the framebuffer
-            let idx = (ly as usize * SCREEN.width) + self.cx as usize;
-            ppu.lcd[idx] = pixel.colour;
+            let idx = (ly as usize * RES.width) + self.cx as usize;
+            ppu.lcd[idx] = pixel.color;
             // Increment the internal pixel column x-position
             self.cx += 1;
         }
@@ -354,7 +356,7 @@ impl Draw {
 
         // Either draw next pixel, or enter HBlank
         ppu.dot += 1;
-        if self.cx < SCREEN.width {
+        if self.cx < RES.width {
             Mode::Draw(self)
         } else {
             Mode::HBlank(Default::default())
@@ -404,7 +406,7 @@ impl HBlank {
             ppu.pic.borrow_mut().req(Interrupt::VBlank);
 
             // Either begin next scanline, or enter VBlank
-            if *ly < SCREEN.height as u8 {
+            if *ly < RES.height as u8 {
                 Mode::Scan(Default::default())
             } else {
                 Mode::VBlank(Default::default())

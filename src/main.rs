@@ -4,11 +4,14 @@ use std::path::PathBuf;
 
 use clap::{Parser, ValueHint};
 use color_eyre::eyre::{Result, WrapErr};
-use gameboy::{Cartridge, Emulator, GameBoy, SCREEN};
-use gameboy_core::emu::Button;
+use gameboy::{Cartridge, Emulator, GameBoy, RES};
+use gameboy_core::spec::dmg::joypad::Button;
+use gameboy_core::spec::dmg::screen::Screen;
 use log::info;
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use remus::Machine;
+
+const PALETTE: [u32; 4] = [0xe9efec, 0xa0a08b, 0x555568, 0x211e20];
 
 /// Game Boy emulator written in Rust.
 #[derive(Parser)]
@@ -54,13 +57,11 @@ fn main() -> Result<()> {
     // Create emulator instance
     let mut gb = GameBoy::new(cart);
 
-    // Set up emulator for running
-    gb.setup();
     // Create a framebuffer window
     let mut win = Window::new(
         &title,
-        SCREEN.width,
-        SCREEN.height,
+        RES.width,
+        RES.height,
         WindowOptions {
             resize: true,
             scale: Scale::X2,
@@ -80,9 +81,12 @@ fn main() -> Result<()> {
         gb.cycle();
 
         // Redraw the screen (if needed)
-        gb.redraw(|buf| {
-            win.update_with_buffer(buf, SCREEN.width, SCREEN.height)
-                .unwrap()
+        gb.redraw(|screen: &Screen| {
+            let buf: Vec<_> = screen
+                .iter()
+                .map(|&pix| PALETTE[usize::from(pix)])
+                .collect();
+            win.update_with_buffer(&buf, RES.width, RES.height).unwrap()
         });
 
         // Send joypad input

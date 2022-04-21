@@ -1,3 +1,7 @@
+//! SM83 core.
+//!
+//! Model for the CPU core present on the Sharp LR35902 SoC.
+
 use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::rc::Rc;
@@ -8,40 +12,31 @@ use remus::reg::Register;
 use remus::{Block, Device, Machine};
 
 use self::inst::Instruction;
+use super::Processor;
 use crate::hw::pic::Pic;
 use crate::util::Bitflags;
 
 mod inst;
 
+/// SM83 central processing unit.
 #[derive(Debug, Default)]
 pub struct Cpu {
-    // External
+    /// Memory address bus.
     bus: Rc<RefCell<Bus>>,
+    /// Programmable interrupt controller.
     pic: Rc<RefCell<Pic>>,
-    // Internal
+    /// Internal register set.
     regs: Registers,
+    /// Run status.
     status: Status,
+    /// Execution state.
     state: State,
+    /// Interrupt master enable.
     ime: Ime,
 }
 
 impl Cpu {
-    /// Set the cpu's bus.
-    pub fn set_bus(&mut self, bus: Rc<RefCell<Bus>>) {
-        self.bus = bus;
-    }
-
-    /// Set the cpu's pic.
-    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
-        self.pic = pic;
-    }
-
-    pub fn wake(&mut self) {
-        self.status = Status::Enabled;
-    }
-}
-
-impl Cpu {
+    /// Fetch the next byte after PC.
     fn fetchbyte(&mut self) -> u8 {
         let pc = &mut *self.regs.pc;
         let byte = self.bus.borrow().read(*pc as usize);
@@ -49,16 +44,19 @@ impl Cpu {
         byte
     }
 
+    /// Read the byte at HL.
     fn readbyte(&mut self) -> u8 {
         let hl = self.regs.hl.get(&self.regs);
         self.bus.borrow().read(hl as usize)
     }
 
+    /// Write to the byte at HL
     fn writebyte(&mut self, byte: u8) {
         let hl = self.regs.hl.get(&self.regs);
         self.bus.borrow_mut().write(hl as usize, byte);
     }
 
+    /// Fetch the next word after PC.
     fn fetchword(&mut self) -> u16 {
         let pc = &mut *self.regs.pc;
         let mut word = [0; 2];
@@ -69,6 +67,7 @@ impl Cpu {
         u16::from_le_bytes(word)
     }
 
+    /// Pop the word at SP.
     fn popword(&mut self) -> u16 {
         let sp = &mut *self.regs.sp;
         let mut word = [0; 2];
@@ -79,6 +78,7 @@ impl Cpu {
         u16::from_le_bytes(word)
     }
 
+    /// Push to the word at SP.
     fn pushword(&mut self, word: u16) {
         let sp = &mut *self.regs.sp;
         let word = word.to_le_bytes();
@@ -91,15 +91,32 @@ impl Cpu {
 
 impl Block for Cpu {
     fn reset(&mut self) {
-        std::mem::take(self);
+        // Reset each sub-block
+        self.bus.borrow_mut().reset();
+        self.pic.borrow_mut().reset();
+        self.regs.reset();
+        // Reset to initial state
+        self.status = Default::default();
+        self.state = Default::default();
+        self.ime = Default::default();
+    }
+}
+
+impl Processor for Cpu {
+    fn set_bus(&mut self, bus: Rc<RefCell<Bus>>) {
+        self.bus = bus;
+    }
+
+    fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
+        self.pic = pic;
+    }
+
+    fn wake(&mut self) {
+        self.status = Status::Enabled;
     }
 }
 
 impl Machine for Cpu {
-    fn setup(&mut self) {
-        self.status = Status::Enabled;
-    }
-
     fn enabled(&self) -> bool {
         matches!(self.status, Status::Enabled)
     }
@@ -109,6 +126,7 @@ impl Machine for Cpu {
     }
 }
 
+/// CPU internal register set.
 #[derive(Debug)]
 struct Registers {
     // ┌───────┬───────┐
@@ -138,6 +156,14 @@ struct Registers {
     hl: WideRegister,
     sp: Register<u16>,
     pc: Register<u16>,
+}
+
+impl Block for Registers {
+    fn reset(&mut self) {
+        // NOTE: the values of internal registers other than PC are undefined
+        //       after a reset.
+        self.pc.reset();
+    }
 }
 
 impl Default for Registers {
@@ -219,6 +245,7 @@ impl Display for Registers {
     }
 }
 
+/// 16-bit wide linked register.
 #[derive(Copy, Clone)]
 struct WideRegister {
     get: fn(&Registers) -> u16,
@@ -241,6 +268,7 @@ impl Debug for WideRegister {
     }
 }
 
+/// CPU flags.
 #[derive(Copy, Clone, Debug)]
 enum Flag {
     Z = 0b10000000,
@@ -257,19 +285,21 @@ impl From<Flag> for u8 {
     }
 }
 
+/// CPU run status.
 #[derive(Debug)]
 enum Status {
     Enabled,
     Halted,
-    Stopped,
+    _Stopped,
 }
 
 impl Default for Status {
     fn default() -> Self {
-        Self::Stopped
+        Self::Enabled
     }
 }
 
+/// CPU execution state.
 #[derive(Debug)]
 enum State {
     Fetch,
@@ -356,6 +386,7 @@ impl Default for State {
     }
 }
 
+/// CPU interrupt master enable.
 #[derive(Debug)]
 enum Ime {
     Disabled,

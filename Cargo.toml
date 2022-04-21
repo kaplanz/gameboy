@@ -14,10 +14,10 @@ members = [
 ]
 
 [dependencies]
-clap = { version = "3.1.8", features = ["derive"] }
+clap = { version = "3.1.10", features = ["derive"] }
 color-eyre = { version = "0.6.1", default-features = false }
 env_logger = "0.9.0"
 gameboy-core = { path = "core" }
 log = "0.4.16"
-minifb = "0.22.0"
+minifb = "0.23.0"
 remus = { git = "https://github.com/zakharykaplan/remus" }

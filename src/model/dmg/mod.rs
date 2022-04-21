@@ -1,18 +1,23 @@
+//! DMG-01: [Game Boy]
+//!
+//! [Game Boy]: https://en.wikipedia.org/wiki/Game_Boy
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use gameboy_core::cart::Cartridge;
-use gameboy_core::cpu::sm83::Cpu;
-use gameboy_core::emu::Button;
+use gameboy_core::dev::Unmapped;
+use gameboy_core::hw::cart::Cartridge;
+use gameboy_core::hw::cpu::{Processor, Sm83 as Cpu};
 use gameboy_core::hw::joypad::Joypad;
 use gameboy_core::hw::pic::Pic;
 use gameboy_core::hw::ppu::Ppu;
 use gameboy_core::hw::timer::Timer;
-use gameboy_core::mem::Unmapped;
+use gameboy_core::spec::dmg::joypad::Button;
+use gameboy_core::spec::dmg::screen::Screen;
 use gameboy_core::Emulator;
-use remus::bus::adapters::View;
+use remus::bus::adapt::View;
 use remus::bus::Bus;
-use remus::{Block, Machine};
+use remus::{Block, Device, Machine};
 
 use self::io::InOut;
 use self::mem::Memory;
@@ -21,8 +26,7 @@ mod boot;
 mod io;
 mod mem;
 
-const PALETTE: [u32; 4] = [0xe9efec, 0xa0a08b, 0x555568, 0x211e20];
-
+/// DMG-01 Game Boy emulator.
 #[derive(Debug, Default)]
 pub struct GameBoy {
     // State
@@ -41,6 +45,10 @@ pub struct GameBoy {
 }
 
 impl GameBoy {
+    /// Constructs a new, reset `GameBoy`.
+    ///
+    /// This will call [`Block::reset`] before returning, allowing emulation to
+    /// begin without further prior setup.
     pub fn new(cart: Cartridge) -> Self {
         let mut this = Self {
             cart,
@@ -62,12 +70,12 @@ impl GameBoy {
         let vram = self.ppu.vram.clone();
         let eram = self.cart.ram().clone();
         let wram = self.mem.wram.clone();
-        let echo = Rc::new(RefCell::new(View::new(wram.clone(), 0x0000..=0x1dff)));
+        let echo = View::new(wram.clone(), 0x0000..=0x1dff).to_shared();
         let oam  = self.ppu.oam.clone();
         let mmio = self.mmio.bus.clone();
         let hram = self.mem.hram.clone();
         let pic  = self.pic.borrow().enable.clone();
-        let unmapped = Rc::new(RefCell::new(Unmapped::new()));
+        let unmapped = Unmapped::new().to_shared();
 
         // Map devices in MMU  // ┌──────────┬────────────┬─────┐
                                // │   SIZE   │    NAME    │ DEV │
@@ -100,8 +108,8 @@ impl Block for GameBoy {
         self.cart.reset();
 
         // Re-map I/O
-        self.mmio.con = self.joypad.p1.clone();              // link I/O to joypad
-        self.mmio.timer = self.timer.regs.clone();           // link I/O to timer registers
+        self.mmio.con = self.joypad.con.clone();             // link I/O to joypad
+        self.mmio.timer = self.timer.ctl.clone();           // link I/O to timer registers
         self.mmio.iflag = self.pic.borrow().active.clone();  // link I/O to IF register
         self.mmio.lcd = self.ppu.ctl.clone();                // link I/O to LCD controller
         self.mmio.boot = self.mem.boot.borrow().ctl.clone(); // link I/O to BOOT controller
@@ -132,34 +140,21 @@ impl Block for GameBoy {
 }
 
 impl Emulator for GameBoy {
+    type Button = Button;
+    type Screen = Screen;
+
     fn send(&mut self, btns: Vec<Button>) {
         self.joypad.recv(btns);
     }
 
-    fn redraw<F>(&self, mut draw: F)
-    where
-        F: FnMut(&[u32]),
-    {
+    fn redraw(&self, mut callback: impl FnMut(&Screen)) {
         if self.ppu.refresh() {
-            let buf = self
-                .ppu
-                .screen()
-                .iter()
-                .map(|&pixel| PALETTE[pixel as usize])
-                .collect::<Vec<_>>();
-            draw(&buf);
+            callback(self.ppu.screen())
         }
     }
 }
 
 impl Machine for GameBoy {
-    fn setup(&mut self) {
-        // Set up CPU
-        self.cpu.setup();
-        // Set up PPU
-        self.ppu.setup();
-    }
-
     fn enabled(&self) -> bool {
         self.cpu.enabled()
     }

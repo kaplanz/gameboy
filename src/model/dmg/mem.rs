@@ -1,3 +1,5 @@
+//! Memory ports.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -6,6 +8,10 @@ use remus::Block;
 
 use super::boot;
 
+/// Input/Output connections.
+///
+/// This struct is plain old data (POD), and its members are accessed by
+/// [`GameBoy`](super::GameBoy).
 #[derive(Debug, Default)]
 pub struct Memory {
     // ┌────────┬──────┬─────┬───────┐

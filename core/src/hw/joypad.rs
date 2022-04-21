@@ -1,3 +1,5 @@
+//! Joypad controller.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -5,31 +7,39 @@ use log::{info, trace};
 use remus::{reg, Block, Device};
 
 use super::pic::{Interrupt, Pic};
-use crate::emu::Button;
+use crate::spec::dmg::joypad::Button;
 
+/// Joypad model.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
 pub struct Joypad {
+    /// Controller register.
+    pub con: Rc<RefCell<Register>>,
+    /// Programmable interrupt controller.
     pic: Rc<RefCell<Pic>>,
-    pub p1: Rc<RefCell<Register>>,
 }
 
 impl Joypad {
-    /// Set the joypad's pic.
+    /// Sets the joypad's interrupt controller.
     pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
         self.pic = pic;
     }
 
+    /// Receives currently pressed buttons.
     pub fn recv(&mut self, btns: Vec<Button>) {
-        // Retrieve P1 (inverted)
-        let prev = !*self.p1.borrow().0;
+        // Retrieve controller state (inverted)
+        let prev = !*self.con.borrow().0;
         let is_empty = btns.is_empty();
 
-        // Calculate updated P1
+        // Calculate updated state
         let next = btns
+            // Use `.iter().cloned()` to allow use of `btns` later for logging.
             .iter()
-            .filter(|&&btn| (prev & btn as u8) & 0x30 != 0)
-            .fold(prev & 0xf0, |p1, &btn| p1 | ((btn as u8) & 0x0f));
+            .cloned()
+            // Filter buttons as requested in the controller register
+            .filter(|&btn| (prev & btn as u8) & 0x30 != 0)
+            // Fold matching pressed buttons' corresponding bits into a byte
+            .fold(prev & 0xf0, |acc, btn| acc | ((btn as u8) & 0x0f));
 
         // Schedule interrupt on updated value
         if (prev & 0x0f) != (next & 0x0f) {
@@ -39,18 +49,19 @@ impl Joypad {
             trace!("Input {next:#010b}: {btns:?}"); // log others with `trace`
         }
 
-        // Update P1 (inverted)
-        *self.p1.borrow_mut().0 = !next;
+        // Update controller state (inverted)
+        *self.con.borrow_mut().0 = !next;
     }
 }
 
 impl Block for Joypad {
     fn reset(&mut self) {
         // Reset P1
-        self.p1.borrow_mut().reset();
+        self.con.borrow_mut().reset();
     }
 }
 
+/// Player input register.
 #[derive(Debug)]
 pub struct Register(reg::Register<u8>);
 

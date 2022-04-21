@@ -3,25 +3,12 @@ use std::ops::{Deref, DerefMut};
 use remus::Device;
 
 use super::{Lcdc, Ppu};
+pub use crate::spec::dmg::screen::Color;
 
 #[derive(Debug)]
 pub struct Pixel {
-    pub colour: Colour,
+    pub color: Color,
     pub palette: Palette,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum Colour {
-    C0 = 0b00,
-    C1 = 0b01,
-    C2 = 0b10,
-    C3 = 0b11,
-}
-
-impl Default for Colour {
-    fn default() -> Self {
-        Colour::C0
-    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -169,13 +156,13 @@ impl From<[u8; 2]> for TileRow {
         Self(
             (0..u8::BITS)
                 .map(|bit| Pixel {
-                    colour: match (((bytes[0] & (0b1 << bit) != 0) as u8) << 1)
+                    color: match (((bytes[0] & (0b1 << bit) != 0) as u8) << 1)
                         | ((bytes[1] & (0b1 << bit) != 0) as u8)
                     {
-                        0b00 => Colour::C0,
-                        0b01 => Colour::C1,
-                        0b10 => Colour::C2,
-                        0b11 => Colour::C3,
+                        0b00 => Color::C0,
+                        0b01 => Color::C1,
+                        0b10 => Color::C2,
+                        0b11 => Color::C3,
                         _ => unreachable!(),
                     },
                     palette: Palette::BgWin,

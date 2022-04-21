@@ -1,21 +1,35 @@
-use std::cell::RefCell;
+//! Game ROM cartridge.
+//!
+//! Encoded within the ROM is a [hardware specification][cartridge header] of
+//! the physical cartridge on which the ROM is connected to the console.
+//!
+//! Additionally, one of several [memory bank controllers][mbcs] may be used to
+//! expand the ROM and external RAM beyond the respective 32 KiB and 8 KiB
+//! addressable bytes.
+//!
+//! [cartridge header]: https://gbdev.io/pandocs/The_Cartridge_Header.html
+//! [mbcs]:             https://gbdev.io/pandocs/MBCs.html
+
 use std::cmp::Ordering;
 use std::iter;
-use std::rc::Rc;
 
 use log::{debug, error, info};
 use remus::dev::Null;
-use remus::mem::{Memory, Ram, Rom};
-use remus::{Block, Device};
+use remus::mem::{Ram, Rom};
+use remus::{Block, Device, Memory, SharedDevice};
 use thiserror::Error;
 
-use self::header::Header;
+use self::header::CartridgeType;
+pub use self::header::{Error as HeaderError, Header};
 use self::mbc::{Mbc, Mbc1, NoMbc};
-use crate::cart::header::CartridgeType;
 
 mod header;
-mod mbc;
+pub mod mbc;
 
+/// Cartridge model.
+///
+/// Parses a [`Header`] from the ROM, then initializes the memory bank
+/// controller ([`mbc`]).
 #[derive(Debug)]
 pub struct Cartridge {
     header: Header,
@@ -23,13 +37,14 @@ pub struct Cartridge {
 }
 
 impl Cartridge {
-    pub fn new(rom: &[u8]) -> Result<Cartridge, Error> {
+    /// Constructs a new `Cartridge`.
+    pub fn new(rom: &[u8]) -> Result<Self, Error> {
         // Parse cartridge header
         let header = Header::try_from(&*rom)?;
         info!("Cartridge:\n{header}");
 
         // Construct null device (for reuse where needed)
-        let null = Rc::new(RefCell::new(Null::<0>::new()));
+        let null = Null::<0>::new().to_shared();
 
         // Prepare external ROM
         let rom = {
@@ -37,13 +52,17 @@ impl Cartridge {
             let read = rom.len();
             match read.cmp(&header.romsz) {
                 Ordering::Less => {
-                    let diff = header.romsz - read;
-                    error!("Read {read} bytes; remaining {diff} byte(s) uninitialized.")
+                    error!(
+                        "Read {read} bytes; remaining {diff} byte(s) uninitialized.",
+                        diff = header.romsz - read
+                    )
                 }
                 Ordering::Equal => info!("Read {read} bytes."),
                 Ordering::Greater => {
-                    let diff = read - header.romsz;
-                    error!("Read {read} bytes; remaining {diff} byte(s) truncated.")
+                    error!(
+                        "Read {read} bytes; remaining {diff} byte(s) truncated.",
+                        diff = read - header.romsz
+                    )
                 }
             }
             rom.iter()
@@ -51,63 +70,59 @@ impl Cartridge {
                 .chain(iter::repeat(0u8))
                 .take(header.romsz)
                 .collect::<Vec<_>>()
+                .into_boxed_slice()
         };
-        debug!("ROM:\n{}", &rom as &dyn Memory);
+        debug!("ROM:\n{}", &&*rom as &dyn Memory);
 
         // Construct external ROM
-        let erom: Rc<RefCell<dyn Device>> = {
-            let rom: Box<[_]> = rom.into();
+        let rom = {
             match header.romsz {
-                0x8000 => Rc::new(RefCell::new(Rom::<0x8000>::from(
-                    &*Box::<[_; 0x8000]>::try_from(rom).unwrap(),
-                ))),
-                0x10000 => Rc::new(RefCell::new(Rom::<0x10000>::from(
-                    &*Box::<[_; 0x10000]>::try_from(rom).unwrap(),
-                ))),
-                0x20000 => Rc::new(RefCell::new(Rom::<0x20000>::from(
-                    &*Box::<[_; 0x20000]>::try_from(rom).unwrap(),
-                ))),
-                0x40000 => Rc::new(RefCell::new(Rom::<0x40000>::from(
-                    &*Box::<[_; 0x40000]>::try_from(rom).unwrap(),
-                ))),
-                0x80000 => Rc::new(RefCell::new(Rom::<0x80000>::from(
-                    &*Box::<[_; 0x80000]>::try_from(rom).unwrap(),
-                ))),
-                0x100000 => Rc::new(RefCell::new(Rom::<0x100000>::from(
-                    &*Box::<[_; 0x100000]>::try_from(rom).unwrap(),
-                ))),
-                0x200000 => Rc::new(RefCell::new(Rom::<0x200000>::from(
-                    &*Box::<[_; 0x200000]>::try_from(rom).unwrap(),
-                ))),
-                0x400000 => Rc::new(RefCell::new(Rom::<0x400000>::from(
-                    &*Box::<[_; 0x400000]>::try_from(rom).unwrap(),
-                ))),
-                0x800000 => Rc::new(RefCell::new(Rom::<0x800000>::from(
-                    &*Box::<[_; 0x800000]>::try_from(rom).unwrap(),
-                ))),
+                0x8000 => {
+                    Rom::<0x8000>::from(&*Box::<[_; 0x8000]>::try_from(rom).unwrap()).to_shared()
+                }
+                0x10000 => {
+                    Rom::<0x10000>::from(&*Box::<[_; 0x10000]>::try_from(rom).unwrap()).to_shared()
+                }
+                0x20000 => {
+                    Rom::<0x20000>::from(&*Box::<[_; 0x20000]>::try_from(rom).unwrap()).to_shared()
+                }
+                0x40000 => {
+                    Rom::<0x40000>::from(&*Box::<[_; 0x40000]>::try_from(rom).unwrap()).to_shared()
+                }
+                0x80000 => {
+                    Rom::<0x80000>::from(&*Box::<[_; 0x80000]>::try_from(rom).unwrap()).to_shared()
+                }
+                0x100000 => Rom::<0x100000>::from(&*Box::<[_; 0x100000]>::try_from(rom).unwrap())
+                    .to_shared(),
+                0x200000 => Rom::<0x200000>::from(&*Box::<[_; 0x200000]>::try_from(rom).unwrap())
+                    .to_shared(),
+                0x400000 => Rom::<0x400000>::from(&*Box::<[_; 0x400000]>::try_from(rom).unwrap())
+                    .to_shared(),
+                0x800000 => Rom::<0x800000>::from(&*Box::<[_; 0x800000]>::try_from(rom).unwrap())
+                    .to_shared(),
                 _ => unreachable!(),
             }
         };
 
         // Construct external RAM
-        let eram: Rc<RefCell<dyn Device>> = match header.ramsz {
+        let eram = match header.ramsz {
             0x0 => null.clone(),
-            0x2000 => Rc::new(RefCell::new(Ram::<0x2000>::new())),
-            0x8000 => Rc::new(RefCell::new(Ram::<0x8000>::new())),
-            0x20000 => Rc::new(RefCell::new(Ram::<0x20000>::new())),
-            0x10000 => Rc::new(RefCell::new(Ram::<0x10000>::new())),
+            0x2000 => Ram::<0x2000>::new().to_shared(),
+            0x8000 => Ram::<0x8000>::new().to_shared(),
+            0x20000 => Ram::<0x20000>::new().to_shared(),
+            0x10000 => Ram::<0x10000>::new().to_shared(),
             _ => unreachable!(),
         };
 
         // Construct a cartridge
         let mbc: Box<dyn Mbc> = match header.cart {
-            CartridgeType::Rom { ram, .. } => {
+            CartridgeType::NoMbc { ram, .. } => {
                 let eram = [null, eram][ram as usize].clone();
-                Box::new(NoMbc::with(erom, eram))
+                Box::new(NoMbc::with(rom, eram))
             }
             CartridgeType::Mbc1 { ram, battery } => {
                 let eram = [null, eram][ram as usize].clone();
-                Box::new(Mbc1::with(erom, eram, battery))
+                Box::new(Mbc1::with(rom, eram, battery))
             }
             cart => unimplemented!("{cart:?}"),
         };
@@ -115,22 +130,26 @@ impl Cartridge {
         Ok(Self { header, mbc })
     }
 
-    /// Get a reference to the cartridge's header.
+    /// Gets a reference to the cartridge's header.
+    #[must_use]
     pub fn header(&self) -> &Header {
         &self.header
     }
 
-    pub fn rom(&self) -> Rc<RefCell<dyn Device>> {
+    /// Gets a shared reference to the cartridge's ROM.
+    pub fn rom(&self) -> SharedDevice {
         self.mbc.rom()
     }
 
-    pub fn ram(&self) -> Rc<RefCell<dyn Device>> {
+    /// Gets a shared reference to the cartridge's RAM.
+    pub fn ram(&self) -> SharedDevice {
         self.mbc.ram()
     }
 }
 
 impl Block for Cartridge {
     fn reset(&mut self) {
+        // Reset MBC
         self.mbc.reset();
     }
 }
@@ -163,10 +182,17 @@ impl Default for Cartridge {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xe6, 0x31, 0xbb,
         ];
-        Self::new(&rom).unwrap()
+        Self {
+            header: Header::try_from(&rom[..]).unwrap(),
+            mbc: Box::new(NoMbc::with(
+                Rom::<0x8000>::new().to_shared(),
+                Ram::<0x2000>::new().to_shared(),
+            )),
+        }
     }
 }
 
+/// A type specifying general categories of [`Cartridge`] error.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("could not parse ROM header")]

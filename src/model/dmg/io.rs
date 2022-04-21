@@ -1,3 +1,5 @@
+//! Input/Output ports.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -9,6 +11,10 @@ use remus::{Block, Device};
 
 use super::boot;
 
+/// Input/Output connections.
+///
+/// This struct is plain old data (POD), and its members are accessed by
+/// [`GameBoy`](super::GameBoy).
 #[rustfmt::skip]
 #[derive(Debug, Default)]
 pub struct InOut {

@@ -1,3 +1,5 @@
+//! Hardware timer.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -7,12 +9,16 @@ use remus::{Block, Device, Machine};
 
 use super::pic::{Interrupt, Pic};
 
+/// Timer model.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
 pub struct Timer {
-    cycle: usize,
+    /// Timer control registers.
+    pub ctl: Rc<RefCell<Registers>>,
+    /// Programmable interrupt controller.
     pic: Rc<RefCell<Pic>>,
-    pub regs: Rc<RefCell<Registers>>,
+    /// Current cycle count.
+    cycle: usize,
 }
 
 impl Timer {
@@ -25,7 +31,7 @@ impl Timer {
 impl Block for Timer {
     fn reset(&mut self) {
         // Reset registers
-        self.regs.borrow_mut().reset();
+        self.ctl.borrow_mut().reset();
     }
 }
 
@@ -36,7 +42,7 @@ impl Machine for Timer {
 
     fn cycle(&mut self) {
         // Borrow registers
-        let regs = &*self.regs.borrow();
+        let regs = &*self.ctl.borrow();
 
         // Increment DIV every 256 cycles
         if self.cycle % 0x100 == 0 {
@@ -76,6 +82,7 @@ impl Machine for Timer {
     }
 }
 
+/// Control registers.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
 pub struct Registers {

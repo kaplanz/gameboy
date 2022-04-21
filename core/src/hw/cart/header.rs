@@ -4,19 +4,35 @@ use std::str::Utf8Error;
 use log::warn;
 use thiserror::Error;
 
+/// Cartridge header.
+///
+/// Information about the ROM and the cartridge containing it. Stored in the
+/// byte range `[0x100, 0x150)`.
 #[derive(Debug, PartialEq)]
 pub struct Header {
+    /// Equality with boot ROM's Nintendo logo.
     pub logo: bool,
+    /// Title of this ROM.
     pub title: String,
+    /// DMG model support.
     pub dmg: bool,
+    /// CGB model support.
     pub cgb: bool,
+    /// SGB model support.
     pub sgb: bool,
+    /// Cartridge type information.
     pub cart: CartridgeType,
+    /// Size of this ROM.
     pub romsz: usize,
+    /// Size of external RAM.
     pub ramsz: usize,
+    /// Destination code (Japan/Worldwide)
     pub jpn: bool,
+    /// Revision number of this ROM.
     pub version: u8,
+    /// 8-bit header checksum.
     pub hchk: u8,
+    /// 16-bit global checksum.
     pub gchk: u16,
 }
 
@@ -72,7 +88,7 @@ impl TryFrom<&[u8]> for Header {
     fn try_from(rom: &[u8]) -> Result<Self, Self::Error> {
         // Extract the header bytes
         let header: &[u8; 0x50] = rom
-            .get(0x100..=0x14f)
+            .get(0x100..0x150)
             .ok_or(Error::Missing)?
             .try_into()
             .unwrap();
@@ -173,9 +189,10 @@ impl TryFrom<&[u8]> for Header {
     }
 }
 
+/// Cartridge information.
 #[derive(Debug, PartialEq)]
 pub enum CartridgeType {
-    Rom {
+    NoMbc {
         ram: bool,
         battery: bool,
     },
@@ -218,7 +235,7 @@ pub enum CartridgeType {
 impl Display for CartridgeType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Rom { .. } => "ROM",
+            Self::NoMbc { .. } => "ROM",
             Self::Mbc1 { .. } => "MBC1",
             Self::Mbc2 { .. } => "MBC2",
             Self::Mmm01 { .. } => "MMM01",
@@ -239,7 +256,7 @@ impl TryFrom<u8> for CartridgeType {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0x00 => Ok(CartridgeType::Rom {
+            0x00 => Ok(CartridgeType::NoMbc {
                 ram: false,
                 battery: false,
             }),
@@ -257,11 +274,11 @@ impl TryFrom<u8> for CartridgeType {
             }),
             0x05 => Ok(CartridgeType::Mbc2 { battery: false }),
             0x06 => Ok(CartridgeType::Mbc2 { battery: true }),
-            0x08 => Ok(CartridgeType::Rom {
+            0x08 => Ok(CartridgeType::NoMbc {
                 ram: true,
                 battery: false,
             }),
-            0x09 => Ok(CartridgeType::Rom {
+            0x09 => Ok(CartridgeType::NoMbc {
                 ram: true,
                 battery: true,
             }),
@@ -350,6 +367,7 @@ impl TryFrom<u8> for CartridgeType {
     }
 }
 
+/// A type specifying general categories of [`Header`] error.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("header missing")]
@@ -414,7 +432,7 @@ mod tests {
                 dmg: true,
                 cgb: false,
                 sgb: false,
-                cart: CartridgeType::Rom {
+                cart: CartridgeType::NoMbc {
                     ram: true,
                     battery: false
                 },

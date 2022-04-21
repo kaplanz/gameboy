@@ -1,11 +1,55 @@
+//! Utility functions, structs, traits, etc.
+
 pub use bitflags::Bitflags;
 
 mod bitflags {
+    /// Bit modifiable flags.
+    ///
+    /// `Bitflags` should be implemenmted on fieldless enumerations, and uses
+    /// (usually mutually exclusive) discriminant values as flags.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use gameboy_core::util::Bitflags;
+    ///
+    /// // Define `Flags` enum
+    /// #[derive(Copy, Clone)]
+    /// enum Flag {
+    ///     A = 0b001, // NOTE: each of the fields should have descrimenant
+    ///     B = 0b010, //       values that are mutually exclusive, to ensure
+    ///     C = 0b100, //       that there is no collision when using flags.
+    /// }
+    ///
+    /// impl Bitflags for Flag {}
+    ///
+    /// impl From<Flag> for u8 {
+    ///     fn from(value: Flag) -> Self {
+    ///         value as u8
+    ///     }
+    /// }
+    ///
+    /// // Use a `u8` as the flag.
+    /// let mut flag: u8 = 0;
+    ///
+    /// // Set some fields
+    /// Flag::A.set(&mut flag, false);
+    /// Flag::B.set(&mut flag, true);
+    /// Flag::C.set(&mut flag, true);
+    ///
+    /// // Read the fields
+    /// assert_eq!(Flag::A.get(&flag), false);
+    /// assert_eq!(Flag::B.get(&flag), true);
+    /// assert_eq!(Flag::C.get(&flag), true);
+    /// assert_eq!(flag, 0b110);
+    /// ```
     pub trait Bitflags: Copy + Into<u8> {
+        /// Gets the corresponding bit value from an integer flag.
         fn get(self, f: &u8) -> bool {
             *f & self.into() != 0
         }
 
+        /// Sets the corresponding bit value on an integer flag.
         fn set(self, f: &mut u8, enable: bool) {
             *f ^= (*f & self.into()) ^ (!(enable as u8).wrapping_sub(1) & self.into())
         }

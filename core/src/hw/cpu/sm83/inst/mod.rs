@@ -5,6 +5,12 @@ use crate::hw::pic::Interrupt;
 
 mod exec;
 
+/// CPU instruction state.
+///
+/// Stores the currently executing instruction together with its state. Can be
+/// started and resumed.
+///
+/// TODO: Eventually replace with a generator once stable.
 #[derive(Clone)]
 pub struct Instruction {
     opcode: u8,
