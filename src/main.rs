@@ -7,7 +7,7 @@ use color_eyre::eyre::{Result, WrapErr};
 use gameboy::{Cartridge, Emulator, GameBoy, RES};
 use gameboy_core::spec::dmg::joypad::Button;
 use gameboy_core::spec::dmg::screen::Screen;
-use log::info;
+use log::{debug, info};
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use remus::Machine;
 
@@ -51,12 +51,15 @@ fn main() -> Result<()> {
         // Read ROM into a buffer
         let mut buf = Vec::new();
         // NOTE: Game Paks manufactured by Nintendo have a maximum 8 MiB ROM.
-        f.take(0x800000)
+        let read = f
+            .take(0x800000)
             .read_to_end(&mut buf)
-            .with_context(|| format!("failed to open ROM: `{}`", args.rom.display()))?;
+            .with_context(|| format!("failed to read ROM: `{}`", args.rom.display()))?;
+        info!("Read {read} bytes");
 
         buf
     };
+
     // Initialize the cartridge
     let cart = Cartridge::new(&rom)
         .with_context(|| format!("failed to load cartridge: `{}`", args.rom.display()))?;
@@ -124,7 +127,7 @@ fn main() -> Result<()> {
 
         // Calculate real-time clock frequency
         if now.elapsed().as_secs() > 0 {
-            info!("Frequency: {active}");
+            debug!("Frequency: {active}");
             active = 0;
             now = std::time::Instant::now();
         }

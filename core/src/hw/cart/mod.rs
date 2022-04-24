@@ -13,7 +13,7 @@
 use std::cmp::Ordering;
 use std::iter;
 
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use remus::dev::Null;
 use remus::mem::{Ram, Rom};
 use remus::{Block, Device, Memory, SharedDevice};
@@ -41,7 +41,7 @@ impl Cartridge {
     pub fn new(rom: &[u8]) -> Result<Self, Error> {
         // Parse cartridge header
         let header = Header::try_from(&*rom)?;
-        info!("Cartridge:\n{header}");
+        debug!("Header:\n{header}");
 
         // Construct null device (for reuse where needed)
         let null = Null::<0>::new().to_shared();
@@ -53,14 +53,14 @@ impl Cartridge {
             match read.cmp(&header.romsz) {
                 Ordering::Less => {
                     error!(
-                        "Read {read} bytes; remaining {diff} byte(s) uninitialized.",
+                        "Initialized {read} bytes; remaining {diff} bytes uninitialized",
                         diff = header.romsz - read
                     )
                 }
-                Ordering::Equal => info!("Read {read} bytes."),
+                Ordering::Equal => info!("Initialized {read} bytes"),
                 Ordering::Greater => {
                     error!(
-                        "Read {read} bytes; remaining {diff} byte(s) truncated.",
+                        "Initialized {read} bytes; remaining {diff} bytes truncated",
                         diff = read - header.romsz
                     )
                 }
@@ -72,7 +72,7 @@ impl Cartridge {
                 .collect::<Vec<_>>()
                 .into_boxed_slice()
         };
-        debug!("ROM:\n{}", &&*rom as &dyn Memory);
+        trace!("ROM:\n{}", &&*rom as &dyn Memory);
 
         // Construct external ROM
         let rom = {
@@ -189,7 +189,7 @@ impl Default for Cartridge {
             0x88, 0x89, 0x00, 0x0e, 0xdc, 0xcc, 0x6e, 0xe6, 0xdd, 0xdd, 0xd9, 0x99, 0xbb, 0xbb,
             0x67, 0x63, 0x6e, 0x0e, 0xec, 0xcc, 0xdd, 0xdc, 0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xe6, 0x31, 0xbb,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xe6, 0x00, 0x6b,
         ];
         Self {
             header: Header::try_from(&rom[..]).unwrap(),
@@ -204,6 +204,6 @@ impl Default for Cartridge {
 /// A type specifying general categories of [`Cartridge`] error.
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("could not parse ROM header")]
+    #[error("could not parse header")]
     Header(#[from] header::Error),
 }
