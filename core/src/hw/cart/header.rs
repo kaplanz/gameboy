@@ -36,6 +36,51 @@ pub struct Header {
     pub gchk: u16,
 }
 
+impl Header {
+    /// Verifies checksums.
+    pub fn check(&self, rom: &[u8]) -> Result<(), Error> {
+        // Calculate checksums
+        let hchk = Self::hchk(rom);
+        let gchk = Self::gchk(rom);
+
+        // Verify header checksum
+        if hchk != self.hchk {
+            Err(Error::HeaderChecksum {
+                found: hchk,
+                expected: self.hchk,
+            })
+        }
+        // Verify global checksum
+        else if gchk != self.gchk {
+            Err(Error::GlobalChecksum {
+                found: gchk,
+                expected: self.gchk,
+            })
+        }
+        // Everything looks good
+        else {
+            Ok(())
+        }
+    }
+
+    /// Calculates header checksum.
+    fn hchk(rom: &[u8]) -> u8 {
+        rom[0x134..=0x14c]
+            .iter()
+            .cloned()
+            .fold(0u8, |accum, item| accum.wrapping_sub(item).wrapping_sub(1))
+    }
+
+    /// Calculates global checksum.
+    fn gchk(rom: &[u8]) -> u16 {
+        rom.iter()
+            .cloned()
+            .fold(0u16, |accum, item| accum.wrapping_add(item as u16))
+            .wrapping_sub(rom[0x14e] as u16)
+            .wrapping_sub(rom[0x14f] as u16)
+    }
+}
+
 impl Display for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "┌──────────────────┐")?;
@@ -149,11 +194,7 @@ impl TryFrom<&[u8]> for Header {
         let gchk = u16::from_be_bytes(header[0x4e..=0x4f].try_into().unwrap());
 
         // Verify header checksum
-        match header[0x34..=0x4c]
-            .iter()
-            .cloned()
-            .fold(0u8, |accum, item| accum.wrapping_sub(item).wrapping_sub(1))
-        {
+        match Self::hchk(rom) {
             chk if chk == hchk => Ok(()),
             chk => Err(Error::HeaderChecksum {
                 found: chk,
@@ -161,13 +202,7 @@ impl TryFrom<&[u8]> for Header {
             }),
         }?;
         // Verify global checksum
-        match rom
-            .iter()
-            .cloned()
-            .fold(0u16, |accum, item| accum.wrapping_add(item as u16))
-            .wrapping_sub(header[0x4e] as u16)
-            .wrapping_sub(header[0x4f] as u16)
-        {
+        match Self::gchk(rom) {
             chk if chk == gchk => (),
             chk => warn!("Global checksum failed: {chk:#06x} != {gchk:#06x}"),
         };
@@ -389,7 +424,7 @@ pub enum Error {
     #[error("bad header checksum (found {found:#04x}, expected {expected:#04x})")]
     HeaderChecksum { found: u8, expected: u8 },
     #[error("bad global checksum: (found {found:#06x}, (expected {expected:#06x})")]
-    GlobalChecksum { found: u8, expected: u8 },
+    GlobalChecksum { found: u16, expected: u16 },
 }
 
 #[cfg(test)]

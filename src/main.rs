@@ -24,6 +24,11 @@ struct Args {
     #[clap(value_hint = ValueHint::FilePath)]
     rom: PathBuf,
 
+    /// Check cartridge integrity
+    #[clap(long = "check")]
+    #[clap(short = 'c')]
+    chk: bool,
+
     /// Color palette
     #[clap(default_value_t)]
     #[clap(long = "palette")]
@@ -61,6 +66,12 @@ fn main() -> Result<()> {
         title => title,
     }
     .to_string();
+    // Check cartridge integrity
+    if args.chk {
+        cart.check(&rom)
+            .with_context(|| "failed cartridge integrity check")?;
+    }
+
     // Create emulator instance
     let mut gb = GameBoy::new(cart);
 
