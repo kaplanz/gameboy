@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use clap::{Parser, ValueHint};
 use color_eyre::eyre::{Result, WrapErr};
 use gameboy::{Cartridge, Emulator, GameBoy, RES};
+use gameboy_core::hw::cart::Header;
 use gameboy_core::spec::dmg::joypad::Button;
 use gameboy_core::spec::dmg::screen::Screen;
 use log::{debug, info};
@@ -24,7 +25,7 @@ struct Args {
     #[clap(value_hint = ValueHint::FilePath)]
     rom: PathBuf,
 
-    /// Check cartridge integrity
+    /// Check ROM integrity
     #[clap(long = "check")]
     #[clap(short = 'c')]
     chk: bool,
@@ -59,6 +60,10 @@ fn main() -> Result<()> {
 
         buf
     };
+    // Check ROM integrity
+    if args.chk {
+        Header::check(&rom).with_context(|| "failed ROM integrity check")?;
+    }
 
     // Initialize the cartridge
     let cart = Cartridge::new(&rom)
@@ -69,11 +74,6 @@ fn main() -> Result<()> {
         title => title,
     }
     .to_string();
-    // Check cartridge integrity
-    if args.chk {
-        cart.check(&rom)
-            .with_context(|| "failed cartridge integrity check")?;
-    }
 
     // Create emulator instance
     let mut gb = GameBoy::new(cart);

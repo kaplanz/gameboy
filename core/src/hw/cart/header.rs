@@ -37,30 +37,37 @@ pub struct Header {
 }
 
 impl Header {
-    /// Verifies checksums.
-    pub fn check(&self, rom: &[u8]) -> Result<(), Error> {
-        // Calculate checksums
-        let hchk = Self::hchk(rom);
-        let gchk = Self::gchk(rom);
+    /// Checks header integrity.
+    pub fn check(rom: &[u8]) -> Result<(), Error> {
+        // Extract the header bytes
+        let header: &[u8; 0x50] = rom
+            .get(0x100..0x150)
+            .ok_or(Error::Missing)?
+            .try_into()
+            .unwrap();
 
         // Verify header checksum
-        if hchk != self.hchk {
-            Err(Error::HeaderChecksum {
-                found: hchk,
-                expected: self.hchk,
-            })
+        let hchk = header[0x4d];
+        let chk = Self::hchk(rom);
+        if hchk != chk {
+            return Err(Error::HeaderChecksum {
+                found: chk,
+                expected: hchk,
+            });
         }
+
         // Verify global checksum
-        else if gchk != self.gchk {
-            Err(Error::GlobalChecksum {
-                found: gchk,
-                expected: self.gchk,
-            })
+        let gchk = u16::from_be_bytes(header[0x4e..=0x4f].try_into().unwrap());
+        let chk = Self::gchk(rom);
+        if gchk != chk {
+            return Err(Error::GlobalChecksum {
+                found: chk,
+                expected: gchk,
+            });
         }
+
         // Everything looks good
-        else {
-            Ok(())
-        }
+        Ok(())
     }
 
     /// Calculates header checksum.
@@ -194,18 +201,18 @@ impl TryFrom<&[u8]> for Header {
         let gchk = u16::from_be_bytes(header[0x4e..=0x4f].try_into().unwrap());
 
         // Verify header checksum
-        match Self::hchk(rom) {
-            chk if chk == hchk => Ok(()),
-            chk => Err(Error::HeaderChecksum {
+        let chk = Self::hchk(rom);
+        if chk != hchk {
+            return Err(Error::HeaderChecksum {
                 found: chk,
                 expected: hchk,
-            }),
-        }?;
+            });
+        }
         // Verify global checksum
-        match Self::gchk(rom) {
-            chk if chk == gchk => (),
-            chk => warn!("Global checksum failed: {chk:#06x} != {gchk:#06x}"),
-        };
+        let chk = Self::gchk(rom);
+        if chk != gchk {
+            warn!("Global checksum failed: {chk:#06x} != {gchk:#06x}");
+        }
 
         Ok(Self {
             logo,
@@ -405,7 +412,7 @@ impl TryFrom<u8> for CartridgeType {
 /// A type specifying general categories of [`Header`] error.
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("header missing")]
+    #[error("missing header")]
     Missing,
     #[error("could not parse title")]
     Title(#[from] Utf8Error),

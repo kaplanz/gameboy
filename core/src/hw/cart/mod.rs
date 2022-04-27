@@ -145,15 +145,6 @@ impl Cartridge {
     pub fn ram(&self) -> SharedDevice {
         self.mbc.ram()
     }
-
-    /// Checks cartridge integrity.
-    pub fn check(&self, rom: &[u8]) -> Result<(), Error> {
-        // Verify checksums
-        self.header.check(rom)?;
-
-        // Everything looks good
-        Ok(())
-    }
 }
 
 impl Block for Cartridge {
