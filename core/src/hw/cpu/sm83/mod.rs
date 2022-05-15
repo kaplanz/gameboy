@@ -352,14 +352,16 @@ impl State {
 
             // Log the instruction
             // NOTE: Ensure that prefix instructions are logged correctly
-            let fmt = match opcode {
-                0xcb => {
-                    let opcode = cpu.bus.borrow().read(*cpu.regs.pc as usize);
-                    format!("{}", Instruction::prefix(opcode))
+            debug!(
+                "{pc:#06x}: {}",
+                match opcode {
+                    0xcb => {
+                        let opcode = cpu.bus.borrow().read(*cpu.regs.pc as usize);
+                        format!("{}", Instruction::prefix(opcode))
+                    }
+                    _ => format!("{inst}"),
                 }
-                _ => format!("{inst}"),
-            };
-            debug!("{pc:#06x}: {fmt}");
+            );
 
             // Proceed to State::Execute(_)
             self = State::Execute(inst);
