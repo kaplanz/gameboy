@@ -1,7 +1,6 @@
 [package]
 name = "gameboy-core"
 version = "0.1.0"
-authors = ["Zakhary Kaplan <zakharykaplan@gmail.com>"]
 edition = "2021"
 repository = "https://github.com/zakharykaplan/gameboy"
 license = "MIT OR Apache-2.0"
