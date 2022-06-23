@@ -8,6 +8,6 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-log = "0.4.16"
+log = "0.4.17"
 remus = { git = "https://github.com/zakharykaplan/remus" }
-thiserror = "1.0.30"
+thiserror = "1.0.31"
