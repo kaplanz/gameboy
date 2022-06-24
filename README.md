@@ -17,3 +17,34 @@
 ---
 
 A cycle accurate emulator of the original 1989 Nintendo Game Boy.
+
+## Progress
+
+### Core
+
+- [ ] Implement audio
+- [x] Implement CPU
+  - [x] Instruction correctness
+  - [x] Cycle accuracy
+  - [x] Timed memory accesses
+- [x] Implement interrupts
+- [x] Implement joypad
+- [ ] Implement PPU
+  - [x] Background drawing
+  - [ ] Window drawing
+  - [ ] Sprite rendering
+- [ ] Implement timer
+  - [x] Functional correctness
+  - [ ] Implementation accuracy
+- [ ] Performance enhancements
+  - [ ] Benchmark tests
+
+### Application
+
+- [x] Basic app
+  - [x] Screen pixel buffer window
+  - [x] Configurable palette
+- [ ] Full GUI
+  - [ ] Dynamic cycle speed modifiers
+  - [ ] Re-mappable joypad
+  - [ ] Interactive debug menu
