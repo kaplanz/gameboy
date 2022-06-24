@@ -160,14 +160,16 @@ impl Machine for GameBoy {
     }
 
     fn cycle(&mut self) {
-        // Wake CPU if interrupts pending
-        if self.pic.borrow().int().is_some() {
-            self.cpu.wake();
-        }
-
         // CPU runs on a 1 MiHz clock: implement using a simple clock divider
-        if self.cycle % 4 == 0 && self.cpu.enabled() {
-            self.cpu.cycle();
+        if self.cycle % 4 == 0 {
+            // Wake disabled CPU if interrupts pending
+            if !self.cpu.enabled() && self.pic.borrow().int().is_some() {
+                self.cpu.wake();
+            }
+            // Cycle CPU if enabled
+            if self.cpu.enabled() {
+                self.cpu.cycle();
+            }
         }
 
         // PPU runs on a 4 MiHz clock

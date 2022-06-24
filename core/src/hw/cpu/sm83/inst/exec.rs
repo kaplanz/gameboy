@@ -671,8 +671,13 @@ pub mod halt {
             panic!("Illegal instruction.");
         }
 
-        // Execute HALT
-        cpu.status = Status::Halted;
+        // Perform HALT bug
+        if !cpu.ime.enabled() && cpu.pic.borrow().int().is_some() {
+            cpu.halt_bug = true;
+        } else {
+            // Execute HALT
+            cpu.status = Status::Halted;
+        }
 
         // Finish
         None

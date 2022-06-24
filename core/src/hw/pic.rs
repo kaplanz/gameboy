@@ -23,11 +23,11 @@ impl Pic {
     pub fn int(&self) -> Option<Interrupt> {
         let active = **self.active.borrow();
         let enable = **self.enable.borrow();
-        (active & enable).try_into().ok()
+        (active & enable & 0x1f).try_into().ok()
     }
 
     pub fn req(&mut self, int: Interrupt) {
-        **self.active.borrow_mut() |= int as u8;
+        **self.active.borrow_mut() |= 0xe0 | int as u8;
     }
 
     pub fn ack(&mut self, int: Interrupt) {

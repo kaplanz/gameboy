@@ -33,6 +33,7 @@ pub struct Cpu {
     state: State,
     /// Interrupt master enable.
     ime: Ime,
+    halt_bug: bool,
 }
 
 impl Cpu {
@@ -314,11 +315,6 @@ impl State {
             // Log previous register state
             trace!("Registers:\n{}", cpu.regs);
 
-            // Enable interrupts (after EI, RETI)
-            if let Ime::WillEnable = cpu.ime {
-                cpu.ime = Ime::Enabled;
-            }
-
             // Check for pending interrupts
             let int = match cpu.ime {
                 Ime::Enabled => cpu.pic.borrow().int(),
@@ -350,6 +346,13 @@ impl State {
             // Decode the instruction
             let inst = Instruction::new(opcode);
 
+            // Check for HALT bug
+            if cpu.halt_bug {
+                // Service the bug by rolling back the PC
+                *cpu.regs.pc = cpu.regs.pc.wrapping_sub(1);
+                cpu.halt_bug = false;
+            }
+
             // Log the instruction
             // NOTE: Ensure that prefix instructions are logged correctly
             debug!(
@@ -362,6 +365,11 @@ impl State {
                     _ => format!("{inst}"),
                 }
             );
+
+            // Enable interrupts (after EI, RETI)
+            if let Ime::WillEnable = cpu.ime {
+                cpu.ime = Ime::Enabled;
+            }
 
             // Proceed to State::Execute(_)
             self = State::Execute(inst);
@@ -394,6 +402,12 @@ enum Ime {
     Disabled,
     Enabled,
     WillEnable,
+}
+
+impl Ime {
+    fn enabled(&self) -> bool {
+        matches!(self, Self::Enabled)
+    }
 }
 
 impl Default for Ime {
