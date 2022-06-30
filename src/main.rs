@@ -20,17 +20,17 @@ mod pal;
 #[derive(Parser)]
 #[clap(author, version, about)]
 struct Args {
-    /// Cartridge ROM image file
+    /// Cartridge ROM image file.
     #[clap(parse(from_os_str))]
     #[clap(value_hint = ValueHint::FilePath)]
     rom: PathBuf,
 
-    /// Check ROM integrity
+    /// Check ROM integrity.
     #[clap(long = "check")]
     #[clap(short = 'c')]
     chk: bool,
 
-    /// Color palette
+    /// Color palette.
     #[clap(default_value_t)]
     #[clap(long = "palette")]
     pal: Palette,
