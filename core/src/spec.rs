@@ -42,9 +42,10 @@ pub mod dmg {
         };
 
         /// Color values.
-        #[derive(Copy, Clone, Debug)]
+        #[derive(Copy, Clone, Debug, Default)]
         pub enum Color {
             /// Lightest
+            #[default]
             C0 = 0b00,
             /// Light Medium
             C1 = 0b01,
@@ -55,12 +56,6 @@ pub mod dmg {
         }
 
         impl Pixel for Color {}
-
-        impl Default for Color {
-            fn default() -> Self {
-                Color::C0
-            }
-        }
 
         impl From<Color> for usize {
             fn from(color: Color) -> Self {

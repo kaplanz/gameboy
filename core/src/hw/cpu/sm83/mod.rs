@@ -287,22 +287,18 @@ impl From<Flag> for u8 {
 }
 
 /// CPU run status.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 enum Status {
+    #[default]
     Enabled,
     Halted,
     _Stopped,
 }
 
-impl Default for Status {
-    fn default() -> Self {
-        Self::Enabled
-    }
-}
-
 /// CPU execution state.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 enum State {
+    #[default]
     Fetch,
     Execute(Instruction),
     Done,
@@ -390,15 +386,10 @@ impl State {
     }
 }
 
-impl Default for State {
-    fn default() -> Self {
-        Self::Fetch
-    }
-}
-
 /// CPU interrupt master enable.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 enum Ime {
+    #[default]
     Disabled,
     Enabled,
     WillEnable,
@@ -407,11 +398,5 @@ enum Ime {
 impl Ime {
     fn enabled(&self) -> bool {
         matches!(self, Self::Enabled)
-    }
-}
-
-impl Default for Ime {
-    fn default() -> Self {
-        Self::Disabled
     }
 }

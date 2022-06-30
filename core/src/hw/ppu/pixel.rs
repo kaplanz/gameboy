@@ -47,11 +47,17 @@ impl Fetch {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum Stage {
+    #[default]
     ReadTile,
-    ReadData0 { tile: u16 },
-    ReadData1 { tile: u16, data0: u8 },
+    ReadData0 {
+        tile: u16,
+    },
+    ReadData1 {
+        tile: u16,
+        data0: u8,
+    },
     Push([Pixel; 8]),
 }
 
@@ -139,12 +145,6 @@ impl Stage {
                 }
             }
         }
-    }
-}
-
-impl Default for Stage {
-    fn default() -> Self {
-        Self::ReadTile
     }
 }
 
