@@ -75,7 +75,7 @@ impl GameBoy {
         let mmio = self.mmio.bus.clone();
         let hram = self.mem.hram.clone();
         let pic  = self.pic.borrow().enable.clone();
-        let unmapped = Unmapped::new().to_shared();
+        let unmapped = Unmapped::<0x10000>::new().to_shared();
 
         // Map devices in MMU  // ┌──────────┬────────────┬─────┐
                                // │   SIZE   │    NAME    │ DEV │
