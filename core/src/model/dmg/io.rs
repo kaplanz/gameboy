@@ -3,13 +3,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use gameboy_core::hw::{joypad, ppu, timer};
 use remus::bus::Bus;
 use remus::mem::Ram;
 use remus::reg::Register;
 use remus::{Block, Device};
 
 use super::boot;
+use crate::hw::{joypad, ppu, timer};
 
 /// Input/Output connections.
 ///

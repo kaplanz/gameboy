@@ -1,7 +1,7 @@
 //! # Game Boy
 //!
 //! Emulator implementations for the following Game Boy models:
-//! - [`DMG`](crate::model::dmg): [Game Boy]
+//! - [`DMG`](crate::dmg): [Game Boy]
 //!
 //! # Examples
 //!
@@ -52,9 +52,6 @@
 //! [Game Boy]: https://en.wikipedia.org/wiki/Game_Boy
 
 pub use gameboy_core::hw::cart::Cartridge;
+pub use gameboy_core::model::dmg::GameBoy;
 pub use gameboy_core::spec::dmg::screen::RES;
 pub use gameboy_core::Emulator;
-
-pub use crate::model::dmg::GameBoy;
-
-pub mod model;

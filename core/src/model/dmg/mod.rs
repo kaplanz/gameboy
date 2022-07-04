@@ -5,22 +5,22 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use gameboy_core::dev::Unmapped;
-use gameboy_core::hw::cart::Cartridge;
-use gameboy_core::hw::cpu::{Processor, Sm83 as Cpu};
-use gameboy_core::hw::joypad::Joypad;
-use gameboy_core::hw::pic::Pic;
-use gameboy_core::hw::ppu::Ppu;
-use gameboy_core::hw::timer::Timer;
-use gameboy_core::spec::dmg::joypad::Button;
-use gameboy_core::spec::dmg::screen::Screen;
-use gameboy_core::Emulator;
 use remus::bus::adapt::View;
 use remus::bus::Bus;
 use remus::{Block, Device, Machine};
 
 use self::io::InOut;
 use self::mem::Memory;
+use crate::dev::Unmapped;
+use crate::hw::cart::Cartridge;
+use crate::hw::cpu::{Processor, Sm83 as Cpu};
+use crate::hw::joypad::Joypad;
+use crate::hw::pic::Pic;
+use crate::hw::ppu::Ppu;
+use crate::hw::timer::Timer;
+use crate::spec::dmg::joypad::Button;
+use crate::spec::dmg::screen::Screen;
+use crate::Emulator;
 
 mod boot;
 mod io;
