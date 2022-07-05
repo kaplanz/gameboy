@@ -4,11 +4,10 @@ use std::cell::RefCell;
 use std::fmt::Display;
 use std::rc::Rc;
 
+use enumflag::Enumflag;
 use remus::reg::Register;
 use remus::Block;
 use thiserror::Error;
-
-use crate::util::Enumflag;
 
 /// PIC model.
 #[derive(Debug, Default)]

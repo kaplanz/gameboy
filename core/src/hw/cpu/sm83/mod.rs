@@ -6,6 +6,7 @@ use std::cell::RefCell;
 use std::fmt::{Debug, Display};
 use std::rc::Rc;
 
+use enumflag::Enumflag;
 use log::{debug, trace};
 use remus::bus::Bus;
 use remus::reg::Register;
@@ -14,7 +15,6 @@ use remus::{Block, Device, Machine};
 use self::inst::Instruction;
 use super::Processor;
 use crate::hw::pic::Pic;
-use crate::util::Enumflag;
 
 mod inst;
 

@@ -3,8 +3,6 @@
 //! This library implements the core behaviour of the various hardware
 //! components of the Nintendo Game Boy family of consoles.
 
-pub mod util;
-
 mod dev;
 mod emu;
 mod hw;
