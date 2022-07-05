@@ -11,9 +11,9 @@ use log::{debug, info};
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use remus::Machine;
 
-use crate::pal::Palette;
+use crate::palette::Palette;
 
-mod pal;
+mod palette;
 
 /// Game Boy emulator written in Rust.
 #[derive(Parser)]
