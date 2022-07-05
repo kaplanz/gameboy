@@ -102,7 +102,10 @@ fn main() -> Result<()> {
 
         // Redraw the screen (if needed)
         emu.redraw(|screen: &Screen| {
-            let buf: Vec<_> = screen.iter().map(|&pix| args.pal[pix as usize]).collect();
+            let buf: Vec<_> = screen
+                .iter()
+                .map(|&pix| args.pal[pix as usize].into())
+                .collect();
             win.update_with_buffer(&buf, SCREEN.width, SCREEN.height)
                 .unwrap()
         });

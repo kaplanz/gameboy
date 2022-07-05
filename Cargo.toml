@@ -10,6 +10,7 @@ license = "MIT OR Apache-2.0"
 [workspace]
 members = [
     "core",
+    "crates/hexicolor",
 ]
 
 [dependencies]
@@ -17,8 +18,8 @@ clap = { version = "3.2.8", features = ["derive"] }
 color-eyre = { version = "0.6.1", default-features = false }
 env_logger = "0.9.0"
 gameboy-core = { path = "core" }
-json5 = "0.4.1"
+hexicolor = { version = "0.1.0", path = "crates/hexicolor" }
 log = "0.4.17"
 minifb = "0.23.0"
 remus = { git = "https://github.com/zakharykaplan/remus" }
-serde = { version = "1.0.138", features = ["derive"] }
+thiserror = "1.0.31"
