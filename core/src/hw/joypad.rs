@@ -7,7 +7,20 @@ use log::{info, trace};
 use remus::{reg, Block, Device};
 
 use super::pic::{Interrupt, Pic};
-use crate::spec::dmg::joypad::Button;
+
+/// Joypad button encoding.
+#[rustfmt::skip]
+#[derive(Copy, Clone, Debug)]
+pub enum Button {
+    A      = 0b00100001,
+    B      = 0b00100010,
+    Select = 0b00100100,
+    Start  = 0b00101000,
+    Right  = 0b00010001,
+    Left   = 0b00010010,
+    Up     = 0b00010100,
+    Down   = 0b00011000,
+}
 
 /// Joypad model.
 #[rustfmt::skip]
@@ -25,14 +38,15 @@ impl Joypad {
         self.pic = pic;
     }
 
-    /// Receives currently pressed buttons.
-    pub fn recv(&mut self, btns: Vec<Button>) {
+    /// Handle pressed button inputs.
+    #[allow(unused)]
+    pub fn input(&mut self, keys: Vec<Button>) {
         // Retrieve controller state (inverted)
         let prev = !*self.con.borrow().0;
-        let is_empty = btns.is_empty();
+        let is_empty = keys.is_empty();
 
         // Calculate updated state
-        let next = btns
+        let next = keys
             // Use `.iter().cloned()` to allow use of `btns` later for logging.
             .iter()
             .cloned()
@@ -44,9 +58,9 @@ impl Joypad {
         // Schedule interrupt on updated value
         if (prev & 0x0f) != (next & 0x0f) {
             self.pic.borrow_mut().req(Interrupt::Joypad);
-            info!("Input {next:#010b}: {btns:?}"); // log updates with `info`
+            info!("Input {next:#010b}: {keys:?}"); // log updates with `info`
         } else if !is_empty {
-            trace!("Input {next:#010b}: {btns:?}"); // log others with `trace`
+            trace!("Input {next:#010b}: {keys:?}"); // log others with `trace`
         }
 
         // Update controller state (inverted)

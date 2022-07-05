@@ -14,7 +14,7 @@ use remus::{Block, Device, Machine};
 use self::inst::Instruction;
 use super::Processor;
 use crate::hw::pic::Pic;
-use crate::util::Bitflags;
+use crate::util::Enumflag;
 
 mod inst;
 
@@ -278,7 +278,7 @@ enum Flag {
     C = 0b00010000,
 }
 
-impl Bitflags for Flag {}
+impl Enumflag for Flag {}
 
 impl From<Flag> for u8 {
     fn from(value: Flag) -> Self {

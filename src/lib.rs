@@ -6,7 +6,8 @@
 //! # Examples
 //!
 //! ```
-//! use gameboy::{Cartridge, GameBoy};
+//! use gameboy::dmg::cart::Cartridge;
+//! use gameboy::dmg::GameBoy;
 //! use remus::Machine; // for `Machine::cycle`
 //!
 //! // Instantiate a `Cartridge` from a ROM
@@ -39,19 +40,18 @@
 //! # ];
 //! let cart = Cartridge::new(rom).unwrap();
 //!
-//! // Create a `GameBoy` instance the cartridge
-//! let mut gb = GameBoy::new(cart);
+//! // Create a `GameBoy` instance from the cartridge
+//! let mut emu = GameBoy::new(cart);
 //!
 //! // Run the emulator
 //! loop {
-//!     gb.cycle();
+//!     emu.cycle();
 //! #     break;
 //! }
 //! ```
 //!
 //! [Game Boy]: https://en.wikipedia.org/wiki/Game_Boy
 
-pub use gameboy_core::hw::cart::Cartridge;
-pub use gameboy_core::model::dmg::GameBoy;
-pub use gameboy_core::spec::dmg::screen::RES;
-pub use gameboy_core::Emulator;
+pub use gameboy_core as core;
+
+pub use crate::core::dmg;

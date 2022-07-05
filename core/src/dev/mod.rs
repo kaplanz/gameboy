@@ -3,8 +3,8 @@
 //! The following are specicialized [`Device`](remus::Device) implementations
 //! useful for Game Boy emulation.
 
-pub use readonly::ReadOnly;
-pub use unmapped::Unmapped;
-
 mod readonly;
 mod unmapped;
+
+pub use self::readonly::ReadOnly;
+pub use self::unmapped::Unmapped;

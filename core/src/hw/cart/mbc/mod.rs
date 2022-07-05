@@ -6,11 +6,11 @@ use std::fmt::Debug;
 
 use remus::{Block, SharedDevice};
 
-pub use self::mbc1::Mbc1;
-pub use self::nombc::NoMbc;
-
 mod mbc1;
 mod nombc;
+
+pub use self::mbc1::Mbc1;
+pub use self::nombc::NoMbc;
 
 /// Unified MBC interface.
 pub(super) trait Mbc: Block + Debug {

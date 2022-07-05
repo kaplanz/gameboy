@@ -13,10 +13,13 @@ use remus::{Block, Device, Machine};
 use self::pixel::{Fetch, Fifo};
 use self::sprite::Sprite;
 use super::pic::{Interrupt, Pic};
-use crate::spec::dmg::screen::{Screen, RES};
+use crate::dmg::SCREEN;
 
 mod pixel;
+mod screen;
 mod sprite;
+
+pub use self::screen::Screen;
 
 /// PPU model.
 #[rustfmt::skip]
@@ -50,9 +53,9 @@ impl Ppu {
         &self.lcd
     }
 
-    /// Check if the screen needs to be refreshed.
-    pub fn refresh(&self) -> bool {
-        // Refresh the screen once per frame, when:
+    /// Check if the screen is ready to be redrawn.
+    pub fn ready(&self) -> bool {
+        // Redraw the screen once per frame, when:
         // 1. PPU is enabled
         // 2. Scanline is top of screen
         // 3. Dot is first of scanline
@@ -342,7 +345,7 @@ impl Draw {
             let ly = **regs.ly.borrow();
 
             // Push the pixel into the framebuffer
-            let idx = (ly as usize * RES.width) + self.cx as usize;
+            let idx = (ly as usize * SCREEN.width) + self.cx as usize;
             ppu.lcd[idx] = pixel.color;
             // Increment the internal pixel column x-position
             self.cx += 1;
@@ -356,7 +359,7 @@ impl Draw {
 
         // Either draw next pixel, or enter HBlank
         ppu.dot += 1;
-        if self.cx < RES.width {
+        if self.cx < SCREEN.width {
             Mode::Draw(self)
         } else {
             Mode::HBlank(Default::default())
@@ -406,7 +409,7 @@ impl HBlank {
             ppu.pic.borrow_mut().req(Interrupt::VBlank);
 
             // Either begin next scanline, or enter VBlank
-            if *ly < RES.height as u8 {
+            if *ly < SCREEN.height as u8 {
                 Mode::Scan(Default::default())
             } else {
                 Mode::VBlank(Default::default())

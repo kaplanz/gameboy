@@ -3,7 +3,20 @@ use std::ops::{Deref, DerefMut};
 use remus::Device;
 
 use super::{Lcdc, Ppu};
-pub use crate::spec::dmg::screen::Color;
+
+/// Pixel color values.
+#[derive(Copy, Clone, Debug, Default)]
+pub enum Color {
+    /// Lightest
+    #[default]
+    C0 = 0b00,
+    /// Light
+    C1 = 0b01,
+    /// Dark
+    C2 = 0b10,
+    /// Darkest
+    C3 = 0b11,
+}
 
 #[derive(Debug)]
 pub struct Pixel {

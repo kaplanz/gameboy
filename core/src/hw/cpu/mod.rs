@@ -9,10 +9,11 @@ use std::rc::Rc;
 use remus::bus::Bus;
 use remus::{Block, Machine};
 
-pub use self::sm83::Cpu as Sm83;
 use crate::hw::pic::Pic;
 
 mod sm83;
+
+pub use self::sm83::Cpu as Sm83;
 
 /// Unified processor interface.
 pub trait Processor: Block + Machine {

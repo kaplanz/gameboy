@@ -4,10 +4,9 @@ use std::path::PathBuf;
 
 use clap::{Parser, ValueHint};
 use color_eyre::eyre::{Result, WrapErr};
-use gameboy::{Cartridge, Emulator, GameBoy, RES};
-use gameboy_core::hw::cart::Header;
-use gameboy_core::spec::dmg::joypad::Button;
-use gameboy_core::spec::dmg::screen::Screen;
+use gameboy::core::Emulator;
+use gameboy::dmg::cart::{Cartridge, Header};
+use gameboy::dmg::{Button, GameBoy, Screen, SCREEN};
 use log::{debug, info};
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use remus::Machine;
@@ -76,13 +75,13 @@ fn main() -> Result<()> {
     .to_string();
 
     // Create emulator instance
-    let mut gb = GameBoy::new(cart);
+    let mut emu = GameBoy::new(cart);
 
     // Create a framebuffer window
     let mut win = Window::new(
         &title,
-        RES.width,
-        RES.height,
+        SCREEN.width,
+        SCREEN.height,
         WindowOptions {
             resize: true,
             scale: Scale::X2,
@@ -99,15 +98,13 @@ fn main() -> Result<()> {
     // TODO: Run emulator on a 4 MiHz clock
     while win.is_open() {
         // Perform a single cycle
-        gb.cycle();
+        emu.cycle();
 
         // Redraw the screen (if needed)
-        gb.redraw(|screen: &Screen| {
-            let buf: Vec<_> = screen
-                .iter()
-                .map(|&pix| args.pal[usize::from(pix)])
-                .collect();
-            win.update_with_buffer(&buf, RES.width, RES.height).unwrap()
+        emu.redraw(|screen: &Screen| {
+            let buf: Vec<_> = screen.iter().map(|&pix| args.pal[pix as usize]).collect();
+            win.update_with_buffer(&buf, SCREEN.width, SCREEN.height)
+                .unwrap()
         });
 
         // Send joypad input
@@ -123,7 +120,7 @@ fn main() -> Result<()> {
             Key::Down  => Some(Button::Down),
             _ => None
         }).collect();
-        gb.send(keys);
+        emu.send(keys);
 
         // Calculate real-time clock frequency
         if now.elapsed().as_secs() > 0 {

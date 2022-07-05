@@ -8,7 +8,7 @@ use remus::reg::Register;
 use remus::Block;
 use thiserror::Error;
 
-use crate::util::Bitflags;
+use crate::util::Enumflag;
 
 /// PIC model.
 #[derive(Debug, Default)]
@@ -87,7 +87,7 @@ impl Interrupt {
     }
 }
 
-impl Bitflags for Interrupt {}
+impl Enumflag for Interrupt {}
 
 impl Display for Interrupt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

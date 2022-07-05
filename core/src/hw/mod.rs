@@ -3,8 +3,9 @@
 //! Each of the following hardware models implements [`Block`](remus::Block).
 
 pub mod cart;
-pub mod cpu;
-pub mod joypad;
-pub mod pic;
-pub mod ppu;
-pub mod timer;
+
+pub(crate) mod cpu;
+pub(crate) mod joypad;
+pub(crate) mod pic;
+pub(crate) mod ppu;
+pub(crate) mod timer;

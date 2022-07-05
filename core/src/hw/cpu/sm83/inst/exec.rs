@@ -3,7 +3,7 @@ use std::ops::{BitAnd, BitOr, BitXor};
 use remus::Device;
 
 use super::{helpers, Cpu, Flag, Ime, Instruction, Status};
-use crate::util::Bitflags;
+use crate::util::Enumflag;
 
 pub mod adc {
     use super::*;

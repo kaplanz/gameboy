@@ -20,11 +20,13 @@ use remus::{Block, Device, Memory, SharedDevice};
 use thiserror::Error;
 
 use self::header::CartridgeType;
-pub use self::header::{Error as HeaderError, Header};
 use self::mbc::{Mbc, Mbc1, NoMbc};
 
 mod header;
+
 pub mod mbc;
+
+pub use self::header::{Error as HeaderError, Header};
 
 /// Cartridge model.
 ///
