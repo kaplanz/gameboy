@@ -23,6 +23,11 @@ A cycle accurate emulator of the original 1989 Nintendo Game Boy.
 ### Core
 
 - [ ] Implement audio
+- [ ] Implement cartridges
+  - [ ] Save RAM to disk
+  - [ ] Support MBCs
+    - [x] MBC1
+    - [ ] MBC3
 - [x] Implement CPU
   - [x] Instruction correctness
   - [x] Cycle accuracy
