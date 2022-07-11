@@ -68,7 +68,11 @@ impl FromStr for Palette {
             Ok(value) => value,
             Err(err) => return Err(Error::Parse(err)),
         };
-        let palette: [Color; 4] = palette.try_into().map_err(Error::PaletteSize)?;
+        let palette: [Color; 4] = palette.try_into().map_err(|err: Vec<_>| match err.len() {
+            len @ 0..=3 => Error::Missing(len),
+            len @ 5.. => Error::Extra(len),
+            _ => unreachable!(),
+        })?;
         Ok(Palette(palette))
     }
 }
@@ -85,6 +89,8 @@ impl Index<usize> for Palette {
 pub enum Error {
     #[error(transparent)]
     Parse(hexicolor::Error),
-    #[error("incorrect palette size")]
-    PaletteSize(Vec<Color>),
+    #[error("missing palette colors: (found {0}, expected 4)")]
+    Missing(usize),
+    #[error("extra palette colors: (found {0}, expected 4)")]
+    Extra(usize),
 }
