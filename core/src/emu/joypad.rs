@@ -1,3 +1,5 @@
+//! Joypad interface.
+
 use std::fmt::Debug;
 
 /// Input interface.

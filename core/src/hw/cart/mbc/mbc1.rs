@@ -8,7 +8,7 @@ use remus::{Block, Device, SharedDevice};
 
 use super::Mbc;
 
-/// MBC type 1.
+/// MBC1 cartridge type.
 #[derive(Debug)]
 pub struct Mbc1 {
     rom: Rc<RefCell<Rom>>,
@@ -91,6 +91,7 @@ impl Mbc for Mbc1 {
     }
 }
 
+/// MBC1 ROM.
 #[derive(Debug)]
 struct Rom {
     bus: Rc<RefCell<Bus>>,
@@ -147,6 +148,7 @@ impl Device for Rom {
     }
 }
 
+/// MBC1 RAM.
 #[derive(Debug)]
 struct Ram(Rc<RefCell<Bank>>);
 

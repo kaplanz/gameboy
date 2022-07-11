@@ -12,8 +12,7 @@ use remus::{Block, Device, Machine};
 use self::mem::Memory;
 use self::mmio::Mmio;
 use crate::dev::Unmapped;
-use crate::emu::screen::Resolution;
-use crate::emu::Emulator;
+use crate::emu::{screen, Emulator};
 use crate::hw::cart::Cartridge;
 use crate::hw::cpu::{Processor, Sm83 as Cpu};
 use crate::hw::joypad::Joypad;
@@ -29,8 +28,8 @@ pub use crate::hw::cart;
 pub use crate::hw::joypad::Button;
 pub use crate::hw::ppu::Screen;
 
-/// LCD resolution info.
-pub const SCREEN: Resolution = Resolution {
+/// Screen info.
+pub const SCREEN: screen::Info = screen::Info {
     width: 160,
     height: 144,
 };

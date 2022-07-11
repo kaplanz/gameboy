@@ -1,3 +1,5 @@
+//! Instruction execution implementations.
+
 use std::ops::{BitAnd, BitOr, BitXor};
 
 use enumflag::Enumflag;
@@ -5,6 +7,7 @@ use remus::Device;
 
 use super::{helpers, Cpu, Flag, Ime, Instruction, Status};
 
+/// Arithmetic add with carry.
 pub mod adc {
     use super::*;
 
@@ -56,6 +59,7 @@ pub mod adc {
     }
 }
 
+/// Arithmetic add.
 pub mod add {
     use super::*;
 
@@ -105,6 +109,7 @@ pub mod add {
     }
 }
 
+/// Arithmetic add wide (16-bit).
 pub mod addw {
     use super::*;
 
@@ -198,6 +203,7 @@ pub mod addw {
     }
 }
 
+/// Logical AND.
 pub mod and {
     use super::*;
 
@@ -247,6 +253,7 @@ pub mod and {
     }
 }
 
+/// Test bit.
 pub mod bit {
     use super::*;
 
@@ -287,6 +294,7 @@ pub mod bit {
     }
 }
 
+/// Call subroutine.
 pub mod call {
     use super::*;
 
@@ -373,6 +381,7 @@ pub mod call {
     }
 }
 
+/// Complement carry flag.
 pub mod ccf {
     use super::*;
 
@@ -394,6 +403,7 @@ pub mod ccf {
     }
 }
 
+/// Compare.
 pub mod cp {
     use super::*;
 
@@ -439,6 +449,7 @@ pub mod cp {
     }
 }
 
+/// Complement.
 pub mod cpl {
     use super::*;
 
@@ -463,6 +474,7 @@ pub mod cpl {
     }
 }
 
+/// Decimal adjust after addition.
 pub mod daa {
     use super::*;
 
@@ -500,6 +512,7 @@ pub mod daa {
     }
 }
 
+/// Decrement.
 pub mod dec {
     use super::*;
 
@@ -578,6 +591,7 @@ pub mod dec {
     }
 }
 
+/// Decrement wide (16-bit).
 pub mod decw {
     use super::*;
 
@@ -628,6 +642,7 @@ pub mod decw {
     }
 }
 
+/// Disable interrupts.
 pub mod di {
     use super::*;
 
@@ -645,6 +660,7 @@ pub mod di {
     }
 }
 
+/// Enable interrupts.
 pub mod ei {
     use super::*;
 
@@ -662,6 +678,7 @@ pub mod ei {
     }
 }
 
+/// Halt CPU.
 pub mod halt {
     use super::*;
 
@@ -684,6 +701,7 @@ pub mod halt {
     }
 }
 
+/// Increment.
 pub mod inc {
     use super::*;
 
@@ -762,6 +780,7 @@ pub mod inc {
     }
 }
 
+/// Increment wide (16-bit).
 pub mod incw {
     use super::*;
 
@@ -812,6 +831,7 @@ pub mod incw {
     }
 }
 
+/// Interrupt service routine.
 pub mod int {
     use super::*;
 
@@ -857,6 +877,7 @@ pub mod int {
     }
 }
 
+/// Jump.
 pub mod jp {
     use super::*;
 
@@ -932,6 +953,7 @@ pub mod jp {
     }
 }
 
+/// Jump relative.
 pub mod jr {
     use super::*;
 
@@ -992,6 +1014,7 @@ pub mod jr {
     }
 }
 
+/// Load.
 pub mod ld {
     use super::*;
 
@@ -1199,6 +1222,7 @@ pub mod ld {
     }
 }
 
+/// Load wide (16-bit).
 pub mod ldw {
     use super::*;
 
@@ -1345,6 +1369,7 @@ pub mod ldw {
     }
 }
 
+/// Load high.
 pub mod ldh {
     use super::*;
 
@@ -1404,6 +1429,7 @@ pub mod ldh {
     }
 }
 
+/// No operation.
 pub mod nop {
     use super::*;
 
@@ -1418,6 +1444,7 @@ pub mod nop {
     }
 }
 
+/// Logical OR.
 pub mod or {
     use super::*;
 
@@ -1464,6 +1491,7 @@ pub mod or {
     }
 }
 
+/// Pop from stack.
 pub mod pop {
     use super::*;
 
@@ -1518,6 +1546,7 @@ pub mod pop {
     }
 }
 
+/// Prefix.
 pub mod prefix {
     use super::*;
 
@@ -1534,6 +1563,7 @@ pub mod prefix {
     }
 }
 
+/// Push to stack.
 pub mod push {
     use super::*;
 
@@ -1588,6 +1618,7 @@ pub mod push {
     }
 }
 
+/// Reset bit.
 pub mod res {
     use super::*;
 
@@ -1644,6 +1675,7 @@ pub mod res {
     }
 }
 
+/// Return from subroutine.
 pub mod ret {
     use super::*;
 
@@ -1718,6 +1750,7 @@ pub mod ret {
     }
 }
 
+/// Return from interrupt service routine.
 pub mod reti {
     use super::*;
 
@@ -1770,6 +1803,7 @@ pub mod reti {
     }
 }
 
+/// Rotate left (9-bit).
 pub mod rl {
     use super::*;
 
@@ -1834,6 +1868,7 @@ pub mod rl {
     }
 }
 
+/// Accumulator rotate left (9-bit).
 pub mod rla {
     use super::*;
 
@@ -1862,6 +1897,7 @@ pub mod rla {
     }
 }
 
+/// Rotate left (8-bit).
 pub mod rlc {
     use super::*;
 
@@ -1924,6 +1960,7 @@ pub mod rlc {
     }
 }
 
+/// Accumulator rotate left (8-bit).
 pub mod rlca {
     use super::*;
 
@@ -1950,6 +1987,7 @@ pub mod rlca {
     }
 }
 
+/// Rotate right (9-bit).
 pub mod rr {
     use super::*;
 
@@ -2014,6 +2052,7 @@ pub mod rr {
     }
 }
 
+/// Arithmetic rotate right (9-bit).
 pub mod rra {
     use super::*;
 
@@ -2042,6 +2081,7 @@ pub mod rra {
     }
 }
 
+/// Rotate right (8-bit).
 pub mod rrc {
     use super::*;
 
@@ -2104,6 +2144,7 @@ pub mod rrc {
     }
 }
 
+/// Arithmetic rotate right (8-bit).
 pub mod rrca {
     use super::*;
 
@@ -2130,6 +2171,7 @@ pub mod rrca {
     }
 }
 
+/// Reset subroutine.
 pub mod rst {
     use super::*;
 
@@ -2186,6 +2228,7 @@ pub mod rst {
     }
 }
 
+/// Arithmetic subtract with carry.
 pub mod sbc {
     use super::*;
 
@@ -2234,6 +2277,7 @@ pub mod sbc {
     }
 }
 
+/// Set carry flag.
 pub mod scf {
     use super::*;
 
@@ -2254,6 +2298,7 @@ pub mod scf {
     }
 }
 
+/// Set bit.
 pub mod set {
     use super::*;
 
@@ -2310,6 +2355,7 @@ pub mod set {
     }
 }
 
+/// Arithmetic shift left.
 pub mod sla {
     use super::*;
 
@@ -2372,6 +2418,7 @@ pub mod sla {
     }
 }
 
+/// Arithmetic shift right.
 pub mod sra {
     use super::*;
 
@@ -2435,6 +2482,7 @@ pub mod sra {
     }
 }
 
+/// Logical shift right.
 pub mod srl {
     use super::*;
 
@@ -2497,6 +2545,7 @@ pub mod srl {
     }
 }
 
+/// Stop CPU.
 pub mod stop {
     use super::*;
 
@@ -2515,6 +2564,7 @@ pub mod stop {
     }
 }
 
+/// Arithmetic subtract.
 pub mod sub {
     use super::*;
 
@@ -2561,6 +2611,7 @@ pub mod sub {
     }
 }
 
+/// Swap nibbles.
 pub mod swap {
     use super::*;
 
@@ -2622,6 +2673,7 @@ pub mod swap {
     }
 }
 
+/// Unused instruction.
 pub mod unused {
     use super::*;
 
@@ -2630,6 +2682,7 @@ pub mod unused {
     }
 }
 
+/// Logical XOR.
 pub mod xor {
     use super::*;
 

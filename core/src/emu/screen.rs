@@ -1,14 +1,16 @@
+//! Screen interface.
+
 use std::fmt::Debug;
 use std::ops::DerefMut;
 
-/// Resolution info.
+/// Screen info.
 #[derive(Debug)]
-pub struct Resolution {
+pub struct Info {
     pub width: usize,
     pub height: usize,
 }
 
-impl Resolution {
+impl Info {
     pub const fn depth(&self) -> usize {
         self.width.saturating_mul(self.height)
     }

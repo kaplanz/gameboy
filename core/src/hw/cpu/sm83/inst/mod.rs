@@ -1,3 +1,5 @@
+//! Instruction state machine.
+
 use std::fmt::{Debug, Display};
 
 use super::{Cpu, Flag, Ime, Status};
@@ -58,9 +60,11 @@ impl Display for Instruction {
     }
 }
 
+/// Helper functions.
 mod helpers {
     use super::*;
 
+    /// Get an 8-bit register operand.
     pub fn get_op8(cpu: &mut Cpu, idx: u8) -> u8 {
         match idx {
             0x0 => *cpu.regs.b,
@@ -75,6 +79,7 @@ mod helpers {
         }
     }
 
+    /// Set an 8-bit register operand.
     pub fn set_op8(cpu: &mut Cpu, idx: u8, value: u8) {
         match idx {
             0x0 => *cpu.regs.b = value,
@@ -90,6 +95,7 @@ mod helpers {
     }
 }
 
+/// Instruction lookup table.
 #[rustfmt::skip]
 const DECODE: [Instruction; 0x100] = [
     Instruction { opcode: 0x00, fmt: "NOP",           exec: exec::nop::start,    stack: Vec::new() },
@@ -350,6 +356,7 @@ const DECODE: [Instruction; 0x100] = [
     Instruction { opcode: 0xff, fmt: "RST 38H",       exec: exec::rst::start,    stack: Vec::new() },
 ];
 
+/// Prefix lookup table.
 #[rustfmt::skip]
 const PREFIX: [Instruction; 0x100] = [
     Instruction { opcode: 0x00, fmt: "RLC B",         exec: exec::rlc::start,    stack: Vec::new() },

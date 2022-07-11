@@ -20,7 +20,7 @@ pub struct Header {
     pub cgb: bool,
     /// SGB model support.
     pub sgb: bool,
-    /// Cartridge type information.
+    /// Cartridge information.
     pub cart: CartridgeType,
     /// Size of this ROM.
     pub romsz: usize,
