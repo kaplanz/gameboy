@@ -166,22 +166,22 @@ impl Block for Registers {
     fn reset(&mut self) {
         // Reset self
         std::mem::take(self);
-        // Reset bus                           // ┌──────┬──────────────────┬─────┐
-        self.bus.reset();                      // │ SIZE │      NAME        │ DEV │
-                                               // ├──────┼──────────────────┼─────┤
-        self.bus.map(0x00, self.lcdc.clone()); // │  1 B │      LCD Control │ Reg │
-        self.bus.map(0x01, self.stat.clone()); // │  1 B │       LCD Status │ Reg │
-        self.bus.map(0x02, self.scy.clone());  // │  1 B │         Scroll Y │ Reg │
-        self.bus.map(0x03, self.scx.clone());  // │  1 B │         Scroll X │ Reg │
-        self.bus.map(0x04, self.ly.clone());   // │  1 B │ LCD Y Coordinate │ Reg │
-        self.bus.map(0x05, self.lyc.clone());  // │  1 B │       LY Compare │ Reg │
-        self.bus.map(0x06, self.dma.clone());  // │  1 B │       LY Compare │ Reg │
-        self.bus.map(0x07, self.bgp.clone());  // │  1 B │       LY Compare │ Reg │
-        self.bus.map(0x08, self.obp0.clone()); // │  1 B │       LY Compare │ Reg │
-        self.bus.map(0x09, self.obp1.clone()); // │  1 B │       LY Compare │ Reg │
-        self.bus.map(0x0a, self.wy.clone());   // │  1 B │         Window Y │ Reg │
-        self.bus.map(0x0b, self.wx.clone());   // │  1 B │         Window X │ Reg │
-                                               // └──────┴──────────────────┴─────┘
+        // Reset bus                           // ┌──────┬───────────────────┬─────┐
+        self.bus.reset();                      // │ SIZE │       NAME        │ DEV │
+                                               // ├──────┼───────────────────┼─────┤
+        self.bus.map(0x00, self.lcdc.clone()); // │  1 B │       LCD Control │ Reg │
+        self.bus.map(0x01, self.stat.clone()); // │  1 B │        LCD Status │ Reg │
+        self.bus.map(0x02, self.scy.clone());  // │  1 B │          Scroll Y │ Reg │
+        self.bus.map(0x03, self.scx.clone());  // │  1 B │          Scroll X │ Reg │
+        self.bus.map(0x04, self.ly.clone());   // │  1 B │  LCD Y Coordinate │ Reg │
+        self.bus.map(0x05, self.lyc.clone());  // │  1 B │        LY Compare │ Reg │
+        self.bus.map(0x06, self.dma.clone());  // │  1 B │      DMA Transfer │ Reg │
+        self.bus.map(0x07, self.bgp.clone());  // │  1 B │   BG Palette Data │ Reg │
+        self.bus.map(0x08, self.obp0.clone()); // │  1 B │ OBJ0 Palette Data │ Reg │
+        self.bus.map(0x09, self.obp1.clone()); // │  1 B │ OBJ1 Palette Data │ Reg │
+        self.bus.map(0x0a, self.wy.clone());   // │  1 B │          Window Y │ Reg │
+        self.bus.map(0x0b, self.wx.clone());   // │  1 B │          Window X │ Reg │
+                                               // └──────┴───────────────────┴─────┘
     }
 }
 

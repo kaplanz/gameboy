@@ -16,7 +16,7 @@ pub struct Scan {
 
 impl Scan {
     pub fn exec(mut self, ppu: &mut Ppu) -> Mode {
-        // Extract the sprite and scanline config
+        // Extract the sprite and scanline info
         let regs = ppu.ctl.borrow();
         let lcdc = **regs.lcdc.borrow();
         let size = Lcdc::ObjSize.get(&lcdc);
@@ -59,6 +59,7 @@ impl Scan {
         if ppu.dot < 80 {
             Mode::Scan(self)
         } else {
+            // Set up the drawing stage
             let mut draw = self.into();
             Draw::setup(&mut draw, ppu);
             Mode::Draw(draw)

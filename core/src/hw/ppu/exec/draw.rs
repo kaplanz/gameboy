@@ -6,7 +6,7 @@ use super::{Mode, Ppu, Scan, SCREEN};
 
 #[derive(Debug, Default)]
 pub struct Draw {
-    pub(crate) pixels: Pipeline,
+    pub(crate) pipe: Pipeline,
     pub(crate) objs: Vec<Sprite>,
 }
 
@@ -14,16 +14,16 @@ impl Draw {
     pub fn setup(&mut self, ppu: &mut Ppu) {
         // Set up the pipeline
         let scx = **ppu.ctl.borrow().scx.borrow();
-        self.pixels.set_discard(scx);
+        self.pipe.set_discard(scx);
     }
 
     pub fn exec(mut self, ppu: &mut Ppu) -> Mode {
         // Execute the next fetch cycle
-        self.pixels.fetch(ppu);
+        self.pipe.fetch(ppu, &self.objs);
 
         // If we have a pixel to draw, draw it
-        let xpos = self.pixels.xpos() as usize;
-        if let Some(pixel) = self.pixels.shift(ppu) {
+        let mut xpos = self.pipe.xpos() as usize;
+        if let Some(pixel) = self.pipe.shift(ppu) {
             // Calculate pixel index on screen
             let ypos = **ppu.ctl.borrow().ly.borrow() as usize;
             let idx = (ypos * SCREEN.width) + xpos;
@@ -33,10 +33,10 @@ impl Draw {
 
             // Write the pixel into the framebuffer
             ppu.lcd[idx] = color;
-        }
 
-        // Retrieve updated x-position
-        let xpos = self.pixels.xpos() as usize;
+            // Retrieve updated x-position
+            xpos = self.pipe.xpos() as usize;
+        }
 
         // Move to the next dot
         ppu.dot += 1;
@@ -46,7 +46,7 @@ impl Draw {
             Mode::Draw(self)
         } else {
             // Increment window internal line counter
-            if self.pixels.was_at_win() {
+            if self.pipe.was_at_win() {
                 ppu.winln += 1;
             }
             Mode::HBlank(self.into())
@@ -59,7 +59,7 @@ impl Display for Draw {
         writeln!(f, "┌─────────────┐")?;
         writeln!(f, "│ {:^11} │", "Draw")?;
         writeln!(f, "├─────────────┤")?;
-        writeln!(f, "│ Column: {:>3} │", self.pixels.xpos())?;
+        writeln!(f, "│ Column: {:>3} │", self.pipe.xpos())?;
         writeln!(f, "│ Objects: {:>2} │", self.objs.len())?;
         write!(f, "└─────────────┘")
     }

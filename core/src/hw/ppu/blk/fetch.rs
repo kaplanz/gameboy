@@ -6,11 +6,15 @@ use super::{Lcdc, Ppu};
 #[derive(Debug, Default)]
 pub struct Fetch {
     busy: bool,
-    tcol: u8,
+    xidx: u8,
     stage: Stage,
 }
 
 impl Fetch {
+    pub fn set_xidx(&mut self, xidx: u8) {
+        self.xidx = xidx;
+    }
+
     #[must_use]
     pub fn stage(&self) -> &Stage {
         &self.stage
@@ -29,6 +33,11 @@ impl Fetch {
     fn tnum(&self, ppu: &Ppu, loc: Location) -> u16 {
         use Location::*;
 
+        // For sprites, we don't need this
+        if loc == Sprite {
+            return -1i16 as u16;
+        }
+
         // Extract scanline info
         let regs = ppu.ctl.borrow();
         let lcdc = **regs.lcdc.borrow();
@@ -46,24 +55,24 @@ impl Fetch {
                 let winmap = Lcdc::WinMap.get(&lcdc);
                 [0x1800, 0x1c00][winmap as usize]
             }
-            Sprite => todo!(),
+            Sprite => unreachable!(),
         };
 
         // Calculate the tile offset
-        let trow: u8;
-        let tcol: u8;
+        let row: u8;
+        let col: u8;
         match loc {
             Background => {
-                trow = ly.wrapping_add(scy) / 8;
-                tcol = (self.tcol + (scx / 8)) & 0x1f;
+                row = ly.wrapping_add(scy) / 8;
+                col = (self.xidx + (scx / 8)) & 0x1f;
             }
             Window => {
-                trow = ppu.winln / 8;
-                tcol = self.tcol;
+                row = ppu.winln / 8;
+                col = self.xidx;
             }
-            Sprite => todo!(),
+            Sprite => unreachable!(),
         }
-        let offset = (32 * trow as u16) + tcol as u16;
+        let offset = (32 * row as u16) + col as u16;
 
         // Calculate the tile number
         base + offset
@@ -80,9 +89,8 @@ impl Fetch {
 
         // Calculate the y-offset within the tile
         let yoff = match loc {
-            Background => ly.wrapping_add(scy) % 8,
+            Background | Sprite => ly.wrapping_add(scy) % 8,
             Window => ppu.winln % 8,
-            Sprite => todo!(),
         };
 
         // Calculate the tile data address
@@ -110,7 +118,6 @@ impl Fetch {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
 pub enum Location {
     #[default]
@@ -137,16 +144,17 @@ impl Stage {
     fn exec(self, fetch: &mut Fetch, fifo: &mut Fifo, ppu: &mut Ppu, loc: Location) -> Self {
         match self {
             Stage::ReadTile => {
-                // Calculate the tile number
-                // NOTE: How this is calculated depends on the type of the tile
-                //       being fetched.
-                let tnum = fetch.tnum(ppu, loc);
-
                 // Fetch the tile number index
                 use Location::*;
                 let tidx = match loc {
-                    Background | Window => ppu.vram.borrow().read(tnum as usize),
-                    Sprite => todo!(),
+                    Background | Window => {
+                        // Calculate the tile number
+                        // NOTE: How this is calculated depends on the type of the tile
+                        //       being fetched.
+                        let tnum = fetch.tnum(ppu, loc);
+                        ppu.vram.borrow().read(tnum as usize)
+                    }
+                    Sprite => fetch.xidx,
                 };
 
                 // NOTE: We can calculate the tile data address in advance. This
@@ -179,7 +187,7 @@ impl Stage {
                 match fifo.try_append(row) {
                     Ok(()) => {
                         // Move fetch to next x-position
-                        fetch.tcol += 1;
+                        fetch.xidx += 1;
                         // Restart fetch
                         Stage::ReadTile
                     }

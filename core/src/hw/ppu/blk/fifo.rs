@@ -23,6 +23,10 @@ impl Fifo {
     pub fn pop(&mut self) -> Option<Pixel> {
         self.0.pop_front()
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 #[derive(Debug)]

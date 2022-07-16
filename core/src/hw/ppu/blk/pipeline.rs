@@ -1,6 +1,7 @@
 use super::fetch::{Fetch, Location, Stage};
 use super::fifo::Fifo;
 use super::pixel::{Color, Pixel};
+use super::sprite::Sprite;
 use super::{Lcdc, Ppu};
 
 #[derive(Debug, Default)]
@@ -22,7 +23,19 @@ impl Pipeline {
         self.discard = discard;
     }
 
-    pub fn fetch(&mut self, ppu: &mut Ppu) {
+    pub fn fetch(&mut self, ppu: &mut Ppu, objs: &[Sprite]) {
+        // Check if we're at an object
+        if self.sprite.fifo.len() < 8 {
+            if let Some(obj) = objs.iter().find(|obj| obj.xpos == self.xpos + 8) {
+                // Configure and fetch the sprite
+                self.sprite.fetch.set_xidx(obj.idx);
+                self.sprite.fetch(ppu);
+
+                // Return early (stall the Background fetch)
+                return;
+            }
+        }
+
         // Cycle the background fetcher
         self.bgwin.fetch(ppu);
 
@@ -30,6 +43,9 @@ impl Pipeline {
         // - The first "warm-up" fetch completes
         let done_warmup = !self.ready && matches!(self.bgwin.fetch.stage(), Stage::Push(_));
         if done_warmup {
+            // Configure channels
+            self.bgwin.loc = Location::Background;
+            self.sprite.loc = Location::Sprite;
             // We're not ready for real fetches
             self.ready = true;
         }
