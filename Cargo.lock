@@ -764,8 +764,9 @@ dependencies = [
 
 [[package]]
 name = "remus"
-version = "0.1.0"
-source = "git+https://github.com/zakharykaplan/remus#444082fa077fb346770a2d9e04de01a5953ecc53"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4534396ab8f620c90fef4f2f479df2b83d4dd1f8ac98bcb3bf85d46f347691d0"
 dependencies = [
  "num",
  "rand",
