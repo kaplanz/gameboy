@@ -17,21 +17,19 @@ mod palette;
 
 /// Game Boy emulator written in Rust.
 #[derive(Parser)]
-#[clap(author, version, about)]
+#[command(author, version, about)]
 struct Args {
     /// Cartridge ROM image file.
-    #[clap(parse(from_os_str))]
-    #[clap(value_hint = ValueHint::FilePath)]
+    #[arg(value_hint = ValueHint::FilePath)]
     rom: PathBuf,
 
     /// Check ROM integrity.
-    #[clap(long = "check")]
-    #[clap(short = 'c')]
+    #[arg(short, long = "check")]
     chk: bool,
 
     /// Color palette.
-    #[clap(default_value_t)]
-    #[clap(long = "palette")]
+    #[arg(default_value_t)]
+    #[arg(long = "palette")]
     pal: Palette,
 }
 
