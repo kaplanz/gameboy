@@ -42,7 +42,7 @@ impl Cartridge {
     /// Constructs a new `Cartridge`.
     pub fn new(rom: &[u8]) -> Result<Self, Error> {
         // Parse cartridge header
-        let header = Header::try_from(&*rom)?;
+        let header = Header::try_from(rom)?;
         debug!("Header:\n{header}");
 
         // Construct null device (for reuse where needed)

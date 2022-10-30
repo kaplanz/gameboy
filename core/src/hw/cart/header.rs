@@ -8,7 +8,7 @@ use thiserror::Error;
 ///
 /// Information about the ROM and the cartridge containing it. Stored in the
 /// byte range `[0x100, 0x150)`.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Header {
     /// Equality with boot ROM's Nintendo logo.
     pub logo: bool,
@@ -232,7 +232,7 @@ impl TryFrom<&[u8]> for Header {
 }
 
 /// Cartridge information.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum CartridgeType {
     NoMbc {
         ram: bool,
