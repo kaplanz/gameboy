@@ -60,11 +60,13 @@ fn main() -> Result<()> {
     // Check ROM integrity
     if args.chk {
         Header::check(&rom).with_context(|| "failed ROM integrity check")?;
+        info!("Passed ROM integrity check")
     }
 
     // Initialize the cartridge
     let cart = Cartridge::new(&rom)
         .with_context(|| format!("failed to load cartridge: `{}`", args.rom.display()))?;
+    info!("Loaded ROM:\n{}", cart.header());
     // Extract ROM title from cartridge
     let title = match cart.header().title.replace('\0', " ").trim() {
         "" => "Game Boy",
