@@ -18,9 +18,9 @@ members = [
 ]
 
 [dependencies]
-clap = { version = "4.0.18", features = ["derive"] }
+clap = { version = "4.0.29", features = ["derive"] }
 color-eyre = { version = "0.6.2", default-features = false }
-env_logger = "0.9.1"
+env_logger = "0.9.3"
 gameboy-core = { path = "core" }
 hexicolor = { version = "0.1.0", path = "crates/hexicolor" }
 log = "0.4.17"
