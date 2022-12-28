@@ -18,12 +18,12 @@ members = [
 ]
 
 [dependencies]
-clap = { version = "4.0.29", features = ["derive", "wrap_help"] }
+clap = { version = "4.0.32", features = ["derive", "wrap_help"] }
 color-eyre = { version = "0.6.2", default-features = false }
-env_logger = "0.9.3"
+env_logger = "0.10.0"
 gameboy-core = { path = "core" }
 hexicolor = { version = "0.1.0", path = "crates/hexicolor" }
 log = "0.4.17"
 minifb = "0.23.0"
 remus = "0.2.0"
-thiserror = "1.0.37"
+thiserror = "1.0.38"

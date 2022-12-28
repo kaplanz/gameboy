@@ -11,4 +11,4 @@ license = "MIT OR Apache-2.0"
 enumflag = { version = "0.1.0", path = "../crates/enumflag" }
 log = "0.4.17"
 remus = "0.2.0"
-thiserror = "1.0.37"
+thiserror = "1.0.38"
