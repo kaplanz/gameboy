@@ -27,6 +27,10 @@ struct Args {
     #[arg(short, long = "check")]
     chk: bool,
 
+    /// Exit after loading cartridge.
+    #[arg(short = 'x', long)]
+    exit: bool,
+
     /// Color palette.
     #[arg(default_value_t)]
     #[arg(long = "palette")]
@@ -76,6 +80,11 @@ fn main() -> Result<()> {
 
     // Create emulator instance
     let mut emu = GameBoy::new(cart);
+
+    // Exit after loading
+    if args.exit {
+        return Ok(());
+    }
 
     // Create a framebuffer window
     let mut win = Window::new(
