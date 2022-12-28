@@ -24,14 +24,26 @@ struct Args {
     rom: PathBuf,
 
     /// Check ROM integrity.
+    ///
+    /// Verifies that both the header and global checksums match the data within
+    /// the ROM.
     #[arg(short, long = "check")]
     chk: bool,
 
     /// Exit after loading cartridge.
+    ///
+    /// Instead of entering the main emulation loop, return immediately after
+    /// loading the cartridge ROM. This option could be used along with
+    /// `--check` to validate a ROM, or using logging to print the cartridge
+    /// header without actually performing any emulation.
     #[arg(short = 'x', long)]
     exit: bool,
 
-    /// Color palette.
+    /// DMG-01 color palette.
+    ///
+    /// Defines the 2-bit color palette for the DMG-01 Game Boy model. The
+    /// palette must be specified as a list of hex color values from lightest to
+    /// darkest.
     #[arg(default_value_t)]
     #[arg(long = "palette")]
     pal: Palette,
