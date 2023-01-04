@@ -59,7 +59,7 @@ impl Machine for Dma {
     fn cycle(&mut self) {
         // Calculate the address to read from
         let idx = self.idx.as_mut().unwrap();
-        let addr = ((self.page as u16) << 8) | (*idx as u16);
+        let addr = (u16::from(self.page) << 8) | (*idx as u16);
         // Read this byte
         let data = self.bus.borrow().read(addr as usize);
         trace!("Transferring OAM({idx:#04x}) <- *{addr:#06x} = {data:#04x}");

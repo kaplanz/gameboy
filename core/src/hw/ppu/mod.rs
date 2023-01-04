@@ -77,7 +77,7 @@ impl Ppu {
     }
 
     /// Color a pixel according to the ppu's palette configuration.
-    fn color(&self, pixel: Pixel) -> Color {
+    fn color(&self, pixel: &Pixel) -> Color {
         let regs = self.ctl.borrow();
         let pal = **match pixel.pal() {
             Palette::BgWin => regs.bgp.borrow(),
@@ -91,10 +91,10 @@ impl Ppu {
 impl Block for Ppu {
     fn reset(&mut self) {
         // Reset LCD
-        self.lcd = Default::default();
+        self.lcd = Screen::default();
 
         // Reset mode
-        self.mode = Default::default();
+        self.mode = Mode::default();
 
         // Reset memory
         self.vram.borrow_mut().reset();
@@ -111,7 +111,7 @@ impl Block for Ppu {
 
 impl Machine for Ppu {
     fn enabled(&self) -> bool {
-        Lcdc::Enable.get(&*self.ctl.borrow().lcdc.borrow_mut())
+        Lcdc::Enable.get(**self.ctl.borrow().lcdc.borrow_mut())
     }
 
     fn cycle(&mut self) {
@@ -206,18 +206,18 @@ impl Device for Registers {
 #[rustfmt::skip]
 #[derive(Copy, Clone, Debug)]
 enum Lcdc {
-    Enable      = 0b10000000,
-    WinMap      = 0b01000000,
-    WinEnable   = 0b00100000,
-    BgWinData   = 0b00010000,
-    BgMap       = 0b00001000,
-    ObjSize     = 0b00000100,
-    ObjEnable   = 0b00000010,
-    BgWinEnable = 0b00000001,
+    Enable      = 0b1000_0000,
+    WinMap      = 0b0100_0000,
+    WinEnable   = 0b0010_0000,
+    BgWinData   = 0b0001_0000,
+    BgMap       = 0b0000_1000,
+    ObjSize     = 0b0000_0100,
+    ObjEnable   = 0b0000_0010,
+    BgWinEnable = 0b0000_0001,
 }
 
 impl Lcdc {
-    pub fn get(self, lcdc: &u8) -> bool {
-        *lcdc & self as u8 != 0
+    pub fn get(self, lcdc: u8) -> bool {
+        lcdc & self as u8 != 0
     }
 }

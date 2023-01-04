@@ -55,16 +55,16 @@ pub enum Interrupt {
     // │   3 │   Serial │  0x0058 │
     // │   4 │   Joypad │  0x0060 │
     // └─────┴──────────┴─────────┘
-    VBlank  = 0b00000001,
-    LcdStat = 0b00000010,
-    Timer   = 0b00000100,
-    Serial  = 0b00001000,
-    Joypad  = 0b00010000,
+    VBlank  = 0b0000_0001,
+    LcdStat = 0b0000_0010,
+    Timer   = 0b0000_0100,
+    Serial  = 0b0000_1000,
+    Joypad  = 0b0001_0000,
 }
 
 impl Interrupt {
     #[rustfmt::skip]
-    pub fn handler(&self) -> u8 {
+    pub fn handler(self) -> u8 {
         match self {
             Self::VBlank  => 0x40,
             Self::LcdStat => 0x48,
@@ -75,7 +75,7 @@ impl Interrupt {
     }
 
     #[rustfmt::skip]
-    pub fn repr(&self) -> &'static str {
+    pub fn repr(self) -> &'static str {
         match self {
             Self::VBlank  => "INT 40H",
             Self::LcdStat => "INT 48H",
@@ -129,20 +129,20 @@ mod tests {
     #[rustfmt::skip]
     #[test]
     fn interrupt_u8_from_works() {
-        assert_eq!(u8::from(Interrupt::VBlank),  0b00000001);
-        assert_eq!(u8::from(Interrupt::LcdStat), 0b00000010);
-        assert_eq!(u8::from(Interrupt::Timer),   0b00000100);
-        assert_eq!(u8::from(Interrupt::Serial),  0b00001000);
-        assert_eq!(u8::from(Interrupt::Joypad),  0b00010000);
+        assert_eq!(u8::from(Interrupt::VBlank),  0b0000_0001);
+        assert_eq!(u8::from(Interrupt::LcdStat), 0b0000_0010);
+        assert_eq!(u8::from(Interrupt::Timer),   0b0000_0100);
+        assert_eq!(u8::from(Interrupt::Serial),  0b0000_1000);
+        assert_eq!(u8::from(Interrupt::Joypad),  0b0001_0000);
     }
 
     #[rustfmt::skip]
     #[test]
     fn interrupt_try_from_u8_works() {
-        assert!(matches!(Interrupt::try_from(0b00000001), Ok(Interrupt::VBlank)));
-        assert!(matches!(Interrupt::try_from(0b00000010), Ok(Interrupt::LcdStat)));
-        assert!(matches!(Interrupt::try_from(0b00000100), Ok(Interrupt::Timer)));
-        assert!(matches!(Interrupt::try_from(0b00001000), Ok(Interrupt::Serial)));
-        assert!(matches!(Interrupt::try_from(0b00010000), Ok(Interrupt::Joypad)));
+        assert!(matches!(Interrupt::try_from(0b0000_0001), Ok(Interrupt::VBlank)));
+        assert!(matches!(Interrupt::try_from(0b0000_0010), Ok(Interrupt::LcdStat)));
+        assert!(matches!(Interrupt::try_from(0b0000_0100), Ok(Interrupt::Timer)));
+        assert!(matches!(Interrupt::try_from(0b0000_1000), Ok(Interrupt::Serial)));
+        assert!(matches!(Interrupt::try_from(0b0001_0000), Ok(Interrupt::Joypad)));
     }
 }

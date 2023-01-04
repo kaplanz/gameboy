@@ -31,19 +31,19 @@ impl Mode {
             let ly = **regs.ly.borrow();
             let lyc = **regs.lyc.borrow();
             *stat ^= (*stat & 0x03) ^ u8::from(&self);
-            *stat ^= (*stat & 0x04) ^ ((ly == lyc) as u8) << 2;
+            *stat ^= (*stat & 0x04) ^ u8::from(ly == lyc) << 2;
 
             // Trigger interrupts
             if ppu.dot == 0 {
                 let mut int = 0;
                 // LYC=LY
-                int |= ((lyc == ly) as u8) << 6;
+                int |= u8::from(lyc == ly) << 6;
                 // Mode 2
-                int |= (matches!(self, Mode::Scan(_)) as u8) << 5;
+                int |= u8::from(matches!(self, Mode::Scan(_))) << 5;
                 // Mode 1
-                int |= (matches!(self, Mode::VBlank(_)) as u8) << 4;
+                int |= u8::from(matches!(self, Mode::VBlank(_))) << 4;
                 // Mode 0
-                int |= (matches!(self, Mode::HBlank(_)) as u8) << 3;
+                int |= u8::from(matches!(self, Mode::HBlank(_))) << 3;
                 // Check for interrupts
                 if int & (*stat & 0x78) != 0 {
                     ppu.pic.borrow_mut().req(Interrupt::LcdStat);
@@ -64,7 +64,7 @@ impl Mode {
 
 impl Default for Mode {
     fn default() -> Self {
-        Self::Scan(Default::default())
+        Self::Scan(Scan::default())
     }
 }
 

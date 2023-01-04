@@ -73,7 +73,7 @@ mod tests {
 
     #[test]
     fn device_len_works() {
-        assert_eq!(Unmapped::<0x10000>::new().len(), 0x10000)
+        assert_eq!(Unmapped::<0x10000>::new().len(), 0x10000);
     }
 
     #[test]

@@ -29,7 +29,7 @@ impl Draw {
             let idx = (ypos * SCREEN.width) + xpos;
 
             // Determine this pixel's color (according to its palette)
-            let color = ppu.color(pixel);
+            let color = ppu.color(&pixel);
 
             // Write the pixel into the framebuffer
             ppu.lcd[idx] = color;

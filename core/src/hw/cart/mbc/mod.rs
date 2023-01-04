@@ -2,6 +2,8 @@
 //!
 //! Implementations of cartridge memory bank controllers.
 
+#![allow(clippy::module_name_repetitions)]
+
 use std::fmt::Debug;
 
 use remus::{Block, SharedDevice};

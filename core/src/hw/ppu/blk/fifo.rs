@@ -8,7 +8,7 @@ pub struct Fifo(VecDeque<Pixel>);
 
 impl Fifo {
     pub fn clear(&mut self) {
-        self.0.clear()
+        self.0.clear();
     }
 
     pub fn try_append(&mut self, row: TileRow) -> Result<(), TileRow> {
@@ -51,7 +51,7 @@ impl From<[u8; 2]> for TileRow {
                 let bit0 = bytes[0] & mask != 0;
                 let bit1 = bytes[1] & mask != 0;
                 // Combine into color value
-                ((bit1 as u8) << 1) | (bit0 as u8)
+                (u8::from(bit1) << 1) | u8::from(bit0)
             })
             // Reverse, since bit 7 represents the leftmost pixel, and bit 0 the
             // rightmost.

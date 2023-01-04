@@ -31,7 +31,7 @@ impl Fetch {
     }
 
     fn tnum(&self, ppu: &Ppu, loc: Location) -> u16 {
-        use Location::*;
+        use Location::{Background, Sprite, Window};
 
         // For sprites, we don't need this
         if loc == Sprite {
@@ -48,11 +48,11 @@ impl Fetch {
         // Determine the tile base
         let base = match loc {
             Background => {
-                let bgmap = Lcdc::BgMap.get(&lcdc);
+                let bgmap = Lcdc::BgMap.get(lcdc);
                 [0x1800, 0x1c00][bgmap as usize]
             }
             Window => {
-                let winmap = Lcdc::WinMap.get(&lcdc);
+                let winmap = Lcdc::WinMap.get(lcdc);
                 [0x1800, 0x1c00][winmap as usize]
             }
             Sprite => unreachable!(),
@@ -78,8 +78,8 @@ impl Fetch {
         base + offset
     }
 
-    fn addr(&self, ppu: &Ppu, loc: Location, tidx: u8) -> u16 {
-        use Location::*;
+    fn addr(ppu: &Ppu, loc: Location, tidx: u8) -> u16 {
+        use Location::{Background, Sprite, Window};
 
         // Extract scanline info
         let regs = ppu.ctl.borrow();
@@ -96,7 +96,7 @@ impl Fetch {
         // Calculate the tile data address
         match loc {
             Background | Window => {
-                if Lcdc::BgWinData.get(&lcdc) {
+                if Lcdc::BgWinData.get(lcdc) {
                     let base = 0x0000;
                     let tidx = tidx as u16;
                     let offset = (16 * tidx) + (2 * yoff) as u16;
@@ -104,7 +104,7 @@ impl Fetch {
                 } else {
                     let base = 0x1000;
                     let tidx = tidx as i8 as i16;
-                    let offset = (16 * tidx) as i16 + (2 * yoff) as i16;
+                    let offset = (16 * tidx) + (2 * yoff) as i16;
                     (base + offset) as u16
                 }
             }
@@ -142,10 +142,11 @@ pub enum Stage {
 
 impl Stage {
     fn exec(self, fetch: &mut Fetch, fifo: &mut Fifo, ppu: &mut Ppu, loc: Location) -> Self {
+        use Location::{Background, Sprite, Window};
+
         match self {
             Stage::ReadTile => {
                 // Fetch the tile number index
-                use Location::*;
                 let tidx = match loc {
                     Background | Window => {
                         // Calculate the tile number
@@ -159,7 +160,7 @@ impl Stage {
 
                 // NOTE: We can calculate the tile data address in advance. This
                 //       is more efficient than doing so once each data read.
-                let addr = fetch.addr(ppu, loc, tidx);
+                let addr = Fetch::addr(ppu, loc, tidx);
 
                 // Progress to next stage
                 Stage::ReadData0 { addr }

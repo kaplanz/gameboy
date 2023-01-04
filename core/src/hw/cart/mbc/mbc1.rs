@@ -17,6 +17,7 @@ pub struct Mbc1 {
 
 impl Mbc1 {
     /// Constructs a new `Mbc1` with the provided configuration.
+    #[allow(clippy::needless_pass_by_value)]
     pub fn with(rom: SharedDevice, ram: SharedDevice, _battery: bool) -> Self {
         // Prepare RAM
         #[allow(clippy::vec_init_then_push)]
@@ -25,7 +26,7 @@ impl Mbc1 {
             let ramsz = ram.borrow().len();
             let nbanks = ramsz / 0x4000;
             // Create banks as `View`s of the RAM
-            let mut banks: Vec<SharedDevice> = Default::default();
+            let mut banks: Vec<SharedDevice> = Vec::default();
             banks.push(Null::<0>::new().to_shared()); // disable RAM at index 0
             for i in 0..nbanks {
                 let range = (0x4000 * i)..(0x4000 * (i + 1));
@@ -43,7 +44,7 @@ impl Mbc1 {
             let romsz = rom.borrow().len();
             let nbanks = romsz / 0x4000;
             // Create banks as `View`s of the ROM
-            let mut banks: Vec<SharedDevice> = Default::default();
+            let mut banks: Vec<SharedDevice> = Vec::default();
             for i in 0..nbanks {
                 let range = (0x4000 * i)..(0x4000 * (i + 1));
                 banks.push(View::new(rom.clone(), range).to_shared());
@@ -123,6 +124,7 @@ impl Device for Rom {
         self.bus.borrow().read(index)
     }
 
+    #[allow(clippy::match_same_arms)]
     fn write(&mut self, index: usize, value: u8) {
         match index {
             // RAM Enable

@@ -40,6 +40,10 @@ pub struct Cartridge {
 
 impl Cartridge {
     /// Constructs a new `Cartridge`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the cartridge header cannot be parsed.
     pub fn new(rom: &[u8]) -> Result<Self, Error> {
         // Parse cartridge header
         let header = Header::try_from(rom)?;
@@ -57,18 +61,18 @@ impl Cartridge {
                     error!(
                         "Initialized {read} bytes; remaining {diff} bytes uninitialized",
                         diff = header.romsz - read
-                    )
+                    );
                 }
                 Ordering::Equal => info!("Initialized {read} bytes"),
                 Ordering::Greater => {
                     error!(
                         "Initialized {read} bytes; remaining {diff} bytes truncated",
                         diff = read - header.romsz
-                    )
+                    );
                 }
             }
             rom.iter()
-                .cloned()
+                .copied()
                 .chain(iter::repeat(0u8))
                 .take(header.romsz)
                 .collect::<Vec<_>>()
@@ -79,29 +83,42 @@ impl Cartridge {
         // Construct external ROM
         let rom = {
             match header.romsz {
-                0x8000 => {
-                    Rom::<0x8000>::from(&*Box::<[_; 0x8000]>::try_from(rom).unwrap()).to_shared()
-                }
-                0x10000 => {
-                    Rom::<0x10000>::from(&*Box::<[_; 0x10000]>::try_from(rom).unwrap()).to_shared()
-                }
-                0x20000 => {
-                    Rom::<0x20000>::from(&*Box::<[_; 0x20000]>::try_from(rom).unwrap()).to_shared()
-                }
-                0x40000 => {
-                    Rom::<0x40000>::from(&*Box::<[_; 0x40000]>::try_from(rom).unwrap()).to_shared()
-                }
-                0x80000 => {
-                    Rom::<0x80000>::from(&*Box::<[_; 0x80000]>::try_from(rom).unwrap()).to_shared()
-                }
-                0x100000 => Rom::<0x100000>::from(&*Box::<[_; 0x100000]>::try_from(rom).unwrap())
-                    .to_shared(),
-                0x200000 => Rom::<0x200000>::from(&*Box::<[_; 0x200000]>::try_from(rom).unwrap())
-                    .to_shared(),
-                0x400000 => Rom::<0x400000>::from(&*Box::<[_; 0x400000]>::try_from(rom).unwrap())
-                    .to_shared(),
-                0x800000 => Rom::<0x800000>::from(&*Box::<[_; 0x800000]>::try_from(rom).unwrap())
-                    .to_shared(),
+                0x0000_8000 => Rom::<0x0000_8000>::from(
+                    &*Box::<[_; 0x0000_8000]>::try_from(rom).map_err(Error::Missing)?,
+                )
+                .to_shared(),
+                0x0001_0000 => Rom::<0x0001_0000>::from(
+                    &*Box::<[_; 0x0001_0000]>::try_from(rom).map_err(Error::Missing)?,
+                )
+                .to_shared(),
+                0x0002_0000 => Rom::<0x0002_0000>::from(
+                    &*Box::<[_; 0x0002_0000]>::try_from(rom).map_err(Error::Missing)?,
+                )
+                .to_shared(),
+                0x0004_0000 => Rom::<0x0004_0000>::from(
+                    &*Box::<[_; 0x0004_0000]>::try_from(rom).map_err(Error::Missing)?,
+                )
+                .to_shared(),
+                0x0008_0000 => Rom::<0x0008_0000>::from(
+                    &*Box::<[_; 0x0008_0000]>::try_from(rom).map_err(Error::Missing)?,
+                )
+                .to_shared(),
+                0x0010_0000 => Rom::<0x0010_0000>::from(
+                    &*Box::<[_; 0x0010_0000]>::try_from(rom).map_err(Error::Missing)?,
+                )
+                .to_shared(),
+                0x0020_0000 => Rom::<0x0020_0000>::from(
+                    &*Box::<[_; 0x0020_0000]>::try_from(rom).map_err(Error::Missing)?,
+                )
+                .to_shared(),
+                0x0040_0000 => Rom::<0x0040_0000>::from(
+                    &*Box::<[_; 0x0040_0000]>::try_from(rom).map_err(Error::Missing)?,
+                )
+                .to_shared(),
+                0x0080_0000 => Rom::<0x0080_0000>::from(
+                    &*Box::<[_; 0x0080_0000]>::try_from(rom).map_err(Error::Missing)?,
+                )
+                .to_shared(),
                 _ => unreachable!(),
             }
         };
@@ -139,11 +156,13 @@ impl Cartridge {
     }
 
     /// Gets a shared reference to the cartridge's ROM.
+    #[must_use]
     pub fn rom(&self) -> SharedDevice {
         self.mbc.rom()
     }
 
     /// Gets a shared reference to the cartridge's RAM.
+    #[must_use]
     pub fn ram(&self) -> SharedDevice {
         self.mbc.ram()
     }
@@ -199,4 +218,6 @@ impl Default for Cartridge {
 pub enum Error {
     #[error("could not parse header")]
     Header(#[from] header::Error),
+    #[error("cartridge missing bytes")]
+    Missing(Box<[u8]>),
 }

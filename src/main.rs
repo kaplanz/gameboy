@@ -66,7 +66,7 @@ fn main() -> Result<()> {
         let mut buf = Vec::new();
         // NOTE: Game Paks manufactured by Nintendo have a maximum 8 MiB ROM.
         let read = f
-            .take(0x800000)
+            .take(0x0080_0000)
             .read_to_end(&mut buf)
             .with_context(|| format!("failed to read ROM: `{}`", args.rom.display()))?;
         info!("Read {read} bytes");
@@ -76,7 +76,7 @@ fn main() -> Result<()> {
     // Check ROM integrity
     if args.chk {
         Header::check(&rom).with_context(|| "failed ROM integrity check")?;
-        info!("Passed ROM integrity check")
+        info!("Passed ROM integrity check");
     }
 
     // Initialize the cartridge
@@ -128,12 +128,12 @@ fn main() -> Result<()> {
                 .map(|&pix| args.pal[pix as usize].into())
                 .collect();
             win.update_with_buffer(&buf, SCREEN.width, SCREEN.height)
-                .unwrap()
+                .unwrap();
         });
 
         // Send joypad input
         #[rustfmt::skip]
-        let keys: Vec<_> = win.get_keys().into_iter().flat_map(|key| match key {
+        let keys: Vec<_> = win.get_keys().into_iter().filter_map(|key| match key {
             Key::Z     => Some(Button::A),
             Key::X     => Some(Button::B),
             Key::Space => Some(Button::Select),
@@ -144,7 +144,7 @@ fn main() -> Result<()> {
             Key::Down  => Some(Button::Down),
             _ => None
         }).collect();
-        emu.send(keys);
+        emu.send(&keys);
 
         // Calculate real-time clock frequency
         if now.elapsed().as_secs() > 0 {

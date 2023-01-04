@@ -13,12 +13,14 @@ use thiserror::Error;
 pub struct Color(u32);
 
 impl Color {
+    #[must_use]
     pub fn new(color: u32) -> Self {
         Self(color)
     }
 
+    #[must_use]
     pub fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Self((r as u32) << 16 | (g as u32) << 8 | (b as u32))
+        Self(u32::from(r) << 16 | u32::from(g) << 8 | u32::from(b))
     }
 }
 
@@ -72,9 +74,9 @@ mod tests {
 
     #[test]
     fn parse_works() {
-        assert_eq!("#123".parse::<Color>().unwrap(), Color(0x123123));
-        assert_eq!("#123456".parse::<Color>().unwrap(), Color(0x123456));
-        assert_eq!("#AbCdEf".parse::<Color>().unwrap(), Color(0xabcdef));
+        assert_eq!("#123".parse::<Color>().unwrap(), Color(0x0012_3123));
+        assert_eq!("#123456".parse::<Color>().unwrap(), Color(0x0012_3456));
+        assert_eq!("#AbCdEf".parse::<Color>().unwrap(), Color(0x00ab_cdef));
     }
 
     #[test]

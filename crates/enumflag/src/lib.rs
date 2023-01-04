@@ -48,6 +48,6 @@ pub trait Enumflag: Copy + Into<u8> {
 
     /// Sets the corresponding bit value on an integer flag.
     fn set(self, f: &mut u8, enable: bool) {
-        *f ^= (*f & self.into()) ^ (!(enable as u8).wrapping_sub(1) & self.into())
+        *f ^= (*f & self.into()) ^ (!u8::from(enable).wrapping_sub(1) & self.into());
     }
 }

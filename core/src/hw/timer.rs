@@ -65,14 +65,13 @@ impl Machine for Timer {
             if self.cycle % div == 0 {
                 // Increment TIMA
                 let tima = &mut **regs.tima.borrow_mut();
-                *tima = match tima.checked_add(1) {
-                    Some(tima) => tima,
-                    None => {
-                        // Schedule Timer interrupt
-                        self.pic.borrow_mut().req(Interrupt::Timer);
-                        // Restart from TMA
-                        **regs.tma.borrow()
-                    }
+                *tima = if let Some(tima) = tima.checked_add(1) {
+                    tima
+                } else {
+                    // Schedule Timer interrupt
+                    self.pic.borrow_mut().req(Interrupt::Timer);
+                    // Restart from TMA
+                    **regs.tma.borrow()
                 };
             };
         }

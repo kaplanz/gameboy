@@ -62,7 +62,7 @@ impl Display for Instruction {
 
 /// Helper functions.
 mod helpers {
-    use super::*;
+    use super::Cpu;
 
     /// Get an 8-bit register operand.
     pub fn get_op8(cpu: &mut Cpu, idx: u8) -> u8 {

@@ -68,7 +68,7 @@ mod tests {
     #[test]
     fn device_len_works() {
         let ronly = setup();
-        assert_eq!(ronly.len(), 0x100)
+        assert_eq!(ronly.len(), 0x100);
     }
 
     #[test]

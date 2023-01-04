@@ -59,7 +59,7 @@ impl Pipeline {
         }
         // Perform the reset
         if done_warmup || reached_window {
-            self.bgwin.fetch = Default::default();
+            self.bgwin.fetch = Fetch::default();
         }
     }
 
@@ -68,7 +68,7 @@ impl Pipeline {
         let pixel = if let Some(mut bgwin) = self.bgwin.fifo.pop() {
             // Overwrite the background/window pixel data if disabled
             let lcdc = **ppu.ctl.borrow().lcdc.borrow();
-            if !Lcdc::BgWinEnable.get(&lcdc) {
+            if !Lcdc::BgWinEnable.get(lcdc) {
                 bgwin.col = Color::C0;
             }
 
@@ -110,7 +110,7 @@ impl Pipeline {
 
         // The window is reached if:
         // - The window is enabled
-        let enabled = Lcdc::WinEnable.get(&lcdc);
+        let enabled = Lcdc::WinEnable.get(lcdc);
         // - The y-position is NOT above the window
         let above = ly < wy;
         // - The x-position is NOT left of the window
@@ -133,6 +133,6 @@ struct Channel {
 
 impl Channel {
     pub fn fetch(&mut self, ppu: &mut Ppu) {
-        self.fetch.exec(&mut self.fifo, ppu, self.loc)
+        self.fetch.exec(&mut self.fifo, ppu, self.loc);
     }
 }

@@ -12,14 +12,14 @@ use super::pic::{Interrupt, Pic};
 #[rustfmt::skip]
 #[derive(Copy, Clone, Debug)]
 pub enum Button {
-    A      = 0b00100001,
-    B      = 0b00100010,
-    Select = 0b00100100,
-    Start  = 0b00101000,
-    Right  = 0b00010001,
-    Left   = 0b00010010,
-    Up     = 0b00010100,
-    Down   = 0b00011000,
+    A      = 0b0010_0001,
+    B      = 0b0010_0010,
+    Select = 0b0010_0100,
+    Start  = 0b0010_1000,
+    Right  = 0b0001_0001,
+    Left   = 0b0001_0010,
+    Up     = 0b0001_0100,
+    Down   = 0b0001_1000,
 }
 
 /// Joypad model.
@@ -40,16 +40,16 @@ impl Joypad {
 
     /// Handle pressed button inputs.
     #[allow(unused)]
-    pub fn input(&mut self, keys: Vec<Button>) {
+    pub fn input(&mut self, keys: &[Button]) {
         // Retrieve controller state (inverted)
         let prev = !*self.con.borrow().0;
         let is_empty = keys.is_empty();
 
         // Calculate updated state
         let next = keys
-            // Use `.iter().cloned()` to allow use of `btns` later for logging.
+            // Use `.iter().copied()` to allow use of `btns` later for logging.
             .iter()
-            .cloned()
+            .copied()
             // Filter buttons as requested in the controller register
             .filter(|&btn| (prev & btn as u8) & 0x30 != 0)
             // Fold matching pressed buttons' corresponding bits into a byte
@@ -109,6 +109,6 @@ impl Device for Register {
         const MASK: u8 = 0x30;
         let read = self.read(index);
         value = (read & !MASK) | (value & MASK);
-        self.0.write(index, value)
+        self.0.write(index, value);
     }
 }

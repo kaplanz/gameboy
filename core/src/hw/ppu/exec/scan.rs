@@ -19,24 +19,24 @@ impl Scan {
         // Extract the sprite and scanline info
         let regs = ppu.ctl.borrow();
         let lcdc = **regs.lcdc.borrow();
-        let size = Lcdc::ObjSize.get(&lcdc);
-        let ht = [8, 16][size as usize];
+        let size = Lcdc::ObjSize.get(lcdc);
+        let ht = [8, 16][usize::from(size)];
         let ly = **regs.ly.borrow();
 
         // Scan should only run when the following conditions are met:
         // - Sprites are enabled
         // - It is currently an "on" dot (as Scan runs at 2 MiHz)
         // - Fewer than 10 sprites have been found per scanline
-        if Lcdc::ObjEnable.get(&lcdc) && ppu.dot % 2 == 0 && self.objs.len() < 10 {
+        if Lcdc::ObjEnable.get(lcdc) && ppu.dot % 2 == 0 && self.objs.len() < 10 {
             // Checking an OAM entry takes 4 dots, due to the read. This means
             // we need another clock divider to disable during the "off" dot.
             if ppu.dot % 4 == 0 {
                 // Scan the current OAM entry
                 let mut obj = [0; 4];
-                obj.iter_mut().for_each(|byte| {
+                for byte in &mut obj {
                     *byte = ppu.oam.borrow().read(self.idx);
                     self.idx += 1;
-                });
+                }
                 // Parse entry into Sprite
                 let obj = Sprite::from(obj);
                 // Add sprite to be rendered if it's on the current scanline

@@ -57,6 +57,7 @@ impl GameBoy {
     ///
     /// This will call [`Block::reset`] before returning, allowing emulation to
     /// begin without further prior setup.
+    #[must_use]
     pub fn new(cart: Cartridge) -> Self {
         let mut this = Self {
             cart,
@@ -153,13 +154,13 @@ impl Emulator for GameBoy {
 
     type Screen = Screen;
 
-    fn send(&mut self, keys: Vec<Self::Input>) {
+    fn send(&mut self, keys: &[Self::Input]) {
         self.joypad.input(keys);
     }
 
     fn redraw(&self, mut callback: impl FnMut(&Screen)) {
         if self.ppu.ready() {
-            callback(self.ppu.screen())
+            callback(self.ppu.screen());
         }
     }
 }

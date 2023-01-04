@@ -10,7 +10,7 @@ pub struct Screen([Color; SCREEN.depth()]);
 
 impl Default for Screen {
     fn default() -> Self {
-        Self([Default::default(); SCREEN.depth()])
+        Self([Color::default(); SCREEN.depth()])
     }
 }
 

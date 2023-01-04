@@ -39,10 +39,10 @@ pub struct Palette([Color; 4]);
 impl Default for Palette {
     fn default() -> Self {
         Self([
-            Color(0xe9efec),
-            Color(0xa0a08b),
-            Color(0x555568),
-            Color(0x211e20),
+            Color(0x00e9_efec),
+            Color(0x00a0_a08b),
+            Color(0x0055_5568),
+            Color(0x0021_1e20),
         ])
     }
 }

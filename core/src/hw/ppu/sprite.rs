@@ -33,7 +33,7 @@ impl From<[u8; 4]> for Sprite {
             palette: [
                 Palette::Obj0,
                 Palette::Obj1,
-            ][(bytes[3] & 0x05 != 0) as usize],
+            ][usize::from(bytes[3] & 0x05 != 0)],
         }
     }
 }

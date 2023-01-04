@@ -1,3 +1,4 @@
+use std::array::TryFromSliceError;
 use std::fmt::Display;
 use std::str::Utf8Error;
 
@@ -9,6 +10,7 @@ use thiserror::Error;
 /// Information about the ROM and the cartridge containing it. Stored in the
 /// byte range `[0x100, 0x150)`.
 #[derive(Debug, Eq, PartialEq)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Header {
     /// Equality with boot ROM's Nintendo logo.
     pub logo: bool,
@@ -38,13 +40,17 @@ pub struct Header {
 
 impl Header {
     /// Checks header integrity.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the cartridge header is invalid.
     pub fn check(rom: &[u8]) -> Result<(), Error> {
         // Extract the header bytes
         let header: &[u8; 0x50] = rom
             .get(0x100..0x150)
             .ok_or(Error::Missing)?
             .try_into()
-            .unwrap();
+            .map_err(Error::Body)?;
 
         // Verify header checksum
         let hchk = header[0x4d];
@@ -57,7 +63,7 @@ impl Header {
         }
 
         // Verify global checksum
-        let gchk = u16::from_be_bytes(header[0x4e..=0x4f].try_into().unwrap());
+        let gchk = u16::from_be_bytes(header[0x4e..=0x4f].try_into().map_err(Error::Body)?);
         let chk = Self::gchk(rom);
         if gchk != chk {
             return Err(Error::GlobalChecksum {
@@ -74,14 +80,14 @@ impl Header {
     fn hchk(rom: &[u8]) -> u8 {
         rom[0x134..=0x14c]
             .iter()
-            .cloned()
+            .copied()
             .fold(0u8, |accum, item| accum.wrapping_sub(item).wrapping_sub(1))
     }
 
     /// Calculates global checksum.
     fn gchk(rom: &[u8]) -> u16 {
         rom.iter()
-            .cloned()
+            .copied()
             .fold(0u16, |accum, item| accum.wrapping_add(item as u16))
             .wrapping_sub(rom[0x14e] as u16)
             .wrapping_sub(rom[0x14f] as u16)
@@ -154,7 +160,7 @@ impl TryFrom<&[u8]> for Header {
                 0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e,
             ];
         // Parse title
-        let tlen = if header[0x43] & 0x80 != 0 { 15 } else { 16 };
+        let tlen = if header[0x43] & 0x80 == 0 { 16 } else { 15 };
         let title = std::str::from_utf8(&header[0x34..0x34 + tlen])
             .map_err(Error::Title)?
             .to_string();
@@ -296,6 +302,7 @@ impl Display for CartridgeType {
 impl TryFrom<u8> for CartridgeType {
     type Error = Error;
 
+    #[allow(clippy::too_many_lines)]
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x00 => Ok(CartridgeType::NoMbc {
@@ -329,7 +336,7 @@ impl TryFrom<u8> for CartridgeType {
                 battery: false,
             }),
             0x0c => Ok(CartridgeType::Mmm01 {
-                ram: false,
+                ram: true,
                 battery: false,
             }),
             0x0d => Ok(CartridgeType::Mmm01 {
@@ -414,6 +421,8 @@ impl TryFrom<u8> for CartridgeType {
 pub enum Error {
     #[error("missing header")]
     Missing,
+    #[error("missing body")]
+    Body(#[from] TryFromSliceError),
     #[error("could not parse title")]
     Title(#[from] Utf8Error),
     #[error("invalid CGB flag: {0}")]

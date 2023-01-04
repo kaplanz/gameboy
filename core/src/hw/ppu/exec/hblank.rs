@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use super::draw::Draw;
+use super::vblank::VBlank;
 use super::{Interrupt, Mode, Ppu, SCREEN};
 
 #[derive(Debug, Default)]
@@ -24,12 +25,12 @@ impl HBlank {
             ppu.pic.borrow_mut().req(Interrupt::VBlank);
 
             // Either begin next scanline, or enter VBlank
-            if *ly < SCREEN.height as u8 {
+            if *ly < u8::try_from(SCREEN.height).unwrap() {
                 Mode::Scan(self.into())
             } else {
                 // Reset internal window line counter
                 ppu.winln = 0;
-                Mode::VBlank(Default::default())
+                Mode::VBlank(VBlank::default())
             }
         }
     }

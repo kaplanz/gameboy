@@ -52,7 +52,7 @@ impl Default for Rom {
     fn default() -> Self {
         Self {
             ctl: Rc::new(RefCell::new(RomDisable::default())),
-            bank: Default::default(),
+            bank: Rc::default(),
             rom: Rc::new(RefCell::new(mem::Rom::from(&BOOTROM))),
         }
     }

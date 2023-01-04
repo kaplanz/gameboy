@@ -1,6 +1,6 @@
 //! SM83 core.
 //!
-//! Model for the CPU core present on the Sharp LR35902 SoC.
+//! Model for the CPU core present on the Sharp LR35902.
 
 use std::cell::RefCell;
 use std::fmt::{Debug, Display};
@@ -12,11 +12,11 @@ use remus::bus::Bus;
 use remus::reg::Register;
 use remus::{Block, Device, Machine};
 
-use self::inst::Instruction;
+use self::insn::Instruction;
 use super::Processor;
 use crate::hw::pic::Pic;
 
-mod inst;
+mod insn;
 
 /// SM83 central processing unit.
 #[derive(Debug, Default)]
@@ -97,9 +97,9 @@ impl Block for Cpu {
         self.pic.borrow_mut().reset();
         self.regs.reset();
         // Reset to initial state
-        self.status = Default::default();
-        self.state = Default::default();
-        self.ime = Default::default();
+        self.status = Status::default();
+        self.state = State::default();
+        self.ime = Ime::default();
     }
 }
 
@@ -170,8 +170,8 @@ impl Block for Registers {
 impl Default for Registers {
     fn default() -> Self {
         Self {
-            a: Default::default(),
-            f: Default::default(),
+            a: Register::default(),
+            f: Register::default(),
             af: WideRegister {
                 get: |regs: &Registers| {
                     let a = *regs.a as u16;
@@ -183,8 +183,8 @@ impl Default for Registers {
                     *regs.f = (af & 0x00ff) as u8;
                 },
             },
-            b: Default::default(),
-            c: Default::default(),
+            b: Register::default(),
+            c: Register::default(),
             bc: WideRegister {
                 get: |regs: &Registers| {
                     let b = *regs.b as u16;
@@ -196,8 +196,8 @@ impl Default for Registers {
                     *regs.c = (bc & 0x00ff) as u8;
                 },
             },
-            d: Default::default(),
-            e: Default::default(),
+            d: Register::default(),
+            e: Register::default(),
             de: WideRegister {
                 get: |regs: &Registers| {
                     let d = *regs.d as u16;
@@ -209,8 +209,8 @@ impl Default for Registers {
                     *regs.e = (de & 0x00ff) as u8;
                 },
             },
-            h: Default::default(),
-            l: Default::default(),
+            h: Register::default(),
+            l: Register::default(),
             hl: WideRegister {
                 get: |regs: &Registers| {
                     let h = *regs.h as u16;
@@ -222,8 +222,8 @@ impl Default for Registers {
                     *regs.l = (hl & 0x00ff) as u8;
                 },
             },
-            sp: Default::default(),
-            pc: Default::default(),
+            sp: Register::default(),
+            pc: Register::default(),
         }
     }
 }
@@ -272,10 +272,10 @@ impl Debug for WideRegister {
 /// CPU flags.
 #[derive(Copy, Clone, Debug)]
 enum Flag {
-    Z = 0b10000000,
-    N = 0b01000000,
-    H = 0b00100000,
-    C = 0b00010000,
+    Z = 0b1000_0000,
+    N = 0b0100_0000,
+    H = 0b0010_0000,
+    C = 0b0001_0000,
 }
 
 impl Enumflag for Flag {}
@@ -322,9 +322,9 @@ impl State {
                 // Acknowledge the interrupt
                 cpu.pic.borrow_mut().ack(int);
                 // Skip State::Fetch
-                let inst = Instruction::int(int);
-                debug!("0xXXXX: {inst}");
-                self = State::Execute(inst);
+                let insn = Instruction::int(int);
+                debug!("0xXXXX: {insn}");
+                self = State::Execute(insn);
             }
             // ... or fetch next instruction
             else {
@@ -340,7 +340,7 @@ impl State {
             let opcode = cpu.fetchbyte();
 
             // Decode the instruction
-            let inst = Instruction::new(opcode);
+            let insn = Instruction::new(opcode);
 
             // Check for HALT bug
             if cpu.halt_bug {
@@ -353,12 +353,11 @@ impl State {
             // NOTE: Ensure that prefix instructions are logged correctly
             debug!(
                 "{pc:#06x}: {}",
-                match opcode {
-                    0xcb => {
-                        let opcode = cpu.bus.borrow().read(*cpu.regs.pc as usize);
-                        format!("{}", Instruction::prefix(opcode))
-                    }
-                    _ => format!("{inst}"),
+                if opcode == 0xcb {
+                    let opcode = cpu.bus.borrow().read(*cpu.regs.pc as usize);
+                    format!("{}", Instruction::prefix(opcode))
+                } else {
+                    format!("{insn}")
                 }
             );
 
@@ -368,16 +367,16 @@ impl State {
             }
 
             // Proceed to State::Execute(_)
-            self = State::Execute(inst);
+            self = State::Execute(insn);
         }
 
         // Run the current State::Execute(_)
-        if let State::Execute(inst) = self {
+        if let State::Execute(insn) = self {
             // Execute a cycle of the instruction
-            let inst = inst.exec(cpu);
+            let insn = insn.exec(cpu);
             // Proceed to next State
-            self = match inst {
-                Some(inst) => State::Execute(inst),
+            self = match insn {
+                Some(insn) => State::Execute(insn),
                 None => State::Done,
             };
         }
