@@ -25,5 +25,5 @@ gameboy-core = { path = "core" }
 hexicolor = { version = "0.1.0", path = "crates/hexicolor" }
 log = "0.4.17"
 minifb = "0.23.0"
-remus = "0.2.0"
+remus = { git = "https://github.com/kaplanz/remus.git" }
 thiserror = "1.0.38"

@@ -10,5 +10,5 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 enumflag = { version = "0.1.0", path = "../crates/enumflag" }
 log = "0.4.17"
-remus = "0.2.0"
+remus = { git = "https://github.com/kaplanz/remus.git" }
 thiserror = "1.0.38"
