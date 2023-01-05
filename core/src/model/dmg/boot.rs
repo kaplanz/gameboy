@@ -31,7 +31,7 @@ const BOOTROM: [u8; 0x100] = [
 /// Boot ROM management [`Device`](Device).
 #[derive(Debug)]
 pub struct Rom {
-    pub ctl: Rc<RefCell<RomDisable>>,
+    pub ctl: Rc<RefCell<Disable>>,
     bank: Rc<RefCell<Bank>>,
     rom: Rc<RefCell<mem::Rom<0x100>>>,
 }
@@ -51,7 +51,7 @@ impl Block for Rom {
 impl Default for Rom {
     fn default() -> Self {
         Self {
-            ctl: Rc::new(RefCell::new(RomDisable::default())),
+            ctl: Rc::new(RefCell::new(Disable::default())),
             bank: Rc::default(),
             rom: Rc::new(RefCell::new(mem::Rom::from(&BOOTROM))),
         }
@@ -78,12 +78,12 @@ impl Device for Rom {
 
 /// Boot ROM disable [`Register`](Register).
 #[derive(Debug, Default)]
-pub struct RomDisable {
+pub struct Disable {
     reg: Register<u8>,
     bank: Rc<RefCell<Bank>>,
 }
 
-impl Block for RomDisable {
+impl Block for Disable {
     fn reset(&mut self) {
         // Reset controller
         self.reg.reset();
@@ -92,7 +92,7 @@ impl Block for RomDisable {
     }
 }
 
-impl Device for RomDisable {
+impl Device for Disable {
     fn contains(&self, index: usize) -> bool {
         self.reg.contains(index)
     }

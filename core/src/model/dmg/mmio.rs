@@ -38,7 +38,7 @@ pub struct Mmio {
     pub sound: Rc<RefCell<Ram<0x17>>>,
     pub wave:  Rc<RefCell<Ram<0x10>>>,
     pub lcd:   Rc<RefCell<ppu::Registers>>,
-    pub boot:  Rc<RefCell<boot::RomDisable>>,
+    pub boot:  Rc<RefCell<boot::Disable>>,
 }
 
 impl Mmio {
