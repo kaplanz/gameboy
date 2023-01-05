@@ -59,16 +59,16 @@ mod tests {
 
     #[test]
     fn new_works() {
-        let unmapped = Unmapped::<0x10000>::new();
+        let unmap = Unmapped::<0x10000>::new();
         assert!((0x000..0x100)
-            .map(|addr| unmapped.read(addr))
+            .map(|addr| unmap.read(addr))
             .all(|byte| byte == 0xff));
     }
 
     #[test]
     fn device_contains_works() {
-        let unmapped = Unmapped::<0x10000>::new();
-        assert!((0x000..0x100).all(|addr| unmapped.contains(addr)));
+        let unmap = Unmapped::<0x10000>::new();
+        assert!((0x000..0x100).all(|addr| unmap.contains(addr)));
     }
 
     #[test]
@@ -78,18 +78,18 @@ mod tests {
 
     #[test]
     fn device_read_works() {
-        let unmapped = Unmapped::<0x10000>::new();
+        let unmap = Unmapped::<0x10000>::new();
         assert!((0x000..0x100)
-            .map(|addr| unmapped.read(addr))
+            .map(|addr| unmap.read(addr))
             .all(|byte| byte == 0xff));
     }
 
     #[test]
     fn device_write_works() {
-        let mut unmapped = Unmapped::<0x10000>::new();
-        (0x000..0x100).for_each(|addr| unmapped.write(addr, 0xaa));
+        let mut unmap = Unmapped::<0x10000>::new();
+        (0x000..0x100).for_each(|addr| unmap.write(addr, 0xaa));
         assert!((0x000..0x100)
-            .map(|addr| unmapped.read(addr))
+            .map(|addr| unmap.read(addr))
             .all(|byte| byte == 0xff));
     }
 }

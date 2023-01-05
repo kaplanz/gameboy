@@ -4,9 +4,12 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use remus::bus::adapt::Bank;
+use remus::bus::Bus;
 use remus::dev::Device;
 use remus::reg::Register;
-use remus::{mem, Block};
+use remus::{mem, Block, SharedDevice};
+
+use super::Board;
 
 /// Boot ROM raw bytes.
 const BOOTROM: [u8; 0x100] = [
@@ -31,16 +34,43 @@ const BOOTROM: [u8; 0x100] = [
 /// Boot ROM management [`Device`](Device).
 #[derive(Debug)]
 pub struct Rom {
-    pub ctl: Rc<RefCell<Disable>>,
-    bank: Rc<RefCell<Bank>>,
+    // State
     rom: Rc<RefCell<mem::Rom<0x100>>>,
+    // Devices
+    // ┌────────┬──────┬─────┬───────┐
+    // │  Size  │ Name │ Dev │ Alias │
+    // ├────────┼──────┼─────┼───────┤
+    // │  8 KiB │ Boot │ ROM │       │
+    // └────────┴──────┴─────┴───────┘
+    bank: Rc<RefCell<Bank>>,
+    // Control
+    // ┌──────┬──────────┬─────┬───────┐
+    // │ Size │   Name   │ Dev │ Alias │
+    // ├──────┼──────────┼─────┼───────┤
+    // │  1 B │ Disable  │ Reg │       │
+    // └──────┴──────────┴─────┴───────┘
+    disable: Rc<RefCell<Disable>>,
+}
+
+impl Rom {
+    /// Gets a reference to the boot ROM.
+    #[must_use]
+    pub fn rom(&self) -> SharedDevice {
+        self.bank.clone()
+    }
+
+    /// Gets a reference to the boot ROM's disable register.
+    #[must_use]
+    pub fn disable(&self) -> SharedDevice {
+        self.disable.clone()
+    }
 }
 
 impl Block for Rom {
     fn reset(&mut self) {
         // Reset controller
-        self.ctl.borrow_mut().reset();
-        self.ctl.borrow_mut().bank = self.bank.clone();
+        self.disable.borrow_mut().reset();
+        self.disable.borrow_mut().bank = self.bank.clone();
         // Reset bank
         self.bank.borrow_mut().reset();
         self.bank.borrow_mut().add(self.rom.clone());
@@ -48,65 +78,63 @@ impl Block for Rom {
     }
 }
 
+impl Board for Rom {
+    #[rustfmt::skip]
+    fn connect(&self, bus: &mut Bus) {
+        // Extract devices
+        let boot = self.rom();
+        let disable = self.disable();
+
+        // Map devices on bus     // ┌──────┬────────┬──────────┬─────┐
+                                  // │ Addr │  Size  │   Name   │ Dev │
+                                  // ├──────┼────────┼──────────┼─────┤
+        bus.map(0x0000, boot);    // │ 0000 │  8 KiB │ Boot     │ ROM │
+        bus.map(0xff50, disable); // │ ff50 │    1 B │ Disable  │ Reg │
+                                  // └──────┴────────┴──────────┴─────┘
+    }
+}
+
 impl Default for Rom {
     fn default() -> Self {
         Self {
-            ctl: Rc::new(RefCell::new(Disable::default())),
-            bank: Rc::default(),
             rom: Rc::new(RefCell::new(mem::Rom::from(&BOOTROM))),
+            bank: Rc::default(),
+            disable: Rc::new(RefCell::new(Disable::default())),
         }
     }
 }
 
-impl Device for Rom {
-    fn contains(&self, index: usize) -> bool {
-        self.bank.borrow().contains(index)
-    }
-
-    fn len(&self) -> usize {
-        self.bank.borrow().len()
-    }
-
-    fn read(&self, index: usize) -> u8 {
-        self.bank.borrow().read(index)
-    }
-
-    fn write(&mut self, index: usize, value: u8) {
-        self.bank.borrow_mut().write(index, value);
-    }
-}
-
-/// Boot ROM disable [`Register`](Register).
+/// Boot ROM disable [`Register`](Disable).
 #[derive(Debug, Default)]
 pub struct Disable {
-    reg: Register<u8>,
+    boff: Register<u8>,
     bank: Rc<RefCell<Bank>>,
 }
 
 impl Block for Disable {
     fn reset(&mut self) {
         // Reset controller
-        self.reg.reset();
+        self.boff.reset();
         // Reset bank
-        self.bank.borrow_mut().set(*self.reg as usize);
+        self.bank.borrow_mut().set(*self.boff as usize);
     }
 }
 
 impl Device for Disable {
     fn contains(&self, index: usize) -> bool {
-        self.reg.contains(index)
+        self.boff.contains(index)
     }
 
     fn len(&self) -> usize {
-        self.reg.len()
+        self.boff.len()
     }
 
     fn read(&self, index: usize) -> u8 {
-        self.reg.read(index)
+        self.boff.read(index)
     }
 
     fn write(&mut self, index: usize, value: u8) {
-        self.reg.write(index, value);
+        self.boff.write(index, value);
         self.bank.borrow_mut().set(value as usize);
     }
 }

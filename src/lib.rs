@@ -10,7 +10,7 @@
 //! use gameboy::dmg::GameBoy;
 //! use remus::Machine; // for `Machine::cycle`
 //!
-//! // Instantiate a `Cartridge` from a ROM
+//! // Instantiate a `Cartridge`
 //! let rom: &[u8]; // -- snip --
 //! # rom = &[
 //! #     0xc3, 0x8b, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc3, 0x8b, 0x02, 0xff, 0xff, 0xff,
@@ -40,8 +40,10 @@
 //! # ];
 //! let cart = Cartridge::new(rom).unwrap();
 //!
-//! // Create a `GameBoy` instance from the cartridge
-//! let mut emu = GameBoy::new(cart);
+//! // Create a `GameBoy` instance
+//! let mut emu = GameBoy::new();
+//! // Load the cartridge into the emulator
+//! emu.load(cart);
 //!
 //! // Run the emulator
 //! loop {

@@ -5,20 +5,35 @@ use std::fmt::Display;
 use std::rc::Rc;
 
 use enumflag::Enumflag;
+use remus::bus::Bus;
 use remus::reg::Register;
-use remus::Block;
+use remus::{Block, SharedDevice};
 use thiserror::Error;
+
+use crate::dmg::Board;
 
 /// PIC model.
 #[derive(Debug, Default)]
 pub struct Pic {
-    /// Interrupt enable (IE) register.
-    pub enable: Rc<RefCell<Register<u8>>>,
     /// Interrupt flag (IF) register.
-    pub active: Rc<RefCell<Register<u8>>>,
+    active: Rc<RefCell<Register<u8>>>,
+    /// Interrupt enable (IE) register.
+    enable: Rc<RefCell<Register<u8>>>,
 }
 
 impl Pic {
+    /// Gets a reference to the PIC's active register.
+    #[must_use]
+    pub fn active(&self) -> SharedDevice {
+        self.active.clone()
+    }
+
+    /// Gets a reference to the PIC's enable register.
+    #[must_use]
+    pub fn enable(&self) -> SharedDevice {
+        self.enable.clone()
+    }
+
     pub fn int(&self) -> Option<Interrupt> {
         let active = **self.active.borrow();
         let enable = **self.enable.borrow();
@@ -36,9 +51,24 @@ impl Pic {
 
 impl Block for Pic {
     fn reset(&mut self) {
-        // Reset registers
         self.enable.borrow_mut().reset();
         self.active.borrow_mut().reset();
+    }
+}
+
+impl Board for Pic {
+    #[rustfmt::skip]
+    fn connect(&self, bus: &mut Bus) {
+        // Extract devices
+        let active = self.active();
+        let enable = self.enable();
+
+        // Map devices on bus    // ┌──────┬──────┬────────┬─────┐
+                                 // │ Addr │ Size │  Name  │ Dev │
+                                 // ├──────┼──────┼────────┼─────┤
+        bus.map(0xff0f, active); // │ ff0f │  1 B │ Active │ Reg │
+        bus.map(0xffff, enable); // │ ffff │  1 B │ Enable │ Reg │
+                                 // └──────┴──────┴────────┴─────┘
     }
 }
 
@@ -47,13 +77,13 @@ impl Block for Pic {
 #[derive(Copy, Clone, Debug)]
 pub enum Interrupt {
     // ┌─────┬──────────┬─────────┐
-    // │ BIT │  SOURCE  │ HANDLER │
+    // │ Bit │  Source  │ Handler │
     // ├─────┼──────────┼─────────┤
-    // │   0 │   VBlank │  0x0040 │
+    // │   0 │ VBlank   │  0x0040 │
     // │   1 │ LCD STAT │  0x0048 │
-    // │   2 │    Timer │  0x0050 │
-    // │   3 │   Serial │  0x0058 │
-    // │   4 │   Joypad │  0x0060 │
+    // │   2 │ Timer    │  0x0050 │
+    // │   3 │ Serial   │  0x0058 │
+    // │   4 │ Joypad   │  0x0060 │
     // └─────┴──────────┴─────────┘
     VBlank  = 0b0000_0001,
     LcdStat = 0b0000_0010,

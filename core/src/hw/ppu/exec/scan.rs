@@ -17,11 +17,10 @@ pub struct Scan {
 impl Scan {
     pub fn exec(mut self, ppu: &mut Ppu) -> Mode {
         // Extract the sprite and scanline info
-        let regs = ppu.ctl.borrow();
-        let lcdc = **regs.lcdc.borrow();
+        let lcdc = **ppu.ctl.lcdc.borrow();
         let size = Lcdc::ObjSize.get(lcdc);
         let ht = [8, 16][usize::from(size)];
-        let ly = **regs.ly.borrow();
+        let ly = **ppu.ctl.ly.borrow();
 
         // Scan should only run when the following conditions are met:
         // - Sprites are enabled
@@ -52,7 +51,6 @@ impl Scan {
             // TODO: citation needed
             self.idx += 2;
         }
-        drop(regs);
 
         // Scan lasts 80 dots, then progresses to Draw
         ppu.dot += 1;

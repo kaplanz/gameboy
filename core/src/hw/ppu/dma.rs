@@ -3,16 +3,19 @@ use std::rc::Rc;
 
 use log::{info, trace};
 use remus::bus::Bus;
-use remus::mem::Ram;
 use remus::{Block, Device, Machine};
+
+use super::Oam;
 
 /// Direct memory access.
 #[derive(Debug, Default)]
 pub struct Dma {
+    // State
     page: u8,
     idx: Option<u8>,
+    // Connections
     bus: Rc<RefCell<Bus>>,
-    oam: Rc<RefCell<Ram<0x00a0>>>,
+    oam: Rc<RefCell<Oam>>,
 }
 
 impl Dma {
@@ -20,7 +23,7 @@ impl Dma {
         self.bus = bus;
     }
 
-    pub fn set_oam(&mut self, oam: Rc<RefCell<Ram<0x00a0>>>) {
+    pub fn set_oam(&mut self, oam: Rc<RefCell<Oam>>) {
         self.oam = oam;
     }
 }

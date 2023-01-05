@@ -67,7 +67,7 @@ impl Pipeline {
         // A shift only occurs if there are pixels in the background FIFO
         let pixel = if let Some(mut bgwin) = self.bgwin.fifo.pop() {
             // Overwrite the background/window pixel data if disabled
-            let lcdc = **ppu.ctl.borrow().lcdc.borrow();
+            let lcdc = **ppu.ctl.lcdc.borrow();
             if !Lcdc::BgWinEnable.get(lcdc) {
                 bgwin.col = Color::C0;
             }
@@ -102,11 +102,10 @@ impl Pipeline {
 
     fn is_at_win(&self, ppu: &Ppu) -> bool {
         // Extract scanline info
-        let regs = ppu.ctl.borrow();
-        let lcdc = **regs.lcdc.borrow();
-        let ly = **regs.ly.borrow();
-        let wy = **regs.wy.borrow();
-        let wx = **regs.wx.borrow();
+        let lcdc = **ppu.ctl.lcdc.borrow();
+        let ly = **ppu.ctl.ly.borrow();
+        let wy = **ppu.ctl.wy.borrow();
+        let wx = **ppu.ctl.wx.borrow();
 
         // The window is reached if:
         // - The window is enabled

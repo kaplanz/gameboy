@@ -39,11 +39,10 @@ impl Fetch {
         }
 
         // Extract scanline info
-        let regs = ppu.ctl.borrow();
-        let lcdc = **regs.lcdc.borrow();
-        let scy = **regs.scy.borrow();
-        let scx = **regs.scx.borrow();
-        let ly = **regs.ly.borrow();
+        let lcdc = **ppu.ctl.lcdc.borrow();
+        let scy = **ppu.ctl.scy.borrow();
+        let scx = **ppu.ctl.scx.borrow();
+        let ly = **ppu.ctl.ly.borrow();
 
         // Determine the tile base
         let base = match loc {
@@ -82,10 +81,9 @@ impl Fetch {
         use Location::{Background, Sprite, Window};
 
         // Extract scanline info
-        let regs = ppu.ctl.borrow();
-        let lcdc = **regs.lcdc.borrow();
-        let scy = **regs.scy.borrow();
-        let ly = **regs.ly.borrow();
+        let lcdc = **ppu.ctl.lcdc.borrow();
+        let scy = **ppu.ctl.scy.borrow();
+        let ly = **ppu.ctl.ly.borrow();
 
         // Calculate the y-offset within the tile
         let yoff = match loc {

@@ -4,13 +4,15 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use log::{info, trace};
-use remus::{reg, Block, Device};
+use remus::bus::Bus;
+use remus::{reg, Block, Device, SharedDevice};
 
 use super::pic::{Interrupt, Pic};
+use crate::dmg::Board;
 
 /// Joypad button encoding.
-#[rustfmt::skip]
 #[derive(Copy, Clone, Debug)]
+#[rustfmt::skip]
 pub enum Button {
     A      = 0b0010_0001,
     B      = 0b0010_0010,
@@ -23,23 +25,33 @@ pub enum Button {
 }
 
 /// Joypad model.
-#[rustfmt::skip]
 #[derive(Debug, Default)]
+#[rustfmt::skip]
 pub struct Joypad {
-    /// Controller register.
-    pub con: Rc<RefCell<Register>>,
-    /// Programmable interrupt controller.
+    // Connections
     pic: Rc<RefCell<Pic>>,
+    // Devices
+    // ┌──────┬────────┬─────┬───────┐
+    // │ Size │  Name  │ Dev │ Alias │
+    // ├──────┼────────┼─────┼───────┤
+    // │  1 B │ Joypad │ Reg │ CON   │
+    // └──────┴────────┴─────┴───────┘
+    con: Rc<RefCell<Control>>,
 }
 
 impl Joypad {
+    /// Gets a reference to the joypad's control register.
+    #[must_use]
+    pub fn con(&self) -> SharedDevice {
+        self.con.clone()
+    }
+
     /// Sets the joypad's interrupt controller.
     pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
         self.pic = pic;
     }
 
     /// Handle pressed button inputs.
-    #[allow(unused)]
     pub fn input(&mut self, keys: &[Button]) {
         // Retrieve controller state (inverted)
         let prev = !*self.con.borrow().0;
@@ -70,28 +82,41 @@ impl Joypad {
 
 impl Block for Joypad {
     fn reset(&mut self) {
-        // Reset P1
         self.con.borrow_mut().reset();
+    }
+}
+
+impl Board for Joypad {
+    #[rustfmt::skip]
+    fn connect(&self, bus: &mut Bus) {
+        // Extract devices
+        let con = self.con();
+
+        // Map devices on bus // ┌──────┬──────┬────────┬─────┐
+                              // │ Addr │ Size │  Name  │ Dev │
+                              // ├──────┼──────┼────────┼─────┤
+        bus.map(0xff00, con); // │ ff00 │  1 B │ Joypad │ Reg │
+                              // └──────┴──────┴────────┴─────┘
     }
 }
 
 /// Player input register.
 #[derive(Debug)]
-pub struct Register(reg::Register<u8>);
+pub struct Control(reg::Register<u8>);
 
-impl Block for Register {
+impl Block for Control {
     fn reset(&mut self) {
         std::mem::take(self);
     }
 }
 
-impl Default for Register {
+impl Default for Control {
     fn default() -> Self {
         Self(reg::Register::from(0xff))
     }
 }
 
-impl Device for Register {
+impl Device for Control {
     fn contains(&self, index: usize) -> bool {
         self.0.contains(index)
     }
@@ -105,10 +130,9 @@ impl Device for Register {
     }
 
     fn write(&mut self, index: usize, mut value: u8) {
-        // NOTE: Only bits 0x30 are writable
-        const MASK: u8 = 0x30;
-        let read = self.read(index);
-        value = (read & !MASK) | (value & MASK);
+        // NOTE: Only bits masked bits are writable
+        const MASK: u8 = 0b0011_0000;
+        value = (value & MASK) | (self.read(index) & !MASK);
         self.0.write(index, value);
     }
 }

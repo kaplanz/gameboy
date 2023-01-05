@@ -5,23 +5,52 @@ use std::rc::Rc;
 
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Block, Device, Machine};
+use remus::{Block, Machine, SharedDevice};
 
 use super::pic::{Interrupt, Pic};
+use crate::dmg::Board;
 
 /// Timer model.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
 pub struct Timer {
-    /// Timer control registers.
-    pub ctl: Rc<RefCell<Registers>>,
-    /// Programmable interrupt controller.
+    // State
+    clock: usize,
+    // Connections
     pic: Rc<RefCell<Pic>>,
-    /// Current cycle count.
-    cycle: usize,
+    // Control
+    ctl: Control,
 }
 
 impl Timer {
+    /// Gets a reference to the timer's divider register.
+    #[must_use]
+    #[allow(unused)]
+    pub fn div(&self) -> SharedDevice {
+        self.ctl.div.clone()
+    }
+
+    /// Gets a reference to the timer's counter register.
+    #[must_use]
+    #[allow(unused)]
+    pub fn tima(&self) -> SharedDevice {
+        self.ctl.tima.clone()
+    }
+
+    /// Gets a reference to the timer's modulo register.
+    #[must_use]
+    #[allow(unused)]
+    pub fn tma(&self) -> SharedDevice {
+        self.ctl.tma.clone()
+    }
+
+    /// Gets a reference to the timer's control register.
+    #[must_use]
+    #[allow(unused)]
+    pub fn tac(&self) -> SharedDevice {
+        self.ctl.tac.clone()
+    }
+
     /// Set the timer's pic.
     pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
         self.pic = pic;
@@ -30,8 +59,13 @@ impl Timer {
 
 impl Block for Timer {
     fn reset(&mut self) {
-        // Reset registers
-        self.ctl.borrow_mut().reset();
+        self.ctl.reset();
+    }
+}
+
+impl Board for Timer {
+    fn connect(&self, bus: &mut Bus) {
+        self.ctl.connect(bus);
     }
 }
 
@@ -41,17 +75,18 @@ impl Machine for Timer {
     }
 
     fn cycle(&mut self) {
-        // Borrow registers
-        let regs = &*self.ctl.borrow();
+        // Borrow control registers
+        let div = &mut **self.ctl.div.borrow_mut();
+        let tima = &mut **self.ctl.tima.borrow_mut();
+        let tma = &**self.ctl.tma.borrow();
+        let tac = &**self.ctl.tac.borrow();
 
         // Increment DIV every 256 cycles
-        if self.cycle % 0x100 == 0 {
-            let div = &mut **regs.div.borrow_mut();
+        if self.clock % 0x100 == 0 {
             *div = div.wrapping_add(1);
         }
 
         // Increment TIMA if enabled
-        let tac = **regs.tac.borrow();
         if tac & 0x04 != 0 {
             // Determine TIMA divider
             let div = match tac & 0x03 {
@@ -62,74 +97,67 @@ impl Machine for Timer {
                 _ => unreachable!(),
             };
             // Check if this is a tic cycle
-            if self.cycle % div == 0 {
+            if self.clock % div == 0 {
                 // Increment TIMA
-                let tima = &mut **regs.tima.borrow_mut();
                 *tima = if let Some(tima) = tima.checked_add(1) {
                     tima
                 } else {
                     // Schedule Timer interrupt
                     self.pic.borrow_mut().req(Interrupt::Timer);
                     // Restart from TMA
-                    **regs.tma.borrow()
+                    *tma
                 };
             };
         }
 
         // Keep track of cycle count
-        self.cycle = self.cycle.wrapping_add(1);
+        self.clock = self.clock.wrapping_add(1);
     }
 }
 
 /// Control registers.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
-pub struct Registers {
-    bus: Bus,
-    // ┌────────┬──────────────────┬─────┬───────┐
-    // │  SIZE  │       NAME       │ DEV │ ALIAS │
-    // ├────────┼──────────────────┼─────┼───────┤
-    // │    1 B │ Divider Register │ Reg │ DIV   │
-    // │    1 B │    Timer Counter │ Reg │ TIMA  │
-    // │    1 B │     Timer Modulo │ Reg │ TMA   │
-    // │    1 B │    Timer Control │ Reg │ TAC   │
-    // └────────┴──────────────────┴─────┴───────┘
-    pub div:  Rc<RefCell<Register<u8>>>,
-    pub tima: Rc<RefCell<Register<u8>>>,
-    pub tma:  Rc<RefCell<Register<u8>>>,
-    pub tac:  Rc<RefCell<Register<u8>>>,
+pub struct Control {
+    // ┌──────┬──────────┬─────┬───────┐
+    // │ Size │   Name   │ Dev │ Alias │
+    // ├──────┼──────────┼─────┼───────┤
+    // │  1 B │ Divider  │ Reg │ DIV   │
+    // │  1 B │ Counter  │ Reg │ TIMA  │
+    // │  1 B │ Modulo   │ Reg │ TMA   │
+    // │  1 B │ Control  │ Reg │ TAC   │
+    // └──────┴──────────┴─────┴───────┘
+    div:  Rc<RefCell<Register<u8>>>,
+    tima: Rc<RefCell<Register<u8>>>,
+    tma:  Rc<RefCell<Register<u8>>>,
+    tac:  Rc<RefCell<Register<u8>>>,
 }
 
-impl Block for Registers {
-    #[rustfmt::skip]
+impl Block for Control {
     fn reset(&mut self) {
-        // Reset self
-        std::mem::take(self);
-        // Reset bus                           // ┌──────┬──────────────────┬─────┐
-        self.bus.reset();                      // │ SIZE │       NAME       │ DEV │
-                                               // ├──────┼──────────────────┼─────┤
-        self.bus.map(0x00, self.div.clone());  // │  1 B │ Divider Register │ Reg │
-        self.bus.map(0x01, self.tima.clone()); // │  1 B │    Timer Counter │ Reg │
-        self.bus.map(0x02, self.tma.clone());  // │  1 B │     Timer Modulo │ Reg │
-        self.bus.map(0x03, self.tac.clone());  // │  1 B │    Timer Control │ Reg │
-                                               // └──────┴──────────────────┴─────┘
+        self.div.borrow_mut().reset();
+        self.tima.borrow_mut().reset();
+        self.tma.borrow_mut().reset();
+        self.tac.borrow_mut().reset();
     }
 }
 
-impl Device for Registers {
-    fn contains(&self, index: usize) -> bool {
-        self.bus.contains(index)
-    }
+impl Board for Control {
+    #[rustfmt::skip]
+    fn connect(&self, bus: &mut Bus) {
+        // Extract devices
+        let div  = self.div.clone();
+        let tima = self.tima.clone();
+        let tma  = self.tma.clone();
+        let tac  = self.tac.clone();
 
-    fn len(&self) -> usize {
-        self.bus.len()
-    }
-
-    fn read(&self, index: usize) -> u8 {
-        self.bus.read(index)
-    }
-
-    fn write(&mut self, index: usize, value: u8) {
-        self.bus.write(index, value);
+        // Map devices on bus  // ┌──────┬──────┬──────────┬─────┐
+                               // │ Addr │ Size │   Name   │ Dev │
+                               // ├──────┼──────┼──────────┼─────┤
+        bus.map(0xff04, div);  // │ ff04 │  1 B │ Divider  │ Reg │
+        bus.map(0xff05, tima); // │ ff05 │  1 B │ Counter  │ Reg │
+        bus.map(0xff06, tma);  // │ ff06 │  1 B │ Modulo   │ Reg │
+        bus.map(0xff07, tac);  // │ ff07 │  1 B │ Control  │ Reg │
+                               // └──────┴──────┴──────────┴─────┘
     }
 }

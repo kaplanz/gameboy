@@ -14,6 +14,7 @@ use remus::{Block, Device, Machine};
 
 use self::insn::Instruction;
 use super::Processor;
+use crate::dmg::Board;
 use crate::hw::pic::Pic;
 
 mod insn;
@@ -101,6 +102,10 @@ impl Block for Cpu {
         self.state = State::default();
         self.ime = Ime::default();
     }
+}
+
+impl Board for Cpu {
+    fn connect(&self, _: &mut Bus) {}
 }
 
 impl Processor for Cpu {

@@ -13,7 +13,7 @@ pub struct Draw {
 impl Draw {
     pub fn setup(&mut self, ppu: &mut Ppu) {
         // Set up the pipeline
-        let scx = **ppu.ctl.borrow().scx.borrow();
+        let scx = **ppu.ctl.scx.borrow();
         self.pipe.set_discard(scx);
     }
 
@@ -25,7 +25,7 @@ impl Draw {
         let mut xpos = self.pipe.xpos() as usize;
         if let Some(pixel) = self.pipe.shift(ppu) {
             // Calculate pixel index on screen
-            let ypos = **ppu.ctl.borrow().ly.borrow() as usize;
+            let ypos = **ppu.ctl.ly.borrow() as usize;
             let idx = (ypos * SCREEN.width) + xpos;
 
             // Determine this pixel's color (according to its palette)

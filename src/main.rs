@@ -91,7 +91,9 @@ fn main() -> Result<()> {
     .to_string();
 
     // Create emulator instance
-    let mut emu = GameBoy::new(cart);
+    let mut emu = GameBoy::new();
+    // Load the cartridge into the emulator
+    emu.load(cart);
 
     // Exit after loading
     if args.exit {
