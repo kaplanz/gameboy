@@ -39,6 +39,28 @@ pub struct Header {
 }
 
 impl Header {
+    /// Constructs a blank `Header`
+    #[must_use]
+    pub fn blank() -> Self {
+        Self {
+            logo: false,
+            title: "Missing".to_string(),
+            dmg: false,
+            cgb: false,
+            sgb: false,
+            cart: CartridgeType::NoMbc {
+                ram: false,
+                battery: false,
+            },
+            romsz: 0x8000,
+            ramsz: 0x00,
+            jpn: false,
+            version: 0x00,
+            hchk: 0x00,
+            gchk: 0x00,
+        }
+    }
+
     /// Checks header integrity.
     ///
     /// # Errors
@@ -190,7 +212,7 @@ impl TryFrom<&[u8]> for Header {
         }?;
         // Parse RAM size
         let ramsz = match header[0x49] {
-            0x00 => Ok(0x0),
+            0x00 => Ok(0),
             0x02 => Ok(0x2000),
             0x03 => Ok(0x8000),
             0x04 => Ok(0x20000),

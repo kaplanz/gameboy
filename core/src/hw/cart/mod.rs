@@ -51,6 +51,64 @@ impl Cartridge {
         let header = Header::try_from(rom)?;
         debug!("Header:\n{header}");
 
+        // Construct memory bank controller
+        let mbc = Self::mbc(&header, rom)?;
+
+        Ok(Self { header, mbc })
+    }
+
+    /// Constructs a new `Cartridge` without checking the header.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the memory bank controller could not be constructed.
+    pub fn unchecked(rom: &[u8]) -> Self {
+        // Parse cartridge header
+        let header = Header::try_from(rom).ok().unwrap_or_else(Header::blank);
+        debug!("Header:\n{header}");
+
+        // Construct memory bank controller
+        let mbc = Self::mbc(&header, rom).ok().unwrap();
+
+        Self { header, mbc }
+    }
+
+    /// Constructs a blank `Cartridge`.
+    #[must_use]
+    pub fn blank() -> Self {
+        // Construct a blank header
+        let header = Header::blank();
+
+        // Use null devices for the ROM, RAM
+        let rom = Null::<0x8000>::with(0xff).to_shared();
+        let eram = Null::<0x0>::new().to_shared();
+
+        // Construct a membory bank controller
+        let mbc = Box::new(NoMbc::with(rom, eram));
+
+        Self { header, mbc }
+    }
+
+    /// Gets a reference to the cartridge's header.
+    #[must_use]
+    pub fn header(&self) -> &Header {
+        &self.header
+    }
+
+    /// Gets a shared reference to the cartridge's ROM.
+    #[must_use]
+    pub fn rom(&self) -> SharedDevice {
+        self.mbc.rom()
+    }
+
+    /// Gets a shared reference to the cartridge's RAM.
+    #[must_use]
+    pub fn ram(&self) -> SharedDevice {
+        self.mbc.ram()
+    }
+
+    /// Constructs a memory bank controller from a parsed ROM and header.
+    fn mbc(header: &Header, rom: &[u8]) -> Result<Box<dyn Mbc>, Error> {
         // Construct null device (for reuse where needed)
         let null = Null::<0>::new().to_shared();
 
@@ -75,7 +133,7 @@ impl Cartridge {
             }
             rom.iter()
                 .copied()
-                .chain(iter::repeat(0u8))
+                .chain(iter::repeat(0xffu8))
                 .take(header.romsz)
                 .collect::<Vec<_>>()
                 .into_boxed_slice()
@@ -135,38 +193,20 @@ impl Cartridge {
             _ => unreachable!(),
         };
 
-        // Construct a cartridge
-        let mbc: Box<dyn Mbc> = match header.cart {
-            CartridgeType::NoMbc { ram, .. } => {
+        // Construct a memory bank controller
+        let mbc: Box<dyn Mbc> = match &header.cart {
+            &CartridgeType::NoMbc { ram, .. } => {
                 let eram = [null, eram][ram as usize].clone();
                 Box::new(NoMbc::with(rom, eram))
             }
-            CartridgeType::Mbc1 { ram, battery } => {
+            &CartridgeType::Mbc1 { ram, battery } => {
                 let eram = [null, eram][ram as usize].clone();
                 Box::new(Mbc1::with(rom, eram, battery))
             }
             cart => unimplemented!("{cart:?}"),
         };
 
-        Ok(Self { header, mbc })
-    }
-
-    /// Gets a reference to the cartridge's header.
-    #[must_use]
-    pub fn header(&self) -> &Header {
-        &self.header
-    }
-
-    /// Gets a shared reference to the cartridge's ROM.
-    #[must_use]
-    pub fn rom(&self) -> SharedDevice {
-        self.mbc.rom()
-    }
-
-    /// Gets a shared reference to the cartridge's RAM.
-    #[must_use]
-    pub fn ram(&self) -> SharedDevice {
-        self.mbc.ram()
+        Ok(mbc)
     }
 }
 

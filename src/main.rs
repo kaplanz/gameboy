@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_lines)]
+
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
@@ -21,7 +23,7 @@ mod palette;
 struct Args {
     /// Cartridge ROM image file.
     #[arg(value_hint = ValueHint::FilePath)]
-    rom: PathBuf,
+    rom: Option<PathBuf>,
 
     /// Boot ROM image file.
     #[arg(short, long)]
@@ -34,6 +36,13 @@ struct Args {
     /// the ROM.
     #[arg(short, long = "check")]
     chk: bool,
+
+    /// Force cartridge construction.
+    ///
+    /// Causes the cartridge generation to always succeed, even if the ROM does
+    /// not contain valid data.
+    #[arg(short, long)]
+    force: bool,
 
     /// Exit after loading cartridge.
     ///
@@ -62,31 +71,45 @@ fn main() -> Result<()> {
     // Parse args
     let args = Args::parse();
 
-    // Read the ROM
-    let rom = {
+    // Prepare the cartridge
+    let cart = if let Some(path) = args.rom {
         // Open ROM file
-        let f = File::open(&args.rom)
-            .with_context(|| format!("failed to open ROM: `{}`", args.rom.display()))?;
-        // Read ROM into a buffer
-        let mut buf = Vec::new();
-        // NOTE: Game Paks manufactured by Nintendo have a maximum 8 MiB ROM.
-        let read = f
-            .take(0x0080_0000)
-            .read_to_end(&mut buf)
-            .with_context(|| format!("failed to read ROM: `{}`", args.rom.display()))?;
-        info!("Read {read} bytes from ROM");
+        let rom = {
+            let f = File::open(&path)
+                .with_context(|| format!("failed to open ROM: `{}`", path.display()))?;
+            // Read ROM into a buffer
+            let mut buf = Vec::new();
+            // NOTE: Game Paks manufactured by Nintendo have a maximum 8 MiB ROM.
+            let read = f
+                .take(0x0080_0000)
+                .read_to_end(&mut buf)
+                .with_context(|| format!("failed to read ROM: `{}`", path.display()))?;
+            info!("Read {read} bytes from ROM");
 
-        buf
+            buf
+        };
+
+        // Check ROM integrity
+        if args.chk {
+            Header::check(&rom).with_context(|| "failed ROM integrity check")?;
+            info!("Passed ROM integrity check");
+        }
+
+        // Initialize the cartridge
+        let cart = if args.force {
+            // Force cartridge from ROM
+            Cartridge::unchecked(&rom)
+        } else {
+            // Exit on cartridge failure
+            Cartridge::new(&rom)
+                .with_context(|| format!("failed to load cartridge: `{}`", path.display()))?
+        };
+        info!("Loaded ROM:\n{}", cart.header());
+
+        cart
+    } else {
+        Cartridge::blank()
     };
-    // Check ROM integrity
-    if args.chk {
-        Header::check(&rom).with_context(|| "failed ROM integrity check")?;
-        info!("Passed ROM integrity check");
-    }
-    // Initialize the cartridge
-    let cart = Cartridge::new(&rom)
-        .with_context(|| format!("failed to load cartridge: `{}`", args.rom.display()))?;
-    info!("Loaded ROM:\n{}", cart.header());
     // Extract ROM title from cartridge
     let title = match cart.header().title.replace('\0', " ").trim() {
         "" => "Game Boy",
