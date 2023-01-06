@@ -8,8 +8,7 @@ use remus::bus::Bus;
 use remus::mem::Ram;
 use remus::{Block, Device};
 
-use super::boot::Rom as BootRom;
-use super::Board;
+use super::{Board, BootRom};
 
 pub type Wram = Ram<0x2000>;
 pub type Hram = Ram<0x007f>;
@@ -30,6 +29,16 @@ pub struct Memory {
     pub(super) boot: Rc<RefCell<BootRom>>,
     pub(super) wram: Rc<RefCell<Wram>>,
     pub(super) hram: Rc<RefCell<Hram>>,
+}
+
+impl Memory {
+    /// Constructs a new `Memory` using provided [`BootRom`].
+    pub fn with(boot: BootRom) -> Self {
+        Self {
+            boot: Rc::new(RefCell::new(boot)),
+            ..Default::default()
+        }
+    }
 }
 
 impl Block for Memory {

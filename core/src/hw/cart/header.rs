@@ -50,7 +50,7 @@ impl Header {
             .get(0x100..0x150)
             .ok_or(Error::Missing)?
             .try_into()
-            .map_err(Error::Body)?;
+            .map_err(Error::TryFromSlice)?;
 
         // Verify header checksum
         let hchk = header[0x4d];
@@ -63,7 +63,11 @@ impl Header {
         }
 
         // Verify global checksum
-        let gchk = u16::from_be_bytes(header[0x4e..=0x4f].try_into().map_err(Error::Body)?);
+        let gchk = u16::from_be_bytes(
+            header[0x4e..=0x4f]
+                .try_into()
+                .map_err(Error::TryFromSlice)?,
+        );
         let chk = Self::gchk(rom);
         if gchk != chk {
             return Err(Error::GlobalChecksum {
@@ -149,7 +153,7 @@ impl TryFrom<&[u8]> for Header {
             .get(0x100..0x150)
             .ok_or(Error::Missing)?
             .try_into()
-            .unwrap();
+            .map_err(Error::TryFromSlice)?;
 
         // Parse Nintendo logo
         let logo = header[0x04..=0x33]
@@ -421,8 +425,8 @@ impl TryFrom<u8> for CartridgeType {
 pub enum Error {
     #[error("missing header")]
     Missing,
-    #[error("missing body")]
-    Body(#[from] TryFromSliceError),
+    #[error(transparent)]
+    TryFromSlice(#[from] TryFromSliceError),
     #[error("could not parse title")]
     Title(#[from] Utf8Error),
     #[error("invalid CGB flag: {0}")]

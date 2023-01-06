@@ -9,8 +9,7 @@ use std::rc::Rc;
 use enumflag::Enumflag;
 use log::{debug, trace};
 use remus::bus::Bus;
-use remus::reg::Register;
-use remus::{Block, Device, Machine};
+use remus::{reg, Block, Device, Machine};
 
 use self::insn::Instruction;
 use super::Processor;
@@ -18,6 +17,17 @@ use crate::dmg::Board;
 use crate::hw::pic::Pic;
 
 mod insn;
+
+/// 16-bit register set.
+#[allow(dead_code)]
+pub enum Register {
+    AF,
+    BC,
+    DE,
+    HL,
+    SP,
+    PC,
+}
 
 /// SM83 central processing unit.
 #[derive(Debug, Default)]
@@ -109,16 +119,69 @@ impl Board for Cpu {
 }
 
 impl Processor for Cpu {
+    type Register = Register;
+
+    fn goto(&mut self, pc: u16) {
+        *self.regs.pc = pc;
+    }
+
+    fn get(&self, reg: Self::Register) -> u16 {
+        let af = self.regs.af;
+        let bc = self.regs.bc;
+        let de = self.regs.de;
+        let hl = self.regs.hl;
+        let regs = &self.regs;
+        match reg {
+            Register::AF => af.get(regs),
+            Register::BC => bc.get(regs),
+            Register::DE => de.get(regs),
+            Register::HL => hl.get(regs),
+            Register::SP => *self.regs.sp,
+            Register::PC => *self.regs.pc,
+        }
+    }
+
+    fn set(&mut self, reg: Self::Register, value: u16) {
+        let af = self.regs.af;
+        let bc = self.regs.bc;
+        let de = self.regs.de;
+        let hl = self.regs.hl;
+        let regs = &mut self.regs;
+        match reg {
+            Register::AF => af.set(regs, value),
+            Register::BC => bc.set(regs, value),
+            Register::DE => de.set(regs, value),
+            Register::HL => hl.set(regs, value),
+            Register::SP => *self.regs.sp = value,
+            Register::PC => *self.regs.pc = value,
+        }
+    }
+
+    fn exec(&mut self, opcode: u8) {
+        // Create a new instruction...
+        let mut insn = Some(Instruction::new(opcode));
+        // ... then execute it until completion
+        while let Some(work) = insn {
+            insn = work.exec(self);
+        }
+    }
+
+    fn run(&mut self, prog: &[u8]) {
+        for &opcode in prog {
+            self.exec(opcode);
+        }
+    }
+
+    fn wake(&mut self) {
+        self.status = Status::Enabled;
+    }
+
     fn set_bus(&mut self, bus: Rc<RefCell<Bus>>) {
         self.bus = bus;
     }
 
     fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
         self.pic = pic;
-    }
-
-    fn wake(&mut self) {
-        self.status = Status::Enabled;
     }
 }
 
@@ -148,20 +211,20 @@ struct Registers {
     // ├───────────────┤
     // │    PC: u16    │
     // └───────────────┘
-    a: Register<u8>,
-    f: Register<u8>,
+    a: reg::Register<u8>,
+    f: reg::Register<u8>,
     af: WideRegister,
-    b: Register<u8>,
-    c: Register<u8>,
+    b: reg::Register<u8>,
+    c: reg::Register<u8>,
     bc: WideRegister,
-    d: Register<u8>,
-    e: Register<u8>,
+    d: reg::Register<u8>,
+    e: reg::Register<u8>,
     de: WideRegister,
-    h: Register<u8>,
-    l: Register<u8>,
+    h: reg::Register<u8>,
+    l: reg::Register<u8>,
     hl: WideRegister,
-    sp: Register<u16>,
-    pc: Register<u16>,
+    sp: reg::Register<u16>,
+    pc: reg::Register<u16>,
 }
 
 impl Block for Registers {
@@ -175,8 +238,8 @@ impl Block for Registers {
 impl Default for Registers {
     fn default() -> Self {
         Self {
-            a: Register::default(),
-            f: Register::default(),
+            a: reg::Register::default(),
+            f: reg::Register::default(),
             af: WideRegister {
                 get: |regs: &Registers| {
                     let a = *regs.a as u16;
@@ -188,8 +251,8 @@ impl Default for Registers {
                     *regs.f = (af & 0x00ff) as u8;
                 },
             },
-            b: Register::default(),
-            c: Register::default(),
+            b: reg::Register::default(),
+            c: reg::Register::default(),
             bc: WideRegister {
                 get: |regs: &Registers| {
                     let b = *regs.b as u16;
@@ -201,8 +264,8 @@ impl Default for Registers {
                     *regs.c = (bc & 0x00ff) as u8;
                 },
             },
-            d: Register::default(),
-            e: Register::default(),
+            d: reg::Register::default(),
+            e: reg::Register::default(),
             de: WideRegister {
                 get: |regs: &Registers| {
                     let d = *regs.d as u16;
@@ -214,8 +277,8 @@ impl Default for Registers {
                     *regs.e = (de & 0x00ff) as u8;
                 },
             },
-            h: Register::default(),
-            l: Register::default(),
+            h: reg::Register::default(),
+            l: reg::Register::default(),
             hl: WideRegister {
                 get: |regs: &Registers| {
                     let h = *regs.h as u16;
@@ -227,8 +290,8 @@ impl Default for Registers {
                     *regs.l = (hl & 0x00ff) as u8;
                 },
             },
-            sp: Register::default(),
-            pc: Register::default(),
+            sp: reg::Register::default(),
+            pc: reg::Register::default(),
         }
     }
 }

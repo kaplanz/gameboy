@@ -6,7 +6,7 @@ use clap::{Parser, ValueHint};
 use color_eyre::eyre::{Result, WrapErr};
 use gameboy::core::Emulator;
 use gameboy::dmg::cart::{Cartridge, Header};
-use gameboy::dmg::{Button, GameBoy, Screen, SCREEN};
+use gameboy::dmg::{BootRom, Button, GameBoy, Screen, SCREEN};
 use log::{debug, info};
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use remus::Machine;
@@ -22,6 +22,11 @@ struct Args {
     /// Cartridge ROM image file.
     #[arg(value_hint = ValueHint::FilePath)]
     rom: PathBuf,
+
+    /// Boot ROM image file.
+    #[arg(short, long)]
+    #[arg(value_hint = ValueHint::FilePath)]
+    boot: Option<PathBuf>,
 
     /// Check ROM integrity.
     ///
@@ -69,7 +74,7 @@ fn main() -> Result<()> {
             .take(0x0080_0000)
             .read_to_end(&mut buf)
             .with_context(|| format!("failed to read ROM: `{}`", args.rom.display()))?;
-        info!("Read {read} bytes");
+        info!("Read {read} bytes from ROM");
 
         buf
     };
@@ -78,7 +83,6 @@ fn main() -> Result<()> {
         Header::check(&rom).with_context(|| "failed ROM integrity check")?;
         info!("Passed ROM integrity check");
     }
-
     // Initialize the cartridge
     let cart = Cartridge::new(&rom)
         .with_context(|| format!("failed to load cartridge: `{}`", args.rom.display()))?;
@@ -90,8 +94,34 @@ fn main() -> Result<()> {
     }
     .to_string();
 
+    // Read the boot ROM
+    let boot = args
+        .boot
+        .map(|boot| -> Result<_> {
+            // Open boot ROM file
+            let f = File::open(&boot)
+                .with_context(|| format!("failed to open boot ROM: `{}`", boot.display()))?;
+            // Read ROM into a buffer
+            let mut buf = Vec::new();
+            // NOTE: Game Paks manufactured by Nintendo have a maximum 8 MiB ROM.
+            let read = f
+                .take(0x0100)
+                .read_to_end(&mut buf)
+                .with_context(|| format!("failed to read boot ROM: `{}`", boot.display()))?;
+            info!("Read {read} bytes from boot ROM");
+
+            Ok(buf)
+        })
+        .transpose()?;
+    // Initialize the boot rom
+    let boot = boot.as_deref().map(BootRom::try_from).transpose()?;
+
     // Create emulator instance
-    let mut emu = GameBoy::new();
+    let mut emu = if let Some(boot) = boot {
+        GameBoy::with(boot)
+    } else {
+        GameBoy::new()
+    };
     // Load the cartridge into the emulator
     emu.load(cart);
 
