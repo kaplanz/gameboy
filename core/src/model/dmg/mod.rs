@@ -129,6 +129,8 @@ impl GameBoy {
         // Move the PC to the ROM's start
         self.cpu.goto(0x0100);
 
+        // Enable the LCD
+        self.bus.borrow_mut().write(0xff40, 0x91);
         // Disable the boot ROM
         self.bus.borrow_mut().write(0xff50, 0x01);
 
