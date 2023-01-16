@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use log::{info, trace};
+use log::{debug, trace};
 use remus::bus::Bus;
 use remus::{Block, Device, Machine};
 
@@ -48,7 +48,7 @@ impl Device for Dma {
     }
 
     fn write(&mut self, _: usize, value: u8) {
-        info!("Starting DMA @ {value:#04x}00");
+        debug!("Starting DMA @ {value:#04x}00");
         self.page = value;
         self.idx = Some(0);
     }

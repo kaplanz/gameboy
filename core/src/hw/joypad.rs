@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use log::{info, trace};
+use log::{debug, trace};
 use remus::bus::Bus;
 use remus::{reg, Block, Device, SharedDevice};
 
@@ -70,7 +70,7 @@ impl Joypad {
         // Schedule interrupt on updated value
         if (prev & 0x0f) != (next & 0x0f) {
             self.pic.borrow_mut().req(Interrupt::Joypad);
-            info!("Input {next:#010b}: {keys:?}"); // log updates with `info`
+            debug!("Input {next:#010b}: {keys:?}"); // log updates with `debug`
         } else if !is_empty {
             trace!("Input {next:#010b}: {keys:?}"); // log others with `trace`
         }
