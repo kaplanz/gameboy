@@ -191,20 +191,22 @@ fn main() -> Result<()> {
             fps += 1; // update frames drawn
         });
 
-        // Send joypad input
-        #[rustfmt::skip]
-        let keys: Vec<_> = win.get_keys().into_iter().filter_map(|key| match key {
-            Key::Z     => Some(Button::A),
-            Key::X     => Some(Button::B),
-            Key::Space => Some(Button::Select),
-            Key::Enter => Some(Button::Start),
-            Key::Right => Some(Button::Right),
-            Key::Left  => Some(Button::Left),
-            Key::Up    => Some(Button::Up),
-            Key::Down  => Some(Button::Down),
-            _ => None
-        }).collect();
-        emu.send(&keys);
+        // Send joypad input (sampled every 64 cycles)
+        if cycles % 0x40 == 0 {
+            #[rustfmt::skip]
+            let keys: Vec<_> = win.get_keys().into_iter().filter_map(|key| match key {
+                Key::Z     => Some(Button::A),
+                Key::X     => Some(Button::B),
+                Key::Space => Some(Button::Select),
+                Key::Enter => Some(Button::Start),
+                Key::Right => Some(Button::Right),
+                Key::Left  => Some(Button::Left),
+                Key::Up    => Some(Button::Up),
+                Key::Down  => Some(Button::Down),
+                _ => None
+            }).collect();
+            emu.send(&keys);
+        }
 
         // Calculate wall-clock frequency
         if now.elapsed().as_secs() > 0 {
