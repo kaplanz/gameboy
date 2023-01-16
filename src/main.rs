@@ -17,6 +17,9 @@ use crate::palette::Palette;
 
 mod palette;
 
+/// Game Boy main clock frequency, set to 4.194304 Hz.
+const FREQ: u32 = 0x0040_0000;
+
 /// Game Boy emulator written in Rust.
 #[derive(Parser)]
 #[command(author, version, about)]
@@ -167,9 +170,10 @@ fn main() -> Result<()> {
     )
     .unwrap();
 
-    // Mark the starting time
+    // Initialize timer, counters
     let mut now = std::time::Instant::now();
-    let mut active = 0;
+    let mut cycles = 0;
+    let mut fps = 0;
 
     // TODO: Run emulator on a 4 MiHz clock
     while win.is_open() {
@@ -184,6 +188,7 @@ fn main() -> Result<()> {
                 .collect();
             win.update_with_buffer(&buf, SCREEN.width, SCREEN.height)
                 .unwrap();
+            fps += 1; // update frames drawn
         });
 
         // Send joypad input
@@ -201,13 +206,24 @@ fn main() -> Result<()> {
         }).collect();
         emu.send(&keys);
 
-        // Calculate real-time clock frequency
+        // Calculate wall-clock frequency
         if now.elapsed().as_secs() > 0 {
-            debug!("Frequency: {active}");
-            active = 0;
+            // Print cycle stats
+            debug!(
+                "Frequency: {freq:0.4} MHz ({speedup:.1}%), FPS: {fps} Hz",
+                freq = f64::from(cycles) / 1e6,
+                speedup = 100. * f64::from(cycles) / f64::from(FREQ)
+            );
+            // Update the title to display the frequency
+            win.set_title(&format!("{title} ({fps} Hz)"));
+            // Reset timer, counters
             now = std::time::Instant::now();
+            cycles = 0;
+            fps = 0;
         }
-        active += 1;
+
+        // Clock another cycle
+        cycles += 1;
     }
 
     Ok(())
