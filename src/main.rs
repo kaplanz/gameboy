@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 
-use clap::{Parser, ValueHint};
+use clap::{Parser, ValueEnum, ValueHint};
 use color_eyre::eyre::{Result, WrapErr};
 use gameboy::core::Emulator;
 use gameboy::dmg::cart::{Cartridge, Header};
@@ -19,6 +19,17 @@ mod palette;
 
 /// Game Boy main clock frequency, set to 4.194304 Hz.
 const FREQ: u32 = 0x0040_0000;
+
+/// Emulation speed modifier.
+#[derive(Clone, Debug, Default, PartialEq, ValueEnum)]
+pub enum Speed {
+    Half,
+    #[default]
+    Full,
+    Double,
+    Triple,
+    Max,
+}
 
 /// Game Boy emulator written in Rust.
 #[derive(Parser)]
@@ -64,6 +75,14 @@ struct Args {
     #[arg(default_value_t)]
     #[arg(long = "palette")]
     pal: Palette,
+
+    /// Run at full-speed.
+    ///
+    /// Causes the emulator to run at the maximum possible speed the host
+    /// machine supports.
+    #[arg(short, long)]
+    #[arg(value_enum, default_value_t = Speed::Full)]
+    speed: Speed,
 }
 
 fn main() -> Result<()> {
@@ -172,7 +191,14 @@ fn main() -> Result<()> {
 
     // Create 4 MiHz clock to sync emulator
     let divider = 0x100;
-    let mut clk = Clock::with_freq(FREQ / divider);
+    let freq = match args.speed {
+        Speed::Half => FREQ / 2,
+        Speed::Full => FREQ,
+        Speed::Double => 2 * FREQ,
+        Speed::Triple => 3 * FREQ,
+        Speed::Max => divider, // special case
+    };
+    let mut clk = Clock::with_freq(freq / divider);
 
     // Initialize timer, counters
     let mut now = std::time::Instant::now();
@@ -182,7 +208,7 @@ fn main() -> Result<()> {
     // Emulation loop
     while win.is_open() {
         // Synchronize with wall-clock
-        if cycles % divider == 0 {
+        if cycles % divider == 0 && args.speed != Speed::Max {
             // Delay until clock is ready
             clk.next();
         }
