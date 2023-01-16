@@ -28,6 +28,8 @@ pub enum Speed {
     Full,
     Double,
     Triple,
+    #[clap(skip)]
+    Custom(f64),
     Max,
 }
 
@@ -196,6 +198,7 @@ fn main() -> Result<()> {
         Speed::Full => FREQ,
         Speed::Double => 2 * FREQ,
         Speed::Triple => 3 * FREQ,
+        Speed::Custom(scale) => (scale * f64::from(FREQ)) as u32,
         Speed::Max => divider, // special case
     };
     let mut clk = Clock::with_freq(freq / divider);
