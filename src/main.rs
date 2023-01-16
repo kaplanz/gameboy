@@ -11,7 +11,7 @@ use gameboy::dmg::cart::{Cartridge, Header};
 use gameboy::dmg::{BootRom, Button, GameBoy, Screen, SCREEN};
 use log::{debug, info};
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
-use remus::Machine;
+use remus::{Clock, Machine};
 
 use crate::palette::Palette;
 
@@ -170,13 +170,23 @@ fn main() -> Result<()> {
     )
     .unwrap();
 
+    // Create 4 MiHz clock to sync emulator
+    let divider = 0x100;
+    let mut clk = Clock::with_freq(FREQ / divider);
+
     // Initialize timer, counters
     let mut now = std::time::Instant::now();
     let mut cycles = 0;
     let mut fps = 0;
 
-    // TODO: Run emulator on a 4 MiHz clock
+    // Emulation loop
     while win.is_open() {
+        // Synchronize with wall-clock
+        if cycles % divider == 0 {
+            // Delay until clock is ready
+            clk.next();
+        }
+
         // Perform a single cycle
         emu.cycle();
 
