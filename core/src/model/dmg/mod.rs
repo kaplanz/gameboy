@@ -11,11 +11,13 @@ use remus::{Block, Device, Machine};
 use self::mem::Memory;
 use crate::dev::Unmapped;
 use crate::emu::{screen, Emulator};
+use crate::hw::audio::Audio;
 use crate::hw::cart::Cartridge;
 use crate::hw::cpu::{Processor, Sm83 as Cpu};
 use crate::hw::joypad::Joypad;
 use crate::hw::pic::Pic;
 use crate::hw::ppu::Ppu;
+use crate::hw::serial::Serial;
 use crate::hw::timer::Timer;
 
 mod boot;
@@ -44,14 +46,16 @@ pub const SCREEN: screen::Info = screen::Info {
 pub struct GameBoy {
     // State
     clock: usize,
-    // Peripherals
-    cart: Option<Cartridge>,
-    // Devices
+    // Processors
     cpu: Cpu,
-    joypad: Joypad,
     ppu: Ppu,
+    // Peripherals
+    audio: Audio,
+    joypad: Joypad,
+    serial: Serial,
     timer: Timer,
-    // Motherboard
+    // Memory
+    cart: Option<Cartridge>,
     mem: Memory,
     // Connections
     bus: Rc<RefCell<Bus>>,
@@ -141,16 +145,20 @@ impl GameBoy {
 impl Block for GameBoy {
     #[rustfmt::skip]
     fn reset(&mut self) {
-        // Reset devices
+        // Reset processors
+        self.cpu.reset();
+        self.ppu.reset();
+
+        // Reset peripherals
+        self.audio.reset();
+        self.joypad.reset();
+        self.serial.reset();
+        self.timer.reset();
+
+        // Reset memory
         if let Some(cart) = &mut self.cart {
             cart.reset();
         }
-        self.cpu.reset();
-        self.joypad.reset();
-        self.ppu.reset();
-        self.timer.reset();
-
-        // Reset motherboard
         self.mem.reset();
 
         // Reset connections
@@ -162,15 +170,23 @@ impl Block for GameBoy {
 impl Board for GameBoy {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
-        // Connect boards
+        // Connect processors
+        self.cpu.connect(bus);
+        self.ppu.connect(bus);
+
+        // Connect peripherals
+        self.audio.connect(bus);
+        self.joypad.connect(bus);
+        self.serial.connect(bus);
+        self.timer.connect(bus);
+
+        // Connect memory
         if let Some(cart) = &self.cart {
             cart.connect(bus);
         }
-        self.cpu.connect(bus);
-        self.joypad.connect(bus);
-        self.ppu.connect(bus);
-        self.timer.connect(bus);
         self.mem.connect(bus);
+
+        // Connect connections
         self.pic.borrow().connect(bus);
 
         // Map devices on bus  // ┌──────┬────────┬────────────┬─────┐
@@ -184,15 +200,15 @@ impl Board for GameBoy {
         // mapped by `mem`     // │ e000 │ 7680 B │ Echo       │ RAM │
         // mapped by `ppu`     // │ fe00 │  160 B │ Object     │ RAM │
                                // │ fea0 │   96 B │ Unmapped   │ --- │
-        // mapped by `con`     // │ ff00 │    1 B │ Controller │ Reg │
-        // mapped by `com`     // │ ff01 │    2 B │ Serial     │ Reg │
+        // mapped by `joypad`  // │ ff00 │    1 B │ Controller │ Reg │
+        // mapped by `serial`  // │ ff01 │    2 B │ Serial     │ Reg │
                                // │ ff03 │    1 B │ Unmapped   │ --- │
         // mapped by `timer`   // │ ff04 │    4 B │ Timer      │ Reg │
                                // │ ff08 │    7 B │ Unmapped   │ --- │
         // mapped by `pic`     // │ ff0f │    1 B │ Interrupt  │ Reg │
-        // mapped by `sound`   // │ ff10 │   23 B │ Sound      │ N/A │
+        // mapped by `audio`   // │ ff10 │   23 B │ Audio      │ N/A │
                                // │ ff27 │    9 B │ Unmapped   │ --- │
-        // mapped by `sound`   // │ ff30 │   16 B │ Waveform   │ N/A │
+        // mapped by `audio`   // │ ff30 │   16 B │ Waveform   │ N/A │
         // mapped by `ppu`     // │ ff40 │   12 B │ LCD        │ PPU │
                                // │ ff4c │    4 B │ Unmapped   │ --- │
         // mapped by `mem`     // │ ff50 │    1 B │ Boot       │ Reg │
@@ -385,7 +401,11 @@ mod tests {
         (0x0000..=0x0000) // NOTE: Only bits 0x30 are writable
             .map(|addr| emu.joypad.con().borrow().read(addr))
             .for_each(|byte| assert_eq!(byte, 0xef));
-        // TODO: Serial
+        // Serial
+        (0xff01..=0xff03).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x07));
+        (0x0000..=0x0002)
+            .map(|_| 0x07) // FIXME
+            .for_each(|byte| assert_eq!(byte, 0x07));
         // Timer
         (0xff04..=0xff07).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x08));
         (0x0000..=0x0003)
@@ -397,8 +417,16 @@ mod tests {
         (0x0000..=0x0000)
             .map(|addr| emu.pic.borrow().active().borrow().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x09));
-        // TODO: Sound
-        // TODO: Waveform RAM
+        // Audio
+        (0xff10..=0xff27).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x0a));
+        (0x0000..=0x0017)
+            .map(|_| 0x0a) // FIXME
+            .for_each(|byte| assert_eq!(byte, 0x0a));
+        // Waveform RAM
+        (0xff30..=0xff3f).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x0b));
+        (0x0000..=0x000f)
+            .map(|_| 0x0b) // FIXME
+            .for_each(|byte| assert_eq!(byte, 0x0b));
         // LCD
         (0xff40..=0xff4b).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x0c));
         (0x0000..=0x000b)
