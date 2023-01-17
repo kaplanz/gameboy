@@ -11,7 +11,7 @@ use remus::{Block, Device, Machine};
 use self::mem::Memory;
 use crate::dev::Unmapped;
 use crate::emu::{screen, Emulator};
-use crate::hw::audio::Audio;
+use crate::hw::apu::Apu;
 use crate::hw::cart::Cartridge;
 use crate::hw::cpu::{Processor, Sm83 as Cpu};
 use crate::hw::joypad::Joypad;
@@ -47,10 +47,10 @@ pub struct GameBoy {
     // State
     clock: usize,
     // Processors
+    apu: Apu,
     cpu: Cpu,
     ppu: Ppu,
     // Peripherals
-    audio: Audio,
     joypad: Joypad,
     serial: Serial,
     timer: Timer,
@@ -150,7 +150,7 @@ impl Block for GameBoy {
         self.ppu.reset();
 
         // Reset peripherals
-        self.audio.reset();
+        self.apu.reset();
         self.joypad.reset();
         self.serial.reset();
         self.timer.reset();
@@ -175,7 +175,7 @@ impl Board for GameBoy {
         self.ppu.connect(bus);
 
         // Connect peripherals
-        self.audio.connect(bus);
+        self.apu.connect(bus);
         self.joypad.connect(bus);
         self.serial.connect(bus);
         self.timer.connect(bus);
@@ -206,9 +206,9 @@ impl Board for GameBoy {
         // mapped by `timer`   // │ ff04 │    4 B │ Timer      │ Reg │
                                // │ ff08 │    7 B │ Unmapped   │ --- │
         // mapped by `pic`     // │ ff0f │    1 B │ Interrupt  │ Reg │
-        // mapped by `audio`   // │ ff10 │   23 B │ Audio      │ N/A │
+        // mapped by `apu`     // │ ff10 │   23 B │ Audio      │ APU │
                                // │ ff27 │    9 B │ Unmapped   │ --- │
-        // mapped by `audio`   // │ ff30 │   16 B │ Waveform   │ N/A │
+        // mapped by `apu`     // │ ff30 │   16 B │ Waveform   │ RAM │
         // mapped by `ppu`     // │ ff40 │   12 B │ LCD        │ PPU │
                                // │ ff4c │    4 B │ Unmapped   │ --- │
         // mapped by `mem`     // │ ff50 │    1 B │ Boot       │ Reg │

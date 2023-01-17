@@ -8,7 +8,7 @@
 
 pub mod cart;
 
-pub(crate) mod audio;
+pub(crate) mod apu;
 pub(crate) mod cpu;
 pub(crate) mod joypad;
 pub(crate) mod pic;
