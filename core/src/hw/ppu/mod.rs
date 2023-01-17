@@ -43,7 +43,7 @@ pub struct Ppu {
     // │   12 B │ Control  │ Reg │       │
     // └────────┴──────────┴─────┴───────┘
     ctl: Control,
-    // Devices
+    // Memory
     // ┌────────┬──────────┬─────┬───────┐
     // │  Size  │   Name   │ Dev │ Alias │
     // ├────────┼──────────┼─────┼───────┤
@@ -184,22 +184,22 @@ impl Ppu {
 
 impl Block for Ppu {
     fn reset(&mut self) {
-        // Reset LCD
-        self.lcd = Screen::default();
-
         // Reset mode
         self.mode = Mode::default();
 
-        // Reset memory
-        self.vram.borrow_mut().reset();
-        self.oam.borrow_mut().reset();
-
-        // Reset registers
+        // Reset control
         self.ctl.reset();
 
         // Reset DMA
         self.ctl.dma.borrow_mut().set_bus(self.bus.clone());
         self.ctl.dma.borrow_mut().set_oam(self.oam.clone());
+
+        // Reset memory
+        self.vram.borrow_mut().reset();
+        self.oam.borrow_mut().reset();
+
+        // Reset LCD
+        self.lcd = Screen::default();
     }
 }
 
@@ -209,7 +209,7 @@ impl Board for Ppu {
         // Connect boards
         self.ctl.connect(bus);
 
-        // Extract devices
+        // Extract memory
         let vram = self.vram();
         let oam  = self.oam();
 
@@ -241,7 +241,7 @@ impl Machine for Ppu {
 /// Control registers.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
-pub struct Control {
+struct Control {
     // ┌──────┬────────────────┬─────┬───────┐
     // │ Size │      Name      │ Dev │ Alias │
     // ├──────┼────────────────┼─────┼───────┤
