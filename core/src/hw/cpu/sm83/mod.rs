@@ -374,7 +374,7 @@ enum State {
 
 impl State {
     fn exec(mut self, cpu: &mut Cpu) -> Self {
-        // If we're State::Done, proceed to State::Fetch this cycle
+        // If we're `State::Done`, proceed to `State::Fetch` this cycle
         if let State::Done = self {
             // Log previous register state
             trace!("Registers:\n{}", cpu.regs);
@@ -389,19 +389,19 @@ impl State {
             if let Some(int) = int {
                 // Acknowledge the interrupt
                 cpu.pic.borrow_mut().ack(int);
-                // Skip State::Fetch
+                // Skip `State::Fetch`
                 let insn = Instruction::int(int);
                 debug!("0xXXXX: {insn}");
                 self = State::Execute(insn);
             }
             // ... or fetch next instruction
             else {
-                // Proceed to State::Fetch
+                // Proceed to `State::Fetch`
                 self = State::Fetch;
             }
         }
 
-        // If we're State::Fetch, proceed to State::Execute(_) this cycle
+        // If we're `State::Fetch,` proceed to `State::Execute(_)` this cycle
         if let State::Fetch = self {
             // Read the next instruction
             let pc = *cpu.regs.pc;
@@ -434,11 +434,11 @@ impl State {
                 cpu.ime = Ime::Enabled;
             }
 
-            // Proceed to State::Execute(_)
+            // Proceed to `State::Execute(_)`
             self = State::Execute(insn);
         }
 
-        // Run the current State::Execute(_)
+        // Run the current `State::Execute(_)`
         if let State::Execute(insn) = self {
             // Execute a cycle of the instruction
             let insn = insn.exec(cpu);
