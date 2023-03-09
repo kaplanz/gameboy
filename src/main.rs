@@ -17,7 +17,7 @@ use crate::palette::Palette;
 
 mod palette;
 
-/// Game Boy main clock frequency, set to 4.194304 Hz.
+/// Game Boy main clock frequency, set to 4,194,304 Hz.
 const FREQ: u32 = 0x0040_0000;
 
 /// Emulation speed modifier.
