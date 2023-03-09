@@ -95,20 +95,44 @@ fn main() -> Result<()> {
     // Parse args
     let args = Args::parse();
 
+    // Prepare the boot ROM
+    let boot = args
+        .boot
+        .map(|boot| -> Result<_> {
+            // Open boot ROM file
+            let mut f = File::open(&boot)
+                .with_context(|| format!("failed to open boot ROM: `{}`", boot.display()))?;
+            // Read boot ROM into a buffer
+            // NOTE: Boot ROM is exactly 256 bytes.
+            let mut buf = [0u8; 0x0100];
+            f.read_exact(&mut buf)
+                .with_context(|| format!("failed to read full boot ROM: `{}`", boot.display()))?;
+            info!(
+                "Read {} bytes from boot ROM: `{}`",
+                buf.len(),
+                boot.display(),
+            );
+
+            Ok(buf)
+        })
+        .transpose()?;
+    // Initialize the boot rom
+    let boot = boot.as_ref().map(BootRom::from);
+
     // Prepare the cartridge
     let cart = if let Some(path) = args.rom {
-        // Open ROM file
         let rom = {
+            // Open ROM file
             let f = File::open(&path)
                 .with_context(|| format!("failed to open ROM: `{}`", path.display()))?;
             // Read ROM into a buffer
-            let mut buf = Vec::new();
             // NOTE: Game Paks manufactured by Nintendo have a maximum 8 MiB ROM.
+            let mut buf = Vec::new();
             let read = f
                 .take(0x0080_0000)
                 .read_to_end(&mut buf)
                 .with_context(|| format!("failed to read ROM: `{}`", path.display()))?;
-            info!("Read {read} bytes from ROM");
+            info!("Read {read} bytes from ROM: `{}`", path.display());
 
             buf
         };
@@ -128,7 +152,7 @@ fn main() -> Result<()> {
             Cartridge::new(&rom)
                 .with_context(|| format!("failed to load cartridge: `{}`", path.display()))?
         };
-        info!("Loaded ROM:\n{}", cart.header());
+        info!("Loaded cartridge:\n{}", cart.header());
 
         cart
     } else {
@@ -140,28 +164,6 @@ fn main() -> Result<()> {
         title => title,
     }
     .to_string();
-
-    // Read the boot ROM
-    let boot = args
-        .boot
-        .map(|boot| -> Result<_> {
-            // Open boot ROM file
-            let f = File::open(&boot)
-                .with_context(|| format!("failed to open boot ROM: `{}`", boot.display()))?;
-            // Read ROM into a buffer
-            let mut buf = Vec::new();
-            // NOTE: Game Paks manufactured by Nintendo have a maximum 8 MiB ROM.
-            let read = f
-                .take(0x0100)
-                .read_to_end(&mut buf)
-                .with_context(|| format!("failed to read boot ROM: `{}`", boot.display()))?;
-            info!("Read {read} bytes from boot ROM");
-
-            Ok(buf)
-        })
-        .transpose()?;
-    // Initialize the boot rom
-    let boot = boot.as_deref().map(BootRom::try_from).transpose()?;
 
     // Create emulator instance
     let mut emu = if let Some(boot) = boot {
