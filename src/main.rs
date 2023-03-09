@@ -28,9 +28,9 @@ pub enum Speed {
     Full,
     Double,
     Triple,
-    #[clap(skip)]
-    Custom(f64),
     Max,
+    #[clap(skip)]
+    Custom(u32),
 }
 
 /// Game Boy emulator written in Rust.
@@ -194,14 +194,14 @@ fn main() -> Result<()> {
     .unwrap();
 
     // Create 4 MiHz clock to sync emulator
-    let divider = 0x100;
+    let divider = 0x100; // user a clock divider to sync
     let freq = match args.speed {
         Speed::Half => FREQ / 2,
         Speed::Full => FREQ,
         Speed::Double => 2 * FREQ,
         Speed::Triple => 3 * FREQ,
-        Speed::Custom(scale) => (scale * f64::from(FREQ)) as u32,
         Speed::Max => divider, // special case
+        Speed::Custom(freq) => freq,
     };
     let mut clk = Clock::with_freq(freq / divider);
 
