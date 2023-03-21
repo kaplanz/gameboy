@@ -9,7 +9,7 @@ use color_eyre::eyre::{Result, WrapErr};
 use gameboy::core::Emulator;
 use gameboy::dmg::cart::{Cartridge, Header};
 use gameboy::dmg::{BootRom, Button, GameBoy, Screen, SCREEN};
-use log::{debug, info};
+use log::{debug, info, warn};
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use remus::{Clock, Machine};
 
@@ -156,6 +156,7 @@ fn main() -> Result<()> {
 
         cart
     } else {
+        warn!("Missing cartridge; defaulting to blank");
         Cartridge::blank()
     };
     // Extract ROM title from cartridge
