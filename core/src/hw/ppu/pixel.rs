@@ -1,24 +1,15 @@
 use thiserror::Error;
 #[derive(Clone, Debug)]
 pub struct Pixel {
-    // FIXME: Remove `pub`s
     /// Color value.
     pub col: Color,
-    /// Color palette.
-    pub pal: Palette,
-    /// Background priority.
-    pub bgp: bool,
+    /// Pixel metadata.
+    pub meta: Meta,
 }
 
 impl Pixel {
-    #[must_use]
-    pub fn col(&self) -> Color {
-        self.col
-    }
-
-    #[must_use]
-    pub fn pal(&self) -> Palette {
-        self.pal
+    pub fn new(col: Color, meta: Meta) -> Self {
+        Self { col, meta }
     }
 
     #[allow(clippy::if_same_then_else)]
@@ -32,7 +23,7 @@ impl Pixel {
         // - If the BG-to-OBJ-Priority bit is 1 and the color number of the
         //   Background Pixel is anything other than 0, the Background Pixel is
         //   pushed to the LCD.
-        else if sprite.bgp && winbg.col != Color::C0 {
+        else if sprite.meta.bgp && winbg.col != Color::C0 {
             winbg
         }
         // - If none of the above conditions apply, the Sprite Pixel is pushed
@@ -75,6 +66,21 @@ impl TryFrom<u8> for Color {
             0b11 => Ok(Color::C3),
             _ => Err(Error::Color),
         }
+    }
+}
+
+/// Pixel metadata.
+#[derive(Clone, Debug)]
+pub struct Meta {
+    /// Color palette.
+    pub pal: Palette,
+    /// Background priority.
+    pub bgp: bool,
+}
+
+impl Meta {
+    pub fn new(pal: Palette, bgp: bool) -> Self {
+        Self { pal, bgp }
     }
 }
 

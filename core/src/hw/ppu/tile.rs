@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use super::pixel::{Palette, Pixel};
+use super::pixel::{Color, Palette};
 
 #[derive(Debug)]
 pub struct Tile {
@@ -11,7 +11,7 @@ pub struct Tile {
 impl Tile {
     #[allow(unused)]
     pub fn xflip(&mut self) {
-        self.rows.iter_mut().for_each(|row| row.reverse());
+        self.rows.iter_mut().for_each(Row::xflip);
     }
 
     #[allow(unused)]
@@ -21,10 +21,16 @@ impl Tile {
 }
 
 #[derive(Debug)]
-pub struct Row([Pixel; 8]);
+pub struct Row([Color; 8]);
+
+impl Row {
+    pub fn xflip(&mut self) {
+        self.reverse();
+    }
+}
 
 impl Deref for Row {
-    type Target = [Pixel; 8];
+    type Target = [Color; 8];
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -54,14 +60,9 @@ impl From<[u8; 2]> for Row {
             // rightmost.
             .rev()
             // Convert into pixels
-            .map(|col| Pixel {
-                col: col.try_into().unwrap(), // succeeds since values are 2-bit
-                // FIXME: Properly handle `pal`, `bgp`
-                pal: Palette::BgWin,
-                bgp: false,
-            })
+            .map(|col| col.try_into().unwrap()) // succeeds since values are 2-bit
             // Collect into an array of [Pixel; 8]
-            .collect::<Vec<Pixel>>()
+            .collect::<Vec<_>>()
             .try_into()
             .unwrap(); // this will succeed on any sane platform where there are
                        // 8 bits in a byte. We won't support whatever archaic
