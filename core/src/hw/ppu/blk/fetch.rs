@@ -14,10 +14,6 @@ pub struct Fetch {
 }
 
 impl Fetch {
-    pub fn set_xidx(&mut self, xidx: u8) {
-        self.xidx = xidx;
-    }
-
     #[must_use]
     pub fn stage(&self) -> &Stage {
         &self.stage
@@ -150,20 +146,33 @@ impl Stage {
         loc: Location,
         sprite: Option<Sprite>,
     ) -> Self {
-        use Location::{Background, Sprite, Window};
-
         match self {
             Stage::ReadTile => {
-                // Fetch the tile number index
-                let tidx = match loc {
-                    Background | Window => {
-                        // Calculate the tile number
-                        // NOTE: How this is calculated depends on the type of the tile
-                        //       being fetched.
-                        let tnum = fetch.tnum(ppu, loc);
-                        ppu.vram.borrow().read(tnum as usize)
+                // Fetch the tile number's index
+                let tidx = if let Some(obj) = sprite {
+                    // Check if the sprite is tall (8x16)
+                    let lcdc = **ppu.ctl.lcdc.borrow();
+                    let tall = Lcdc::ObjSize.get(lcdc);
+                    if tall {
+                        // Determine if we're fetching the top or bottom
+                        // tile of the tall sprite.
+                        let ly = **ppu.ctl.ly.borrow();
+                        let top = (obj.ypos..obj.ypos + 8).contains(&(ly + 16));
+                        if top ^ obj.yflip {
+                            obj.idx & 0b1111_1110
+                        } else {
+                            obj.idx | 0b0000_0001
+                        }
+                    } else {
+                        // Short (8x8) sprites only span a single tile
+                        obj.idx
                     }
-                    Sprite => fetch.xidx,
+                } else {
+                    // Calculate the tile number
+                    // NOTE: How this is calculated depends on the type of the tile
+                    //       being fetched.
+                    let tnum = fetch.tnum(ppu, loc);
+                    ppu.vram.borrow().read(tnum as usize)
                 };
 
                 // NOTE: We can calculate the tile data address in advance. This
