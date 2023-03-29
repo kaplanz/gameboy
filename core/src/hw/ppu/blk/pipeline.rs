@@ -11,7 +11,6 @@ pub struct Pipeline {
     xpos: u8,
     bgwin: Channel,
     sprite: Channel,
-    meta: Option<Sprite>,
 }
 
 impl Pipeline {
@@ -29,10 +28,7 @@ impl Pipeline {
         if self.sprite.fifo.len() < 8 {
             if let Some(obj) = objs.iter().find(|obj| obj.xpos == self.xpos + 8) {
                 // Configure and fetch the sprite
-                self.sprite.fetch.set_xidx(obj.idx);
                 self.sprite.fetch(ppu, Some(obj.clone()));
-                // Store the most current sprite's metadata
-                self.meta = Some(obj.clone());
 
                 // Return early (stall the Background fetch)
                 return;
@@ -79,10 +75,6 @@ impl Pipeline {
 
             // Now also pop the sprite FIFO
             if let Some(sprite) = self.sprite.fifo.pop() {
-                // Delete sprite metadata when the sprite FIFO is depleted
-                if self.sprite.fifo.is_empty() {
-                    self.meta = None;
-                }
                 // Blend the two pixels together
                 Pixel::blend(bgwin, sprite)
             } else {
