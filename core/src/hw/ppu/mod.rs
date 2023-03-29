@@ -10,7 +10,7 @@ use remus::{Block, Machine, SharedDevice};
 
 use self::dma::Dma;
 use self::exec::Mode;
-use self::pixel::{Color, Palette, Pixel};
+use self::pixel::{Palette, Pixel};
 use super::pic::{Interrupt, Pic};
 use crate::dmg::{Board, SCREEN};
 
@@ -22,7 +22,9 @@ mod screen;
 mod sprite;
 mod tile;
 
+pub use self::pixel::Color;
 pub use self::screen::Screen;
+pub use self::tile::{Row, Tile};
 
 pub type Vram = Ram<0x2000>;
 pub type Oam = Ram<0x00a0>;
@@ -58,6 +60,12 @@ pub struct Ppu {
 }
 
 impl Ppu {
+    /// Gets the internal memory state.
+    #[must_use]
+    pub fn mem(&self) -> Rc<RefCell<Vram>> {
+        self.vram.clone()
+    }
+
     /// Gets a shared reference to the PPU's video RAM.
     #[must_use]
     pub fn vram(&self) -> SharedDevice {

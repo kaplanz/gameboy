@@ -86,6 +86,7 @@ impl GameBoy {
         .setup()
     }
 
+    /// Loads a `Cartridge` into the `GameBoy`.
     pub fn load(&mut self, cart: Cartridge) {
         // Disconnect any connected cartridge from the bus
         let bus = &mut *self.bus.borrow_mut();
@@ -95,6 +96,24 @@ impl GameBoy {
         // Store and connect the supplied cartridge
         cart.connect(bus);
         self.cart = Some(cart);
+    }
+
+    /// Returns the VRAM's current state from the model.
+    ///
+    /// # Panics
+    ///
+    /// Cannot panic, as VRAM always has a fixed size.
+    #[must_use]
+    pub fn vram(&self) -> Box<[u8; 0x2000]> {
+        self.ppu
+            .mem()
+            .borrow()
+            .iter()
+            .copied()
+            .collect::<Vec<_>>()
+            .into_boxed_slice()
+            .try_into()
+            .unwrap()
     }
 
     fn setup(mut self) -> Self {

@@ -1,26 +1,50 @@
 use std::ops::{Deref, DerefMut};
 
-use super::pixel::{Color, Palette};
+use super::pixel::Color;
 
-#[derive(Debug)]
-pub struct Tile {
-    pub rows: [Row; 8],
-    pub pal: Palette,
-}
+#[derive(Clone, Debug)]
+pub struct Tile([Row; 8]);
 
 impl Tile {
     #[allow(unused)]
     pub fn xflip(&mut self) {
-        self.rows.iter_mut().for_each(Row::xflip);
+        self.0.iter_mut().for_each(Row::xflip);
     }
 
     #[allow(unused)]
     pub fn yflip(&mut self) {
-        self.rows.reverse();
+        self.0.reverse();
     }
 }
 
-#[derive(Debug)]
+impl Deref for Tile {
+    type Target = [Row; 8];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<[Row; 8]> for Tile {
+    fn from(rows: [Row; 8]) -> Self {
+        Self(rows)
+    }
+}
+
+impl From<[u8; 16]> for Tile {
+    fn from(bytes: [u8; 16]) -> Self {
+        let rows: [Row; 8] = bytes
+            .chunks_exact(2)
+            .map(|row| <[_; 2]>::try_from(row).unwrap())
+            .map(Row::from)
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+        rows.into()
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Row([Color; 8]);
 
 impl Row {
