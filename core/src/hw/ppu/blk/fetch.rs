@@ -1,6 +1,7 @@
 use remus::Device;
 
-use super::fifo::{Fifo, TileRow};
+use super::fifo::Fifo;
+use super::tile::Row;
 use super::{Lcdc, Ppu};
 
 #[derive(Debug, Default)]
@@ -35,7 +36,7 @@ impl Fetch {
 
         // For sprites, we don't need this
         if loc == Sprite {
-            return -1i16 as u16;
+            unreachable!("Sprites have no tile number")
         }
 
         // Extract scanline info
@@ -135,7 +136,7 @@ pub enum Stage {
         addr: u16,
         data0: u8,
     },
-    Push(TileRow),
+    Push(Row),
 }
 
 impl Stage {
@@ -176,7 +177,7 @@ impl Stage {
                 let data1 = ppu.vram.borrow().read(addr as usize);
 
                 // Decode pixels from data
-                let row = TileRow::from([data0, data1]);
+                let row = Row::from([data0, data1]);
 
                 // Progress to next stage
                 Stage::Push(row)

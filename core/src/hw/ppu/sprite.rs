@@ -1,6 +1,6 @@
 use super::pixel::Palette;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Sprite {
     // Byte 0 - Y Position
     pub ypos: u8,
@@ -27,13 +27,13 @@ impl From<[u8; 4]> for Sprite {
             ypos:     bytes[0],
             xpos:     bytes[1],
             idx:      bytes[2],
-            priority: bytes[3] & 0x08 != 0,
-            yflip:    bytes[3] & 0x07 != 0,
-            xflip:    bytes[3] & 0x06 != 0,
+            priority: bytes[3] & 0b1000_0000 != 0,
+            yflip:    bytes[3] & 0b0100_0000 != 0,
+            xflip:    bytes[3] & 0b0010_0000 != 0,
             palette: [
-                Palette::Obj0,
-                Palette::Obj1,
-            ][usize::from(bytes[3] & 0x05 != 0)],
+                Palette::Obp0,
+                Palette::Obp1,
+            ][usize::from(bytes[3] & 0b0001_0000 != 0)],
         }
     }
 }

@@ -20,6 +20,7 @@ mod exec;
 mod pixel;
 mod screen;
 mod sprite;
+mod tile;
 
 pub use self::screen::Screen;
 
@@ -175,8 +176,8 @@ impl Ppu {
     fn color(&self, pixel: &Pixel) -> Color {
         let pal = **match pixel.pal() {
             Palette::BgWin => self.ctl.bgp.borrow(),
-            Palette::Obj0 => self.ctl.obp0.borrow(),
-            Palette::Obj1 => self.ctl.obp1.borrow(),
+            Palette::Obp0 => self.ctl.obp0.borrow(),
+            Palette::Obp1 => self.ctl.obp1.borrow(),
         };
         pixel.col().recolor(pal)
     }
