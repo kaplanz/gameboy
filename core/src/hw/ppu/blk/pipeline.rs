@@ -11,6 +11,7 @@ pub struct Pipeline {
     xpos: u8,
     bgwin: Channel,
     sprite: Channel,
+    meta: Option<Sprite>,
 }
 
 impl Pipeline {
@@ -30,23 +31,27 @@ impl Pipeline {
                 // Configure and fetch the sprite
                 self.sprite.fetch.set_xidx(obj.idx);
                 self.sprite.fetch(ppu);
+                // Store the most current sprite's metadata
+                self.meta = Some(obj.clone());
 
                 // Return early (stall the Background fetch)
                 return;
             }
         }
 
-        // Cycle the background fetcher
-        self.bgwin.fetch(ppu);
+        // Cycle the background fetcher when its empty
+        if self.bgwin.fifo.is_empty() {
+            self.bgwin.fetch(ppu);
+        }
 
         // Restart background fetcher when:
         // - The first "warm-up" fetch completes
         let done_warmup = !self.ready && matches!(self.bgwin.fetch.stage(), Stage::Push(_));
         if done_warmup {
-            // Configure channels
+            // Configure channels (only run once)
             self.bgwin.loc = Location::Background;
             self.sprite.loc = Location::Sprite;
-            // We're not ready for real fetches
+            // We're now ready for real fetches
             self.ready = true;
         }
         // - The window border is encountered
@@ -74,6 +79,10 @@ impl Pipeline {
 
             // Now also pop the sprite FIFO
             if let Some(sprite) = self.sprite.fifo.pop() {
+                // Delete sprite metadata when the sprite FIFO is depleted
+                if self.sprite.fifo.is_empty() {
+                    self.meta = None;
+                }
                 // Blend the two pixels together
                 Pixel::blend(bgwin, sprite)
             } else {

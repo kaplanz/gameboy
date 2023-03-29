@@ -1,4 +1,4 @@
-use super::{pixel, sprite, Lcdc, Ppu};
+use super::{pixel, sprite, tile, Lcdc, Ppu};
 
 mod fetch;
 mod fifo;

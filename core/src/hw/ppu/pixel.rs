@@ -1,5 +1,5 @@
 use thiserror::Error;
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Pixel {
     // FIXME: Remove `pub`s
     /// Color value.
@@ -81,8 +81,8 @@ impl TryFrom<u8> for Color {
 #[derive(Copy, Clone, Debug)]
 pub enum Palette {
     BgWin,
-    Obj0,
-    Obj1,
+    Obp0,
+    Obp1,
 }
 
 #[derive(Debug, Error)]
