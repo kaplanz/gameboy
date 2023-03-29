@@ -22,35 +22,32 @@ impl Scan {
         let ht = [8, 16][usize::from(size)];
         let ly = **ppu.ctl.ly.borrow();
 
-        // Scan should only run when the following conditions are met:
-        // - Sprites are enabled
-        // - It is currently an "on" dot (as Scan runs at 2 MiHz)
-        // - Fewer than 10 sprites have been found per scanline
-        if Lcdc::ObjEnable.get(lcdc) && ppu.dot % 2 == 0 && self.objs.len() < 10 {
-            // Checking an OAM entry takes 4 dots, due to the read. This means
-            // we need another clock divider to disable during the "off" dot.
-            if ppu.dot % 4 == 0 {
+        // Scanning a single entry takes 2 dots
+        if ppu.dot % 2 == 0 {
+            // Sprites should only be scanned when the following are met:
+            // - Objects are are enabled
+            // - Fewer than 10 sprites have been found per scanline
+            if Lcdc::ObjEnable.get(lcdc) && self.objs.len() < 10 {
                 // Scan the current OAM entry
                 let mut obj = [0; 4];
-                for byte in &mut obj {
-                    *byte = ppu.oam.borrow().read(self.idx);
-                    self.idx += 1;
+                for (off, byte) in obj.iter_mut().enumerate() {
+                    *byte = ppu.oam.borrow().read(self.idx + off);
                 }
                 // Parse entry into Sprite
                 let obj = Sprite::from(obj);
                 // Add sprite to be rendered if it's on the current scanline
-                if obj.xpos != 0 && (obj.ypos..=obj.ypos + ht).contains(&(ly + 16)) {
+                if obj.xpos != 0 && (obj.ypos..obj.ypos + ht).contains(&(ly + 16)) {
                     self.objs.push(obj);
                 }
             }
-        } else {
-            // Regardless, move to next OAM entry
-            // NOTE: We're incrementing by 2 here, since the PPU has a 16-bit
-            //       wide bus to the OAM, allowing it to access one word (2
-            //       bytes) per dot.
-            // TODO: citation needed
-            self.idx += 2;
         }
+
+        // Move to next OAM entry
+        // NOTE: We're incrementing by 2 here since the PPU has a 16-bit wide
+        //       bus to the OAM, allowing it to access one word (2 bytes) per
+        //       dot.
+        // XXX: citation needed
+        self.idx += 2;
 
         // Scan lasts 80 dots, then progresses to Draw
         ppu.dot += 1;
