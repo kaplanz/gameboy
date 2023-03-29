@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use super::pixel::Pixel;
+use super::pixel::{Meta, Pixel};
 use super::tile::Row;
 
 #[derive(Debug, Default)]
@@ -11,12 +11,13 @@ impl Fifo {
         self.0.clear();
     }
 
-    pub fn try_append(&mut self, row: Row) -> Result<(), Row> {
+    pub fn try_append(&mut self, row: Row, meta: Meta) -> Result<(), (Row, Meta)> {
         if self.0.is_empty() {
-            self.0.extend(row.iter().cloned());
+            self.0
+                .extend(row.iter().map(|col| Pixel::new(*col, meta.clone())));
             Ok(())
         } else {
-            Err(row)
+            Err((row, meta))
         }
     }
 

@@ -1,6 +1,8 @@
 use remus::Device;
 
 use super::fifo::Fifo;
+use super::pixel::{Meta, Palette};
+use super::sprite::Sprite;
 use super::tile::Row;
 use super::{Lcdc, Ppu};
 
@@ -21,13 +23,13 @@ impl Fetch {
         &self.stage
     }
 
-    pub fn exec(&mut self, fifo: &mut Fifo, ppu: &mut Ppu, loc: Location) {
+    pub fn exec(&mut self, fifo: &mut Fifo, ppu: &mut Ppu, loc: Location, sprite: Option<Sprite>) {
         // NOTE: Some stages of the fetch take 2 dots to complete, so only
         //       execute when we're not already busy from the current stage.
         if self.busy {
             self.busy = false;
         } else {
-            self.stage = std::mem::take(&mut self.stage).exec(self, fifo, ppu, loc);
+            self.stage = std::mem::take(&mut self.stage).exec(self, fifo, ppu, loc, sprite);
         }
     }
 
@@ -136,11 +138,18 @@ pub enum Stage {
         addr: u16,
         data0: u8,
     },
-    Push(Row),
+    Push(Row, Meta),
 }
 
 impl Stage {
-    fn exec(self, fetch: &mut Fetch, fifo: &mut Fifo, ppu: &mut Ppu, loc: Location) -> Self {
+    fn exec(
+        self,
+        fetch: &mut Fetch,
+        fifo: &mut Fifo,
+        ppu: &mut Ppu,
+        loc: Location,
+        sprite: Option<Sprite>,
+    ) -> Self {
         use Location::{Background, Sprite, Window};
 
         match self {
@@ -164,7 +173,14 @@ impl Stage {
                 // Progress to next stage
                 Stage::ReadData0 { addr }
             }
-            Stage::ReadData0 { addr } => {
+            Stage::ReadData0 { mut addr } => {
+                // Perform y-flip on sprites
+                if let Some(obj) = sprite {
+                    if obj.yflip {
+                        super::sprite::Sprite::yflip(&mut addr);
+                    }
+                }
+
                 // Fetch the first byte of the tile
                 let data0 = ppu.vram.borrow().read(addr as usize);
 
@@ -178,22 +194,33 @@ impl Stage {
 
                 // Decode pixels from data
                 let row = Row::from([data0, data1]);
+                let meta = match sprite {
+                    Some(obj) => obj.meta(),
+                    None => Meta::new(Palette::BgWin, false), // Background/Window
+                };
 
                 // Progress to next stage
-                Stage::Push(row)
+                Stage::Push(row, meta)
             }
-            Stage::Push(row) => {
+            Stage::Push(mut row, meta) => {
+                // Perform x-flip on sprites
+                if let Some(obj) = sprite {
+                    if obj.xflip {
+                        row.xflip();
+                    }
+                }
+
                 // Attempt to push row to FIFO
-                match fifo.try_append(row) {
+                match fifo.try_append(row, meta) {
                     Ok(()) => {
                         // Move fetch to next x-position
                         fetch.xidx += 1;
                         // Restart fetch
                         Stage::ReadTile
                     }
-                    Err(row) => {
+                    Err((row, meta)) => {
                         // Try again next cycle
-                        Stage::Push(row)
+                        Stage::Push(row, meta)
                     }
                 }
             }

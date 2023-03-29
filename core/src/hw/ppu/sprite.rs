@@ -1,4 +1,4 @@
-use super::pixel::Palette;
+use super::pixel::{Meta, Palette};
 
 #[derive(Clone, Debug)]
 pub struct Sprite {
@@ -14,10 +14,20 @@ pub struct Sprite {
     // - X: x-flip
     // - Y: y-flip
     // - Z: priority
-    pub priority: bool,
-    pub yflip: bool,
+    pub pal: Palette,
     pub xflip: bool,
-    pub palette: Palette,
+    pub yflip: bool,
+    pub bgp: bool,
+}
+
+impl Sprite {
+    pub fn meta(&self) -> Meta {
+        Meta::new(self.pal, self.bgp)
+    }
+
+    pub fn yflip(addr: &mut u16) {
+        *addr ^= 0b0000_1110;
+    }
 }
 
 impl From<[u8; 4]> for Sprite {
@@ -27,10 +37,10 @@ impl From<[u8; 4]> for Sprite {
             ypos:     bytes[0],
             xpos:     bytes[1],
             idx:      bytes[2],
-            priority: bytes[3] & 0b1000_0000 != 0,
+            bgp: bytes[3] & 0b1000_0000 != 0,
             yflip:    bytes[3] & 0b0100_0000 != 0,
             xflip:    bytes[3] & 0b0010_0000 != 0,
-            palette: [
+            pal: [
                 Palette::Obp0,
                 Palette::Obp1,
             ][usize::from(bytes[3] & 0b0001_0000 != 0)],

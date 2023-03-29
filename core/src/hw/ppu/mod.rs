@@ -174,12 +174,12 @@ impl Ppu {
 
     /// Color a pixel according to the ppu's palette configuration.
     fn color(&self, pixel: &Pixel) -> Color {
-        let pal = **match pixel.pal() {
+        let pal = **match pixel.meta.pal {
             Palette::BgWin => self.ctl.bgp.borrow(),
             Palette::Obp0 => self.ctl.obp0.borrow(),
             Palette::Obp1 => self.ctl.obp1.borrow(),
         };
-        pixel.col().recolor(pal)
+        pixel.col.recolor(pal)
     }
 }
 

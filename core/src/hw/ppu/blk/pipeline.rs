@@ -30,7 +30,7 @@ impl Pipeline {
             if let Some(obj) = objs.iter().find(|obj| obj.xpos == self.xpos + 8) {
                 // Configure and fetch the sprite
                 self.sprite.fetch.set_xidx(obj.idx);
-                self.sprite.fetch(ppu);
+                self.sprite.fetch(ppu, Some(obj.clone()));
                 // Store the most current sprite's metadata
                 self.meta = Some(obj.clone());
 
@@ -41,12 +41,12 @@ impl Pipeline {
 
         // Cycle the background fetcher when its empty
         if self.bgwin.fifo.is_empty() {
-            self.bgwin.fetch(ppu);
+            self.bgwin.fetch(ppu, None);
         }
 
         // Restart background fetcher when:
         // - The first "warm-up" fetch completes
-        let done_warmup = !self.ready && matches!(self.bgwin.fetch.stage(), Stage::Push(_));
+        let done_warmup = !self.ready && matches!(self.bgwin.fetch.stage(), Stage::Push(_, _));
         if done_warmup {
             // Configure channels (only run once)
             self.bgwin.loc = Location::Background;
@@ -140,7 +140,7 @@ struct Channel {
 }
 
 impl Channel {
-    pub fn fetch(&mut self, ppu: &mut Ppu) {
-        self.fetch.exec(&mut self.fifo, ppu, self.loc);
+    pub fn fetch(&mut self, ppu: &mut Ppu, sprite: Option<Sprite>) {
+        self.fetch.exec(&mut self.fifo, ppu, self.loc, sprite);
     }
 }
