@@ -9,6 +9,8 @@ use color_eyre::eyre::{Result, WrapErr};
 use gameboy::core::Emulator;
 use gameboy::dmg::cart::{Cartridge, Header};
 use gameboy::dmg::{BootRom, Button, GameBoy, Screen, SCREEN};
+use gameboy_core::Tile;
+use itertools::Itertools;
 use log::{debug, info, warn};
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use remus::{Clock, Machine};
@@ -34,6 +36,7 @@ pub enum Speed {
 }
 
 /// Game Boy emulator written in Rust.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Parser)]
 #[command(author, version, about)]
 struct Args {
@@ -68,6 +71,13 @@ struct Args {
     /// header without actually performing any emulation.
     #[arg(short = 'x', long)]
     exit: bool,
+
+    /// Launch in debug mode.
+    ///
+    /// Causes the emulator to run in debug mode. Provided debugging options
+    /// include rendering the PPU's video RAM contents.
+    #[arg(long)]
+    debug: bool,
 
     /// DMG-01 color palette.
     ///
@@ -180,19 +190,43 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    // Define window options
+    let opts = WindowOptions {
+        resize: true,
+        scale: Scale::X2,
+        scale_mode: ScaleMode::AspectRatioStretch,
+        ..Default::default()
+    };
+    // Create debug mode windows
+    let mut debug = if args.debug {
+        Some(Debug {
+            tdat: Window::new("Tile Data", 16 * 8, 24 * 8, opts).unwrap(),
+            map1: Window::new(
+                "Tile Map 1",
+                32 * 8,
+                32 * 8,
+                WindowOptions {
+                    scale: Scale::X1,
+                    ..opts
+                },
+            )
+            .unwrap(),
+            map2: Window::new(
+                "Tile Map 2",
+                32 * 8,
+                32 * 8,
+                WindowOptions {
+                    scale: Scale::X1,
+                    ..opts
+                },
+            )
+            .unwrap(),
+        })
+    } else {
+        None
+    };
     // Create a framebuffer window
-    let mut win = Window::new(
-        &title,
-        SCREEN.width,
-        SCREEN.height,
-        WindowOptions {
-            resize: true,
-            scale: Scale::X2,
-            scale_mode: ScaleMode::AspectRatioStretch,
-            ..Default::default()
-        },
-    )
-    .unwrap();
+    let mut win = Window::new(&title, SCREEN.width, SCREEN.height, opts).unwrap();
 
     // Create 4 MiHz clock to sync emulator
     let divider = 0x100; // user a clock divider to sync
@@ -213,43 +247,6 @@ fn main() -> Result<()> {
 
     // Emulation loop
     while win.is_open() {
-        // Synchronize with wall-clock
-        if cycles % divider == 0 && args.speed != Speed::Max {
-            // Delay until clock is ready
-            clk.next();
-        }
-
-        // Perform a single cycle
-        emu.cycle();
-
-        // Redraw the screen (if needed)
-        emu.redraw(|screen: &Screen| {
-            let buf: Vec<_> = screen
-                .iter()
-                .map(|&pix| args.pal[pix as usize].into())
-                .collect();
-            win.update_with_buffer(&buf, SCREEN.width, SCREEN.height)
-                .unwrap();
-            fps += 1; // update frames drawn
-        });
-
-        // Send joypad input (sampled every 64 cycles)
-        if cycles % 0x40 == 0 {
-            #[rustfmt::skip]
-            let keys: Vec<_> = win.get_keys().into_iter().filter_map(|key| match key {
-                Key::Z     => Some(Button::A),
-                Key::X     => Some(Button::B),
-                Key::Space => Some(Button::Select),
-                Key::Enter => Some(Button::Start),
-                Key::Right => Some(Button::Right),
-                Key::Left  => Some(Button::Left),
-                Key::Up    => Some(Button::Up),
-                Key::Down  => Some(Button::Down),
-                _ => None
-            }).collect();
-            emu.send(&keys);
-        }
-
         // Calculate wall-clock frequency
         if now.elapsed().as_secs() > 0 {
             // Print cycle stats
@@ -266,9 +263,105 @@ fn main() -> Result<()> {
             fps = 0;
         }
 
+        // Synchronize with wall-clock
+        if cycles % divider == 0 && args.speed != Speed::Max {
+            // Delay until clock is ready
+            clk.next();
+        }
+
+        // Perform a single cycle
+        emu.cycle();
+
+        // Redraw the screen (if needed)
+        emu.redraw(|screen: &Screen| {
+            let buf = screen
+                .iter()
+                .map(|&pix| args.pal[pix as usize].into())
+                .collect_vec();
+            win.update_with_buffer(&buf, SCREEN.width, SCREEN.height)
+                .unwrap();
+            fps += 1; // update frames drawn
+        });
+
+        // Update the debug screens every second
+        if let Some(debug) = &mut debug {
+            if cycles == 0 {
+                // Retrieve a copy of the VRAM
+                let vram = emu.vram();
+                // Extract tile data, maps
+                let tiles = vram[..0x1800]
+                    .chunks_exact(16) // 16-bytes per tile
+                    .map(|tile| Tile::from(<[_; 16]>::try_from(tile).unwrap()))
+                    .collect_vec();
+                let map1 = vram[0x1800..0x1c00]
+                    .iter()
+                    .map(|&tnum| tiles[tnum as usize].clone())
+                    .collect_vec();
+                let map2 = vram[0x1c00..0x2000]
+                    .iter()
+                    .map(|&tnum| tiles[tnum as usize].clone())
+                    .collect_vec();
+                // Define rendering function
+                let render = |tiles: &[Tile], width: usize| -> Vec<u32> {
+                    tiles
+                        .chunks_exact(width) // tiles per row
+                        .flat_map(|row| {
+                            row.iter()
+                                .flat_map(|tile| tile.iter().enumerate())
+                                .sorted_by_key(|row| row.0)
+                                .map(|(_, row)| row)
+                                .collect_vec()
+                        })
+                        .flat_map(|row| row.into_iter().map(|pix| args.pal[pix as usize].into()))
+                        .collect_vec()
+                };
+                // Render tile data
+                let tdat = render(tiles.as_slice(), 16);
+                debug
+                    .tdat
+                    .update_with_buffer(&tdat, 16 * 8, 24 * 8)
+                    .unwrap();
+                // Render tile maps
+                let map1 = render(map1.as_slice(), 32);
+                debug
+                    .map1
+                    .update_with_buffer(&map1, 32 * 8, 32 * 8)
+                    .unwrap();
+                let map2 = render(map2.as_slice(), 32);
+                debug
+                    .map2
+                    .update_with_buffer(&map2, 32 * 8, 32 * 8)
+                    .unwrap();
+            }
+        }
+
+        // Send joypad input (sampled every 64 cycles)
+        if cycles % 0x40 == 0 {
+            #[rustfmt::skip]
+            let keys = win.get_keys().into_iter().filter_map(|key| match key {
+                Key::Z     => Some(Button::A),
+                Key::X     => Some(Button::B),
+                Key::Space => Some(Button::Select),
+                Key::Enter => Some(Button::Start),
+                Key::Right => Some(Button::Right),
+                Key::Left  => Some(Button::Left),
+                Key::Up    => Some(Button::Up),
+                Key::Down  => Some(Button::Down),
+                _ => None
+            }).collect_vec();
+            emu.send(&keys);
+        }
+
         // Clock another cycle
         cycles += 1;
     }
 
     Ok(())
+}
+
+#[derive(Debug)]
+struct Debug {
+    tdat: Window,
+    map1: Window,
+    map2: Window,
 }

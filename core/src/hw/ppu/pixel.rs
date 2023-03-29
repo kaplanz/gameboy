@@ -50,7 +50,7 @@ pub enum Color {
 }
 
 impl Color {
-    pub fn recolor(self, pal: u8) -> Self {
+    pub(crate) fn recolor(self, pal: u8) -> Self {
         Self::try_from((pal >> (2 * (self as u8))) & 0b11).unwrap()
     }
 }

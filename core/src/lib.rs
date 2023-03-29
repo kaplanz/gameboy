@@ -11,4 +11,5 @@ mod hw;
 mod model;
 
 pub use self::emu::Emulator;
+pub use self::hw::ppu::{Color, Row, Tile};
 pub use self::model::dmg;
