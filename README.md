@@ -34,10 +34,10 @@ A cycle accurate emulator of the original 1989 Nintendo Game Boy.
   - [x] Timed memory accesses
 - [x] Implement interrupts
 - [x] Implement joypad
-- [ ] Implement PPU
+- [x] Implement PPU
   - [x] Background drawing
-  - [ ] Window drawing
-  - [ ] Sprite rendering
+  - [x] Window drawing
+  - [x] Sprite rendering
 - [ ] Implement timer
   - [x] Functional correctness
   - [ ] Implementation accuracy
@@ -49,6 +49,7 @@ A cycle accurate emulator of the original 1989 Nintendo Game Boy.
 - [x] Basic app
   - [x] Screen pixel buffer window
   - [x] Configurable palette
+  - [x] Static debug mode
 - [ ] Full GUI
   - [ ] Dynamic cycle speed modifiers
   - [ ] Re-mappable joypad
