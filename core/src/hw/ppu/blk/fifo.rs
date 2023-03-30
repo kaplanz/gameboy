@@ -13,8 +13,7 @@ impl Fifo {
 
     pub fn try_append(&mut self, row: Row, meta: Meta) -> Result<(), (Row, Meta)> {
         if self.0.is_empty() {
-            self.0
-                .extend(row.iter().map(|col| Pixel::new(*col, meta.clone())));
+            self.0.extend(row.iter().map(|col| Pixel::new(*col, meta)));
             Ok(())
         } else {
             Err((row, meta))

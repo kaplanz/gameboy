@@ -9,8 +9,6 @@ use color_eyre::eyre::{Result, WrapErr};
 use gameboy::core::Emulator;
 use gameboy::dmg::cart::{Cartridge, Header};
 use gameboy::dmg::{BootRom, Button, GameBoy, Screen, SCREEN};
-use gameboy_core::Tile;
-use itertools::Itertools;
 use log::{debug, info, warn};
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use remus::{Clock, Machine};
@@ -276,8 +274,8 @@ fn main() -> Result<()> {
         emu.redraw(|screen: &Screen| {
             let buf = screen
                 .iter()
-                .map(|&pix| args.pal[pix as usize].into())
-                .collect_vec();
+                .map(|&col| args.pal[col as usize].into())
+                .collect::<Vec<_>>();
             win.update_with_buffer(&buf, SCREEN.width, SCREEN.height)
                 .unwrap();
             fps += 1; // update frames drawn
@@ -286,48 +284,22 @@ fn main() -> Result<()> {
         // Update the debug screens every second
         if let Some(debug) = &mut debug {
             if cycles == 0 {
-                // Retrieve a copy of the VRAM
-                let vram = emu.vram();
-                // Extract tile data, maps
-                let tiles = vram[..0x1800]
-                    .chunks_exact(16) // 16-bytes per tile
-                    .map(|tile| Tile::from(<[_; 16]>::try_from(tile).unwrap()))
-                    .collect_vec();
-                let map1 = vram[0x1800..0x1c00]
-                    .iter()
-                    .map(|&tnum| tiles[tnum as usize].clone())
-                    .collect_vec();
-                let map2 = vram[0x1c00..0x2000]
-                    .iter()
-                    .map(|&tnum| tiles[tnum as usize].clone())
-                    .collect_vec();
-                // Define rendering function
-                let render = |tiles: &[Tile], width: usize| -> Vec<u32> {
-                    tiles
-                        .chunks_exact(width) // tiles per row
-                        .flat_map(|row| {
-                            row.iter()
-                                .flat_map(|tile| tile.iter().enumerate())
-                                .sorted_by_key(|row| row.0)
-                                .map(|(_, row)| row)
-                                .collect_vec()
-                        })
-                        .flat_map(|row| row.into_iter().map(|pix| args.pal[pix as usize].into()))
-                        .collect_vec()
-                };
-                // Render tile data
-                let tdat = render(tiles.as_slice(), 16);
+                // Probe for debug info
+                let info = emu.debug();
+
+                // Extract PPU state
+                let tdat = info.ppu.tdat.map(|col| args.pal[col as usize].into());
+                let map1 = info.ppu.map1.map(|col| args.pal[col as usize].into());
+                let map2 = info.ppu.map2.map(|col| args.pal[col as usize].into());
+                // Display PPU state
                 debug
                     .tdat
                     .update_with_buffer(&tdat, 16 * 8, 24 * 8)
                     .unwrap();
-                // Render tile maps
-                let map1 = render(map1.as_slice(), 32);
                 debug
                     .map1
                     .update_with_buffer(&map1, 32 * 8, 32 * 8)
                     .unwrap();
-                let map2 = render(map2.as_slice(), 32);
                 debug
                     .map2
                     .update_with_buffer(&map2, 32 * 8, 32 * 8)
@@ -348,7 +320,7 @@ fn main() -> Result<()> {
                 Key::Up    => Some(Button::Up),
                 Key::Down  => Some(Button::Down),
                 _ => None
-            }).collect_vec();
+            }).collect::<Vec<_>>();
             emu.send(&keys);
         }
 
