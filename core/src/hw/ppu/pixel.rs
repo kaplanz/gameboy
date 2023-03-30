@@ -70,18 +70,12 @@ impl TryFrom<u8> for Color {
 }
 
 /// Pixel metadata.
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Meta {
     /// Color palette.
     pub pal: Palette,
     /// Background priority.
     pub bgp: bool,
-}
-
-impl Meta {
-    pub fn new(pal: Palette, bgp: bool) -> Self {
-        Self { pal, bgp }
-    }
 }
 
 #[derive(Copy, Clone, Debug)]

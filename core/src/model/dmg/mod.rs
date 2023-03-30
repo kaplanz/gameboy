@@ -16,7 +16,7 @@ use crate::hw::cart::Cartridge;
 use crate::hw::cpu::{Processor, Sm83 as Cpu};
 use crate::hw::joypad::Joypad;
 use crate::hw::pic::Pic;
-use crate::hw::ppu::Ppu;
+use crate::hw::ppu::{self, Ppu};
 use crate::hw::serial::Serial;
 use crate::hw::timer::Timer;
 
@@ -104,16 +104,10 @@ impl GameBoy {
     ///
     /// Cannot panic, as VRAM always has a fixed size.
     #[must_use]
-    pub fn vram(&self) -> Box<[u8; 0x2000]> {
-        self.ppu
-            .mem()
-            .borrow()
-            .iter()
-            .copied()
-            .collect::<Vec<_>>()
-            .into_boxed_slice()
-            .try_into()
-            .unwrap()
+    pub fn debug(&self) -> Debug {
+        Debug {
+            ppu: self.ppu.debug(),
+        }
     }
 
     fn setup(mut self) -> Self {
@@ -290,6 +284,11 @@ impl Machine for GameBoy {
         // Keep track of cycles executed
         self.clock = self.clock.wrapping_add(1);
     }
+}
+
+#[derive(Debug)]
+pub struct Debug {
+    pub ppu: ppu::Debug,
 }
 
 #[cfg(test)]

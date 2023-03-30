@@ -313,7 +313,6 @@ dependencies = [
  "env_logger",
  "gameboy-core",
  "hexicolor",
- "itertools",
  "log",
  "minifb",
  "remus",
@@ -325,6 +324,7 @@ name = "gameboy-core"
 version = "0.1.0"
 dependencies = [
  "enumflag",
+ "itertools",
  "log",
  "remus",
  "thiserror",

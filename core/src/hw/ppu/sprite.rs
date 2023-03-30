@@ -21,8 +21,8 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn meta(&self) -> Meta {
-        Meta::new(self.pal, self.bgp)
+    pub fn meta(Self { pal, bgp, .. }: Self) -> Meta {
+        Meta { pal, bgp }
     }
 
     pub fn yflip(addr: &mut u16) {

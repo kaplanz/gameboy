@@ -3,6 +3,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use itertools::Itertools;
 use remus::bus::Bus;
 use remus::mem::Ram;
 use remus::reg::Register;
@@ -10,7 +11,8 @@ use remus::{Block, Machine, SharedDevice};
 
 use self::dma::Dma;
 use self::exec::Mode;
-use self::pixel::{Palette, Pixel};
+use self::pixel::{Meta, Palette, Pixel};
+use self::tile::Tile;
 use super::pic::{Interrupt, Pic};
 use crate::dmg::{Board, SCREEN};
 
@@ -24,7 +26,6 @@ mod tile;
 
 pub use self::pixel::Color;
 pub use self::screen::Screen;
-pub use self::tile::{Row, Tile};
 
 pub type Vram = Ram<0x2000>;
 pub type Oam = Ram<0x00a0>;
@@ -60,10 +61,10 @@ pub struct Ppu {
 }
 
 impl Ppu {
-    /// Gets the internal memory state.
+    /// Gets internal debug info.
     #[must_use]
-    pub fn mem(&self) -> Rc<RefCell<Vram>> {
-        self.vram.clone()
+    pub fn debug(&self) -> Debug {
+        Debug::new(self)
     }
 
     /// Gets a shared reference to the PPU's video RAM.
@@ -337,5 +338,68 @@ enum Lcdc {
 impl Lcdc {
     pub fn get(self, lcdc: u8) -> bool {
         lcdc & self as u8 != 0
+    }
+}
+
+#[derive(Debug)]
+pub struct Debug {
+    pub tdat: [Color; 0x06000],
+    pub map1: [Color; 0x10000],
+    pub map2: [Color; 0x10000],
+}
+
+impl Debug {
+    /// Constructs `Debug` info for the PPU.
+    fn new(ppu: &Ppu) -> Self {
+        // Retrieve a copy of the VRAM
+        let vram = ppu.vram.borrow();
+
+        // Extract tile data, maps
+        let tdat: [_; 0x180] = vram[..0x1800]
+            .chunks_exact(16) // 16-bytes per tile
+            .map(|tile| Tile::from(<[_; 16]>::try_from(tile).unwrap()))
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+        let map1: [_; 0x400] = vram[0x1800..0x1c00]
+            .iter()
+            .map(|&tnum| tdat[tnum as usize].clone())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+        let map2: [_; 0x400] = vram[0x1c00..0x2000]
+            .iter()
+            .map(|&tnum| tdat[tnum as usize].clone())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        // Render tile data, maps
+        let meta = Meta {
+            pal: Palette::BgWin,
+            bgp: false,
+        }; // prepare metadata
+        let tdat = Self::render(&tdat, ppu, meta, 16); // 16x24 tiles
+        let map1 = Self::render(&map1, ppu, meta, 32); // 32x32 tiles
+        let map2 = Self::render(&map2, ppu, meta, 32); // 32x32 tiles
+
+        // Return debug info
+        Self { tdat, map1, map2 }
+    }
+
+    /// Renders tile data as pixels
+    fn render<const N: usize>(tdat: &[Tile], ppu: &Ppu, meta: Meta, width: usize) -> [Color; N] {
+        tdat.chunks_exact(width) // tiles per row
+            .flat_map(|row| {
+                row.iter()
+                    .flat_map(|tile| tile.iter().enumerate())
+                    .sorted_by_key(|row| row.0)
+                    .map(|(_, row)| row)
+                    .collect_vec()
+            })
+            .flat_map(|row| row.into_iter().map(|col| ppu.color(&Pixel::new(col, meta))))
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap()
     }
 }

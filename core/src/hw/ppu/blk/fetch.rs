@@ -204,8 +204,11 @@ impl Stage {
                 // Decode pixels from data
                 let row = Row::from([data0, data1]);
                 let meta = match sprite {
-                    Some(obj) => obj.meta(),
-                    None => Meta::new(Palette::BgWin, false), // Background/Window
+                    Some(obj) => Sprite::meta(obj),
+                    None => Meta {
+                        pal: Palette::BgWin,
+                        bgp: false,
+                    }, // Background/Window
                 };
 
                 // Progress to next stage
