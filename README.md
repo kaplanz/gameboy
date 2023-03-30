@@ -54,3 +54,31 @@ A cycle accurate emulator of the original 1989 Nintendo Game Boy.
   - [ ] Dynamic cycle speed modifiers
   - [ ] Re-mappable joypad
   - [ ] Interactive debug menu
+
+## References
+
+This project would not have been possible without the countless Game Boy
+community resources. Of these, I would like to specifically recognize the [Game
+Boy Development community][gbdev].
+
+See the list of resources (in no particular order) used as research for this
+project below.
+
+### Documentation
+
+- [Pan Docs][pandocs]
+- [The Gameboy Emulator Development Guide][gbedg]
+- [Game Boy Architecture by Rodrigo Copetti][gbarch]
+
+### ROMs
+
+- [Test ROMs by Shay Green (a.k.a. Blargg)][blargg]
+- [dmg-acid2 by Matt Curie][dmg-acid2]
+
+<!-- Reference-style links -->
+[blargg]:    https://github.com/retrio/gb-test-roms
+[dmg-acid2]: https://github.com/mattcurrie/dmg-acid2
+[gbarch]:    https://www.copetti.org/writings/consoles/game-boy
+[gbdev]:     https://gbdev.io
+[gbedg]:     http://pixelbits.16-b.it/GBEDG/
+[pandocs]:   https://gbdev.io/pandocs/

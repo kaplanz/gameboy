@@ -46,7 +46,7 @@ impl Scan {
         // NOTE: We're incrementing by 2 here since the PPU has a 16-bit wide
         //       bus to the OAM, allowing it to access one word (2 bytes) per
         //       dot.
-        // XXX: citation needed
+        // <https://raw.githubusercontent.com/ISSOtm/pandocs/rendering-internals/src/Rendering_Internals.md>
         self.idx += 2;
 
         // Scan lasts 80 dots, then progresses to Draw
