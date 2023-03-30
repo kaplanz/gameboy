@@ -12,4 +12,4 @@ enumflag = { version = "0.1.0", path = "../crates/enumflag" }
 itertools = "0.10.5"
 log = "0.4.17"
 remus = { git = "https://github.com/kaplanz/remus.git" }
-thiserror = "1.0.38"
+thiserror = "1.0.40"
