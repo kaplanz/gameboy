@@ -351,6 +351,10 @@ pub struct Debug {
 impl Debug {
     /// Constructs `Debug` info for the PPU.
     fn new(ppu: &Ppu) -> Self {
+        // Extract scanline info
+        let lcdc = **ppu.ctl.lcdc.borrow();
+        let bgwin = Lcdc::BgMap.get(lcdc);
+
         // Retrieve a copy of the VRAM
         let vram = ppu.vram.borrow();
 
@@ -363,13 +367,13 @@ impl Debug {
             .unwrap();
         let map1: [_; 0x400] = vram[0x1800..0x1c00]
             .iter()
-            .map(|&tnum| tdat[tnum as usize].clone())
+            .map(|&tnum| tdat[Self::tidx(tnum, bgwin)].clone())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
         let map2: [_; 0x400] = vram[0x1c00..0x2000]
             .iter()
-            .map(|&tnum| tdat[tnum as usize].clone())
+            .map(|&tnum| tdat[Self::tidx(tnum, bgwin)].clone())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
@@ -385,6 +389,18 @@ impl Debug {
 
         // Return debug info
         Self { tdat, map1, map2 }
+    }
+
+    /// Fetches the appropriate tile address from an tile number
+    #[allow(clippy::identity_op)]
+    pub fn tidx(tnum: u8, bgwin: bool) -> usize {
+        // Calculate tile index offset
+        let addr = if bgwin {
+            (0x1000i16 + (16 * tnum as i8 as i16)) as usize
+        } else {
+            (0x0000u16 + (16 * tnum as u16)) as usize
+        };
+        addr / 16
     }
 
     /// Renders tile data as pixels
