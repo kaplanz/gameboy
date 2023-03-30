@@ -29,7 +29,7 @@ impl Fetch {
         }
     }
 
-    fn tnum(&self, ppu: &Ppu, loc: Location) -> u16 {
+    fn cpos(&self, ppu: &Ppu, loc: Location) -> u16 {
         use Location::{Background, Sprite, Window};
 
         // For sprites, we don't need this
@@ -76,7 +76,7 @@ impl Fetch {
         base + offset
     }
 
-    fn addr(ppu: &Ppu, loc: Location, tidx: u8) -> u16 {
+    fn addr(ppu: &Ppu, loc: Location, tnum: u8) -> u16 {
         use Location::{Background, Sprite, Window};
 
         // Extract scanline info
@@ -95,19 +95,19 @@ impl Fetch {
             Background | Window => {
                 if Lcdc::BgWinData.get(lcdc) {
                     let base = 0x0000;
-                    let tidx = tidx as u16;
+                    let tidx = tnum as u16;
                     let offset = (16 * tidx) + (2 * yoff) as u16;
                     base + offset
                 } else {
                     let base = 0x1000;
-                    let tidx = tidx as i8 as i16;
+                    let tidx = tnum as i8 as i16;
                     let offset = (16 * tidx) + (2 * yoff) as i16;
                     (base + offset) as u16
                 }
             }
             Sprite => {
                 let base = 0x0000;
-                let tidx = tidx as u16;
+                let tidx = tnum as u16;
                 let offset = (16 * tidx) + (2 * yoff) as u16;
                 base + offset
             }
@@ -149,7 +149,7 @@ impl Stage {
         match self {
             Stage::ReadTile => {
                 // Fetch the tile number's index
-                let tidx = if let Some(obj) = sprite {
+                let tnum = if let Some(obj) = sprite {
                     // Check if the sprite is tall (8x16)
                     let lcdc = **ppu.ctl.lcdc.borrow();
                     let tall = Lcdc::ObjSize.get(lcdc);
@@ -171,13 +171,13 @@ impl Stage {
                     // Calculate the tile number
                     // NOTE: How this is calculated depends on the type of the tile
                     //       being fetched.
-                    let tnum = fetch.tnum(ppu, loc);
-                    ppu.vram.borrow().read(tnum as usize)
+                    let cpos = fetch.cpos(ppu, loc);
+                    ppu.vram.borrow().read(cpos as usize)
                 };
 
                 // NOTE: We can calculate the tile data address in advance. This
                 //       is more efficient than doing so once each data read.
-                let addr = Fetch::addr(ppu, loc, tidx);
+                let addr = Fetch::addr(ppu, loc, tnum);
 
                 // Progress to next stage
                 Stage::ReadData0 { addr }
