@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum, ValueHint};
 use color_eyre::eyre::{ensure, Result, WrapErr};
-use gameboy::dmg::cart::{Cartridge, Header};
+use gameboy::dmg::cart::Cartridge;
 use gameboy::dmg::{BootRom, GameBoy, SCREEN};
 use log::{info, warn};
 use minifb::{Scale, ScaleMode, Window, WindowOptions};
@@ -51,6 +51,7 @@ struct Args {
     /// Verifies that both the header and global checksums match the data within
     /// the ROM.
     #[arg(short, long = "check")]
+    #[arg(conflicts_with("force"))]
     chk: bool,
 
     /// Force cartridge construction.
@@ -204,19 +205,22 @@ fn cart(path: Option<PathBuf>, chk: bool, force: bool) -> Result<Cartridge> {
             buf
         };
 
-        // Check ROM integrity
-        if chk {
-            Header::check(&rom).with_context(|| "failed ROM integrity check")?;
-            info!("Passed ROM integrity check");
-        }
-
         // Initialize the cartridge
         let cart = if force {
-            // Force cartridge from ROM
+            // Force cartridge creation from ROM
             Cartridge::unchecked(&rom)
+        } else if chk {
+            // Check ROM integrity and create a cartridge
+            let cart = Cartridge::checked(&rom)
+                // exit on failure
+                .with_context(|| format!("failed ROM integrity check: `{}`", path.display()))?;
+            info!("Passed ROM integrity check");
+
+            cart
         } else {
-            // Exit on cartridge failure
+            // Attempt to create a cartridge
             Cartridge::new(&rom)
+                // exit on failure
                 .with_context(|| format!("failed to load cartridge: `{}`", path.display()))?
         };
         info!("Loaded cartridge:\n{}", cart.header());

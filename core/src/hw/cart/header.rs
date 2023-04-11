@@ -41,7 +41,7 @@ pub struct Header {
 impl Header {
     /// Constructs a blank `Header`
     #[must_use]
-    pub fn blank() -> Self {
+    pub(super) fn blank() -> Self {
         Self {
             logo: false,
             title: "Missing".to_string(),
@@ -66,7 +66,7 @@ impl Header {
     /// # Errors
     ///
     /// Returns an error when the cartridge header is invalid.
-    pub fn check(rom: &[u8]) -> Result<(), Error> {
+    pub(super) fn check(rom: &[u8]) -> Result<(), Error> {
         // Extract the header bytes
         let header: &[u8; 0x50] = rom
             .get(0x100..0x150)
