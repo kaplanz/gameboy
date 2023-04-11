@@ -13,7 +13,7 @@
 use std::cmp::Ordering;
 use std::iter;
 
-use log::{debug, error, info, trace};
+use log::{debug, info, trace, warn};
 use remus::bus::Bus;
 use remus::dev::Null;
 use remus::mem::{Ram, Rom};
@@ -49,6 +49,22 @@ impl Cartridge {
     pub fn new(rom: &[u8]) -> Result<Self, Error> {
         // Parse cartridge header
         let header = Header::try_from(rom)?;
+        debug!("Header:\n{header}");
+
+        // Construct memory bank controller
+        let mbc = Self::mbc(&header, rom)?;
+
+        Ok(Self { header, mbc })
+    }
+
+    /// Constructs a new `Cartridge` explicitly checking the entire header.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the cartridge header contained an error.
+    pub fn checked(rom: &[u8]) -> Result<Self, Error> {
+        // Check then parse cartridge header
+        let header = Header::check(rom).and_then(|_| Header::try_from(rom))?;
         debug!("Header:\n{header}");
 
         // Construct memory bank controller
@@ -118,15 +134,17 @@ impl Cartridge {
             let read = rom.len();
             match read.cmp(&header.romsz) {
                 Ordering::Less => {
-                    error!(
-                        "Initialized {read} bytes; remaining {diff} bytes uninitialized",
+                    warn!(
+                        "Initialized {init} bytes; remaining {diff} bytes uninitialized",
+                        init = read,
                         diff = header.romsz - read
                     );
                 }
                 Ordering::Equal => info!("Initialized {read} bytes"),
                 Ordering::Greater => {
-                    error!(
-                        "Initialized {read} bytes; remaining {diff} bytes truncated",
+                    warn!(
+                        "Initialized {init} bytes; remaining {diff} bytes truncated",
+                        init = header.romsz,
                         diff = read - header.romsz
                     );
                 }
