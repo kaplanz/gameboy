@@ -3,7 +3,7 @@ use std::io::Read;
 use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum, ValueHint};
-use color_eyre::eyre::{Result, WrapErr};
+use color_eyre::eyre::{ensure, Result, WrapErr};
 use gameboy::dmg::cart::{Cartridge, Header};
 use gameboy::dmg::{BootRom, GameBoy, SCREEN};
 use log::{info, warn};
@@ -37,6 +37,7 @@ pub enum Speed {
 #[command(author, version, about)]
 struct Args {
     /// Cartridge ROM image file.
+    #[arg(required_unless_present("force"))]
     #[arg(value_hint = ValueHint::FilePath)]
     rom: Option<PathBuf>,
 
@@ -222,6 +223,7 @@ fn cart(path: Option<PathBuf>, chk: bool, force: bool) -> Result<Cartridge> {
 
         Ok(cart)
     } else {
+        ensure!(force, "missing cartridge");
         warn!("Missing cartridge; defaulting to blank");
         Ok(Cartridge::blank())
     }
