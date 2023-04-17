@@ -2534,6 +2534,8 @@ pub mod stop {
         assert!(insn.opcode == 0x10, "Illegal instruction.");
 
         // Execute STOP
+        // <https://gbdev.io/pandocs/imgs/gb_stop.png>
+        #[cfg(debug_assertions)]
         todo!("implement this mess of an instruction");
 
         // Finish
