@@ -61,6 +61,15 @@ struct Args {
     #[arg(short, long)]
     force: bool,
 
+    /// Logging level.
+    ///
+    /// A comma-separated list of logging directives, parsed using `env_logger`.
+    /// Note that these filters are parsed after `RUST_LOG`.
+    #[arg(short, long)]
+    #[arg(default_value = "info")]
+    #[arg(env = "RUST_LOG")]
+    log: String,
+
     /// Exit after loading cartridge.
     ///
     /// Instead of entering the main emulation loop, return immediately after
@@ -98,10 +107,10 @@ struct Args {
 fn main() -> Result<()> {
     // Install panic and error report handlers
     color_eyre::install()?;
-    // Initialize logger
-    env_logger::init();
     // Parse args
     let args = Args::parse();
+    // Initialize logger
+    env_logger::builder().parse_filters(&args.log).init();
 
     // Read the boot ROM
     let boot = boot(args.boot)?;
