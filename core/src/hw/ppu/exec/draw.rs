@@ -1,8 +1,9 @@
 use std::fmt::Display;
 
 use super::blk::Pipeline;
+use super::scan::Scan;
 use super::sprite::Sprite;
-use super::{Mode, Ppu, Scan, SCREEN};
+use super::{Mode, Ppu, SCREEN};
 
 #[derive(Debug, Default)]
 pub struct Draw {
