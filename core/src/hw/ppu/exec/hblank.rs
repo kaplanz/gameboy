@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
 use super::draw::Draw;
-use super::vblank::VBlank;
 use super::{Interrupt, Mode, Ppu, SCREEN};
 
 #[derive(Debug, Default)]
@@ -29,7 +28,7 @@ impl HBlank {
             } else {
                 // Reset internal window line counter
                 ppu.winln = 0;
-                Mode::VBlank(VBlank::default())
+                Mode::VBlank(self.into())
             }
         }
     }
