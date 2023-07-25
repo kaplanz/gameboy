@@ -66,7 +66,9 @@ impl GameBoy {
     /// Constructs a new `GameBoy`.
     ///
     /// The returned instance will be fully set-up for emulation to begin
-    /// without further prior setup.
+    /// without further setup.
+    ///
+    /// Note that [`Cartridge`]s must be manually loaded with [`Self::load`].
     #[must_use]
     pub fn new() -> Self {
         Self::default().setup().boot()
@@ -75,7 +77,9 @@ impl GameBoy {
     /// Constructs a new `GameBoy` using the provided boot ROM.
     ///
     /// The returned instance will be fully set-up for emulation to begin
-    /// without further prior setup.
+    /// without further setup.
+    ///
+    /// Note that [`Cartridge`]s must be manually loaded with [`Self::load`].
     #[must_use]
     pub fn with(boot: BootRom) -> Self {
         let mem = Memory::with(boot);
@@ -86,7 +90,10 @@ impl GameBoy {
         .setup()
     }
 
-    /// Loads a `Cartridge` into the `GameBoy`.
+    /// Loads a game [`Cartridge`] into the `GameBoy`
+    ///
+    /// If a cartridge has already been loaded, it will be disconnected and
+    /// replaced.
     pub fn load(&mut self, cart: Cartridge) {
         // Disconnect any connected cartridge from the bus
         let bus = &mut *self.bus.borrow_mut();
