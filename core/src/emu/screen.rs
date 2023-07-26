@@ -2,14 +2,14 @@
 
 use std::fmt::Debug;
 
-/// Screen info.
+/// Specified screen dimensions.
 #[derive(Debug)]
-pub struct Info {
+pub struct Spec {
     pub width: usize,
     pub height: usize,
 }
 
-impl Info {
+impl Spec {
     pub const fn depth(&self) -> usize {
         self.width.saturating_mul(self.height)
     }

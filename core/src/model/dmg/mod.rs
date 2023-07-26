@@ -35,8 +35,8 @@ pub use crate::hw::cart;
 pub use crate::hw::joypad::Button;
 pub use crate::hw::ppu::Screen;
 
-/// Screen info.
-pub const SCREEN: screen::Info = screen::Info {
+/// DMG-01 screen specification.
+pub const SCREEN: screen::Spec = screen::Spec {
     width: 160,
     height: 144,
 };
@@ -293,6 +293,7 @@ impl Machine for GameBoy {
     }
 }
 
+/// Debug information.
 #[derive(Debug)]
 pub struct Debug {
     pub ppu: ppu::Debug,
