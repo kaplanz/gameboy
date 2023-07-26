@@ -1,16 +1,19 @@
 use std::fmt::Display;
 
 use super::hblank::HBlank;
-use super::{Mode, Ppu};
+use super::{Mode, Ppu, SCREEN};
 
 #[derive(Debug, Default)]
 pub struct VBlank;
 
 impl VBlank {
+    /// Number of lines for which `VBlank` runs.
+    pub const LINES: usize = 10;
+
     pub fn exec(self, ppu: &mut Ppu) -> Mode {
         // VBlank lasts for 456 dots per scanline
         ppu.dot += 1;
-        if ppu.dot < 456 {
+        if ppu.dot < HBlank::DOTS {
             Mode::VBlank(self)
         } else {
             // Extract scanline info
@@ -20,7 +23,7 @@ impl VBlank {
             ppu.dot = 0;
 
             // VBlank lasts for scanlines 144..154
-            if *ly < 154 {
+            if (*ly as usize) < SCREEN.height + Self::LINES {
                 Mode::VBlank(self)
             } else {
                 // Reset scanline

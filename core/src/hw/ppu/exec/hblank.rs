@@ -7,27 +7,32 @@ use super::{Interrupt, Mode, Ppu, SCREEN};
 pub struct HBlank;
 
 impl HBlank {
+    /// Maximum dot within the scanline for which `HBlank` runs.
+    pub const DOTS: usize = 456;
+
     pub fn exec(self, ppu: &mut Ppu) -> Mode {
         // HBlank lasts until the 456th dot
         ppu.dot += 1;
-        if ppu.dot < 456 {
+        if ppu.dot < Self::DOTS {
             Mode::HBlank(self)
         } else {
             // Extract scanline info
             let ly = &mut **ppu.ctl.ly.borrow_mut();
-            // Increment scanline at the 456th dot, and reset dot-clock
+            // Increment scanline and reset dot-clock
             *ly += 1;
             ppu.dot = 0;
 
             // Schedule VBlank interrupt
             ppu.pic.borrow_mut().req(Interrupt::VBlank);
 
-            // Either begin next scanline, or enter VBlank
-            if *ly < u8::try_from(SCREEN.height).unwrap() {
+            // Determine next mode
+            if (*ly as usize) < SCREEN.height {
+                // Begin next scanline
                 Mode::Scan(self.into())
             } else {
                 // Reset internal window line counter
                 ppu.winln = 0;
+                // Enter VBlank
                 Mode::VBlank(self.into())
             }
         }
