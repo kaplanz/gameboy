@@ -5,7 +5,7 @@ use log::{debug, trace};
 use remus::bus::Bus;
 use remus::{Block, Device, Machine};
 
-use super::Oam;
+use super::{Oam, SCREEN};
 
 /// Direct memory access.
 #[derive(Debug, Default)]
@@ -69,9 +69,7 @@ impl Machine for Dma {
         // Write this byte
         self.oam.borrow_mut().write(*idx as usize, data);
         // Increment the address
-        self.idx = match *idx + 1 {
-            160 => None,
-            idx => Some(idx),
-        };
+        let idx = *idx + 1;
+        self.idx = ((idx as usize) < SCREEN.width).then_some(idx);
     }
 }
