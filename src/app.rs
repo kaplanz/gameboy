@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::{BufWriter, Write};
+
 use gameboy::core::Emulator;
 use gameboy::dmg::{Button, GameBoy, Screen, SCREEN};
 use log::debug;
@@ -20,6 +23,7 @@ pub struct App {
     pub emu: GameBoy,
     pub win: Window,
     pub debug: Option<Debug>,
+    pub doctor: Option<Doctor>,
 }
 
 impl App {
@@ -29,6 +33,7 @@ impl App {
             mut emu,
             mut win,
             mut debug,
+            mut doctor,
         } = self;
         let title = opts.title;
 
@@ -48,6 +53,11 @@ impl App {
         let mut now = std::time::Instant::now();
         let mut cycles = 0;
         let mut fps = 0;
+
+        // Enable doctor when used
+        if doctor.is_some() {
+            emu.doctor.enable();
+        }
 
         // Emulation loop
         while win.is_open() {
@@ -113,6 +123,15 @@ impl App {
                 }
             }
 
+            // Log doctor entries
+            if let Some(doctor) = &mut doctor {
+                if let Some(entries) = emu.doctor.checkup() {
+                    if !entries.is_empty() {
+                        writeln!(doctor.log, "{entries}").unwrap();
+                    }
+                }
+            }
+
             // Send joypad input (sampled every 64 cycles)
             if cycles % 0x40 == 0 {
                 #[rustfmt::skip]
@@ -145,7 +164,7 @@ pub struct Debug {
 
 impl Debug {
     pub fn new(opts: WindowOptions) -> Self {
-        Debug {
+        Self {
             tdat: Window::new("Tile Data", 16 * 8, 24 * 8, opts).unwrap(),
             map1: Window::new(
                 "Tile Map 1",
@@ -167,6 +186,19 @@ impl Debug {
                 },
             )
             .unwrap(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Doctor {
+    log: BufWriter<File>,
+}
+
+impl Doctor {
+    pub fn new(log: File) -> Self {
+        Self {
+            log: BufWriter::new(log),
         }
     }
 }

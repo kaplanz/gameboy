@@ -9,7 +9,7 @@ use gameboy::dmg::{BootRom, GameBoy, SCREEN};
 use log::{info, warn};
 use minifb::{Scale, ScaleMode, Window, WindowOptions};
 
-use crate::app::{App, Opts};
+use crate::app::{App, Doctor, Opts};
 use crate::pal::Palette;
 
 mod app;
@@ -86,6 +86,14 @@ struct Args {
     #[arg(long)]
     debug: bool,
 
+    /// Doctor logfile path.
+    ///
+    /// Enables logging at the provided path of the emulator's state after every
+    /// instruction in the format used by Gameboy Doctor.
+    #[arg(long)]
+    #[arg(value_hint = ValueHint::FilePath)]
+    doctor: Option<PathBuf>,
+
     /// DMG-01 color palette.
     ///
     /// Defines the 2-bit color palette for the DMG-01 Game Boy model. The
@@ -153,6 +161,9 @@ fn main() -> Result<()> {
         None
     };
 
+    // Open doctor logfile
+    let doctor = args.doctor.map(File::create).transpose()?.map(Doctor::new);
+
     // Prepare app, options
     let Args { pal, speed, .. } = args;
     let opts = Opts { title, pal, speed };
@@ -161,6 +172,7 @@ fn main() -> Result<()> {
         emu,
         win,
         debug,
+        doctor,
     };
 
     // Run the app

@@ -3,7 +3,7 @@
 //! Model for the CPU core present on the Sharp LR35902.
 
 use std::cell::RefCell;
-use std::fmt::{Debug, Display};
+use std::fmt::{Debug, Display, Write};
 use std::rc::Rc;
 
 use enumflag::Enumflag;
@@ -107,6 +107,36 @@ impl Cpu {
         self.bus.borrow_mut().write(*sp as usize, word[1]);
         *sp = sp.wrapping_sub(1);
         self.bus.borrow_mut().write(*sp as usize, word[0]);
+    }
+
+    /// Prepares an introspective view of the state.
+    pub fn doctor(&self) -> Option<String> {
+        // Check if we're ready for the next doctor entry
+        if let State::Execute(_) = self.state {
+            None
+        } else {
+            let mut s = String::new();
+            let _ = write!(&mut s, "A:{:02X} ", *self.regs.a);
+            let _ = write!(&mut s, "F:{:02X} ", *self.regs.f);
+            let _ = write!(&mut s, "B:{:02X} ", *self.regs.b);
+            let _ = write!(&mut s, "C:{:02X} ", *self.regs.c);
+            let _ = write!(&mut s, "D:{:02X} ", *self.regs.d);
+            let _ = write!(&mut s, "E:{:02X} ", *self.regs.e);
+            let _ = write!(&mut s, "H:{:02X} ", *self.regs.h);
+            let _ = write!(&mut s, "L:{:02X} ", *self.regs.l);
+            let _ = write!(&mut s, "SP:{:04X} ", *self.regs.sp);
+            let _ = write!(&mut s, "PC:{:04X} ", *self.regs.pc);
+            let pcmem: Vec<_> = (0..4)
+                .map(|i| *self.regs.pc + i)
+                .map(|addr| self.read(addr))
+                .collect();
+            let _ = write!(
+                &mut s,
+                "PCMEM:{:02X},{:02X},{:02X},{:02X}",
+                pcmem[0], pcmem[1], pcmem[2], pcmem[3],
+            );
+            Some(s)
+        }
     }
 }
 
