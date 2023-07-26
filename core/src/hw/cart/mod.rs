@@ -17,12 +17,11 @@ use log::{debug, info, trace, warn};
 use remus::bus::Bus;
 use remus::dev::Null;
 use remus::mem::{Ram, Rom};
-use remus::{Block, Device, Memory, SharedDevice};
+use remus::{Block, Board, Device, Memory, SharedDevice};
 use thiserror::Error;
 
 use self::header::CartridgeType;
 use self::mbc::{Mbc, Mbc1, NoMbc};
-use crate::dmg::Board;
 
 mod header;
 

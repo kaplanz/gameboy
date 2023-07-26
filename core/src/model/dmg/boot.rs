@@ -8,10 +8,8 @@ use remus::bus::adapt::Bank;
 use remus::bus::Bus;
 use remus::dev::Device;
 use remus::reg::Register;
-use remus::{mem, Block, SharedDevice};
+use remus::{mem, Block, Board, SharedDevice};
 use thiserror::Error;
-
-use super::Board;
 
 /// Boot ROM management [`Device`](Device).
 #[derive(Debug, Default)]

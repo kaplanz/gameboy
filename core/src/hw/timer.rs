@@ -5,10 +5,9 @@ use std::rc::Rc;
 
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Block, Machine, SharedDevice};
+use remus::{Block, Board, Machine, SharedDevice};
 
 use super::pic::{Interrupt, Pic};
-use crate::dmg::Board;
 
 /// Timer model.
 #[rustfmt::skip]

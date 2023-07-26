@@ -6,9 +6,7 @@ use std::rc::Rc;
 use remus::bus::Bus;
 use remus::mem::Ram;
 use remus::reg::Register;
-use remus::{Block, Machine, SharedDevice};
-
-use crate::dmg::Board;
+use remus::{Block, Board, Machine, SharedDevice};
 
 pub type Wave = Ram<0x0010>;
 
