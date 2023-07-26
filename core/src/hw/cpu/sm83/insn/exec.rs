@@ -1397,12 +1397,12 @@ pub mod ldh {
         // Perform a read/write to the address
         match insn.opcode {
             0xe0 | 0xe2 => {
-                // Execute LD (a8|C), A
+                // Execute LD(H?) (a8|C), A
                 let op2 = *cpu.regs.a;
                 cpu.bus.borrow_mut().write(addr as usize, op2);
             }
             0xf0 | 0xf2 => {
-                // Execute LD A, (a8|C)
+                // Execute LD(H?) A, (a8|C)
                 *cpu.regs.a = cpu.bus.borrow().read(addr as usize);
             }
             _ => panic!("Illegal instruction."),

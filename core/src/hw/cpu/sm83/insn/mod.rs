@@ -324,7 +324,7 @@ const DECODE: [Instruction; 0x100] = [
     Instruction { opcode: 0xdf, fmt: "RST 18H",       exec: exec::rst::start,    stack: Vec::new() },
     Instruction { opcode: 0xe0, fmt: "LDH (a8), A",   exec: exec::ldh::start,    stack: Vec::new() },
     Instruction { opcode: 0xe1, fmt: "POP HL",        exec: exec::pop::start,    stack: Vec::new() },
-    Instruction { opcode: 0xe2, fmt: "LDH (C), A",    exec: exec::ldh::start,    stack: Vec::new() },
+    Instruction { opcode: 0xe2, fmt: "LD (C), A",     exec: exec::ldh::start,    stack: Vec::new() },
     Instruction { opcode: 0xe3, fmt: "UNUSED",        exec: exec::unused::start, stack: Vec::new() },
     Instruction { opcode: 0xe4, fmt: "UNUSED",        exec: exec::unused::start, stack: Vec::new() },
     Instruction { opcode: 0xe5, fmt: "PUSH HL",       exec: exec::push::start,   stack: Vec::new() },
