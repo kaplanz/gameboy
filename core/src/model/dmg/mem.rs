@@ -6,9 +6,9 @@ use std::rc::Rc;
 use remus::bus::adapt::View;
 use remus::bus::Bus;
 use remus::mem::Ram;
-use remus::{Block, Device};
+use remus::{Block, Board, Device};
 
-use super::{Board, BootRom};
+use super::BootRom;
 
 pub type Wram = Ram<0x2000>;
 pub type Hram = Ram<0x007f>;

@@ -7,14 +7,14 @@ use itertools::Itertools;
 use remus::bus::Bus;
 use remus::mem::Ram;
 use remus::reg::Register;
-use remus::{Block, Machine, SharedDevice};
+use remus::{Block, Board, Machine, SharedDevice};
 
 use self::dma::Dma;
 use self::exec::Mode;
 use self::pixel::{Meta, Palette, Pixel};
 use self::tile::Tile;
 use super::pic::{Interrupt, Pic};
-use crate::dmg::{Board, SCREEN};
+use crate::dmg::SCREEN;
 
 mod blk;
 mod dma;

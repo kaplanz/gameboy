@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use remus::bus::Bus;
-use remus::{Block, Device, Machine};
+use remus::{Block, Board, Device, Machine};
 
 use self::mem::Memory;
 use crate::dev::Unmapped;
@@ -24,12 +24,6 @@ mod boot;
 mod mem;
 
 pub use boot::Rom as BootRom;
-
-pub trait Board {
-    fn connect(&self, bus: &mut Bus);
-
-    fn disconnect(&self, _bus: &mut Bus) {}
-}
 
 pub use crate::hw::cart;
 pub use crate::hw::joypad::Button;

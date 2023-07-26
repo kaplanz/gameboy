@@ -9,11 +9,10 @@ use std::rc::Rc;
 use enumflag::Enumflag;
 use log::{debug, trace};
 use remus::bus::Bus;
-use remus::{reg, Block, Device, Machine};
+use remus::{reg, Block, Board, Device, Machine};
 
 use self::insn::Instruction;
 use super::Processor;
-use crate::dmg::Board;
 use crate::hw::pic::Pic;
 
 mod insn;

@@ -5,10 +5,9 @@ use std::rc::Rc;
 
 use log::{debug, trace};
 use remus::bus::Bus;
-use remus::{reg, Block, Device, SharedDevice};
+use remus::{reg, Block, Board, Device, SharedDevice};
 
 use super::pic::{Interrupt, Pic};
-use crate::dmg::Board;
 
 /// Joypad button encoding.
 #[derive(Copy, Clone, Debug)]

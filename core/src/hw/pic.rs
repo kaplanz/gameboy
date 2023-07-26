@@ -7,10 +7,8 @@ use std::rc::Rc;
 use enumflag::Enumflag;
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Block, SharedDevice};
+use remus::{Block, Board, SharedDevice};
 use thiserror::Error;
-
-use crate::dmg::Board;
 
 /// PIC model.
 #[derive(Debug, Default)]

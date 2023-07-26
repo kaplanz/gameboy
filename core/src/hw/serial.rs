@@ -2,9 +2,7 @@
 
 use remus::bus::Bus;
 use remus::dev::Null;
-use remus::{Block, Device, Machine};
-
-use crate::dmg::Board;
+use remus::{Block, Board, Device, Machine};
 
 #[derive(Debug, Default)]
 pub struct Serial;
