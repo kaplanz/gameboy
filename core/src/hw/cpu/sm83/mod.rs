@@ -47,6 +47,16 @@ pub struct Cpu {
 }
 
 impl Cpu {
+    /// Read the byte at the given address.
+    fn read(&self, addr: u16) -> u8 {
+        self.bus.borrow().read(addr as usize)
+    }
+
+    /// Write to the byte at the given address.
+    fn write(&self, addr: u16, byte: u8) {
+        self.bus.borrow_mut().write(addr as usize, byte);
+    }
+
     /// Fetch the next byte after PC.
     fn fetchbyte(&mut self) -> u8 {
         let pc = &mut *self.regs.pc;
@@ -58,13 +68,13 @@ impl Cpu {
     /// Read the byte at HL.
     fn readbyte(&mut self) -> u8 {
         let hl = self.regs.hl.get(&self.regs);
-        self.bus.borrow().read(hl as usize)
+        self.read(hl)
     }
 
     /// Write to the byte at HL
     fn writebyte(&mut self, byte: u8) {
         let hl = self.regs.hl.get(&self.regs);
-        self.bus.borrow_mut().write(hl as usize, byte);
+        self.write(hl, byte);
     }
 
     /// Fetch the next word after PC.
