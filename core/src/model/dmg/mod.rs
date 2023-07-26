@@ -5,6 +5,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use itertools::Itertools;
 use remus::bus::Bus;
 use remus::{Block, Board, Device, Machine};
 
@@ -38,6 +39,8 @@ pub const SCREEN: screen::Spec = screen::Spec {
 /// DMG-01 Game Boy emulator.
 #[derive(Debug, Default)]
 pub struct GameBoy {
+    // Debug
+    pub doctor: Doctor,
     // State
     clock: usize,
     // Processors
@@ -266,6 +269,13 @@ impl Machine for GameBoy {
                 self.cpu.wake();
             }
 
+            // Collect doctor entries (if enabled)
+            if self.doctor.enabled() {
+                if let Some(entry) = self.cpu.doctor() {
+                    self.doctor.notice(entry);
+                }
+            }
+
             // Cycle CPU if enabled
             if self.cpu.enabled() {
                 self.cpu.cycle();
@@ -291,6 +301,40 @@ impl Machine for GameBoy {
 #[derive(Debug)]
 pub struct Debug {
     pub ppu: ppu::Debug,
+}
+
+/// Doctor entries.
+#[derive(Debug, Default)]
+pub struct Doctor(Option<Vec<String>>);
+
+impl Doctor {
+    /// Enable doctor diagnostics.
+    pub fn enable(&mut self) {
+        self.0 = Some(Vec::new());
+    }
+
+    /// Disable doctor diagnostics.
+    pub fn disable(&mut self) {
+        self.0 = None;
+    }
+
+    /// Checks if the doctor is enabled.
+    #[must_use]
+    pub fn enabled(&self) -> bool {
+        self.0.is_some()
+    }
+
+    /// Returns an introspecive view of the emulator's state, to be used by
+    /// [Gameboy Doctor](https://robertheaton.com/gameboy-doctor).
+    pub fn checkup(&mut self) -> Option<String> {
+        self.0.as_mut().map(|it| it.drain(..).join("\n"))
+    }
+
+    fn notice(&mut self, entry: String) {
+        if let Some(it) = &mut self.0 {
+            it.push(entry);
+        }
+    }
 }
 
 #[cfg(test)]
