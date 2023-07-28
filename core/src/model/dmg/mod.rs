@@ -134,6 +134,17 @@ impl GameBoy {
         self
     }
 
+    /// Gets the `GameBoy`'s cpu.
+    #[must_use]
+    pub fn cpu(&self) -> &Cpu {
+        &self.cpu
+    }
+
+    /// Mutably gets the `GameBoy`'s cpu.
+    pub fn cpu_mut(&mut self) -> &mut Cpu {
+        &mut self.cpu
+    }
+
     fn boot(mut self) -> Self {
         type Register = <Cpu as Processor>::Register;
 

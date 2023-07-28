@@ -11,7 +11,7 @@ use remus::{Block, Machine};
 
 use crate::hw::pic::Pic;
 
-mod sm83;
+pub mod sm83;
 
 pub use self::sm83::Cpu as Sm83;
 

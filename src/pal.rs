@@ -22,7 +22,7 @@ impl FromStr for Color {
     type Err = hexicolor::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Color(s.parse::<hexicolor::Color>()?.into()))
+        Ok(Self(s.parse::<hexicolor::Color>()?.into()))
     }
 }
 
@@ -60,20 +60,18 @@ impl FromStr for Palette {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let pal: Vec<Color> = match s
+        let pal: Vec<Color> = s
             .split(',')
             .map(str::parse::<Color>)
             .collect::<Result<_, _>>()
-        {
-            Ok(value) => value,
-            Err(err) => return Err(Error::Parse(err)),
-        };
+            .map_err(Error::Parse)?;
         let pal: [Color; 4] = pal.try_into().map_err(|err: Vec<_>| match err.len() {
             len @ 0..=3 => Error::Missing(len),
             len @ 5.. => Error::Extra(len),
             _ => unreachable!(),
         })?;
-        Ok(Palette(pal))
+
+        Ok(Self(pal))
     }
 }
 
@@ -88,7 +86,7 @@ impl Index<usize> for Palette {
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
-    Parse(hexicolor::Error),
+    Parse(#[from] hexicolor::Error),
     #[error("missing palette colors: (found {0}, expected 4)")]
     Missing(usize),
     #[error("extra palette colors: (found {0}, expected 4)")]

@@ -60,10 +60,10 @@ impl TryFrom<u8> for Color {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0b00 => Ok(Color::C0),
-            0b01 => Ok(Color::C1),
-            0b10 => Ok(Color::C2),
-            0b11 => Ok(Color::C3),
+            0b00 => Ok(Self::C0),
+            0b01 => Ok(Self::C1),
+            0b10 => Ok(Self::C2),
+            0b11 => Ok(Self::C3),
             _ => Err(Error::Color),
         }
     }

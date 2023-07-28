@@ -10,9 +10,11 @@ use log::{info, warn};
 use minifb::{Scale, ScaleMode, Window, WindowOptions};
 
 use crate::app::{App, Doctor, Opts};
+use crate::gbd::Debugger;
 use crate::pal::Palette;
 
 mod app;
+mod gbd;
 mod pal;
 
 /// Game Boy main clock frequency, set to 4,194,304 Hz.
@@ -94,6 +96,12 @@ struct Args {
     #[arg(value_hint = ValueHint::FilePath)]
     doctor: Option<PathBuf>,
 
+    /// Launch with Game Boy Debugger.
+    ///
+    /// Starts emulation with the the Game Boy Debugger (GBD) prompt enabled.
+    #[arg(long)]
+    gbd: bool,
+
     /// DMG-01 color palette.
     ///
     /// Defines the 2-bit color palette for the DMG-01 Game Boy model. The
@@ -164,6 +172,9 @@ fn main() -> Result<()> {
     // Open doctor logfile
     let doctor = args.doctor.map(File::create).transpose()?.map(Doctor::new);
 
+    // Declare debugger
+    let gbd = args.gbd.then_some(Debugger::new());
+
     // Prepare app, options
     let Args { pal, speed, .. } = args;
     let opts = Opts { title, pal, speed };
@@ -173,12 +184,11 @@ fn main() -> Result<()> {
         win,
         debug,
         doctor,
+        gbd,
     };
 
     // Run the app
-    app.run();
-
-    Ok(())
+    app.run()
 }
 
 fn boot(path: Option<PathBuf>) -> Result<Option<BootRom>> {
