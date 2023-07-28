@@ -1,20 +1,29 @@
 //! Parser for `Debugger` commands.
 
-WHITESPACE   = _{ " " | "\t" | NEWLINE }
+WHITESPACE    = _{ " " | "\t" | NEWLINE }
 
-int            = @{ ("+" | "-")? ~ uint }
-  uint         = @{ bin | oct | hex | dec }
-    bin        = @{ ^"0b" ~ ASCII_BIN_DIGIT+ }
-    oct        = @{ ^"0o" ~ ASCII_OCT_DIGIT+ }
-    hex        = @{ ^"0x" ~ ASCII_HEX_DIGIT+ }
-    dec        = @{ (ASCII_NONZERO_DIGIT ~ ASCII_DIGIT+ | ASCII_DIGIT) }
+Int           = @{ ("+" | "-")? ~ UInt }
+  UInt        = @{ Bin | Oct | Hex | Dec }
+    Bin       = @{ ^"0b" ~ ASCII_BIN_DIGIT+ }
+    Oct       = @{ ^"0o" ~ ASCII_OCT_DIGIT+ }
+    Hex       = @{ ^"0x" ~ ASCII_HEX_DIGIT+ }
+    Dec       = @{ (ASCII_NONZERO_DIGIT ~ ASCII_DIGIT+ | ASCII_DIGIT) }
 
-input        = _{ SOI ~ command? ~ EOI }
-  command    = _{ break | continue | list | read | skip | step | write }
-    break    =  { (^"break" | ^"b") ~ uint }
-    continue =  { (^"continue" | ^"c") }
-    list     =  { (^"list" | ^"l") }
-    read     =  { (^"read" | ^"r") ~ uint }
-    skip     =  { (^"skip") ~ uint ~ uint }
-    step     =  { (^"step" | ^"s") }
-    write    =  { (^"write" | ^"w") ~ uint ~ int }
+Input         = _{ SOI ~ Command? ~ EOI }
+  Keyword     = _{ KBreak | KContinue | KList | KRead | KSkip | KStep |
+                   KWrite }
+    KBreak    = _{ ^"break"    | ^"b" }
+    KContinue = _{ ^"continue" | ^"c" }
+    KList     = _{ ^"list"     | ^"l" }
+    KRead     = _{ ^"read"     | ^"r" }
+    KSkip     = _{ ^"skip"            }
+    KStep     = _{ ^"step"     | ^"s" }
+    KWrite    = _{ ^"write"    | ^"w" }
+  Command     = _{ Break | Continue | List | Read | Skip | Step | Write }
+    Break     =  { KBreak ~ UInt }
+    Continue  =  { KContinue }
+    List      =  { KList }
+    Read      =  { KRead ~ UInt }
+    Skip      =  { KSkip ~ UInt ~ UInt }
+    Step      =  { KStep }
+    Write     =  { KWrite ~ UInt ~ Int }
