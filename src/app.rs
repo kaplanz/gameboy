@@ -29,6 +29,7 @@ pub struct App {
 }
 
 impl App {
+    #[allow(clippy::too_many_lines)]
     pub fn run(self) -> crate::Result<()> {
         let Self {
             opts,
@@ -62,9 +63,12 @@ impl App {
             emu.doctor.enable();
         }
 
-        // Set up debugger when used
+        // Prepare debugger when used
         if let Some(gbd) = &mut gbd {
+            // Enable debugger
             gbd.enable();
+            // Sync initial console state
+            gbd.sync(&emu);
         }
 
         // Emulation loop
@@ -93,9 +97,30 @@ impl App {
                 // Perform debugger actions
                 if gbd.enabled() {
                     // Fetch next debugger command
-                    let cmd = gbd.prompt()?;
+                    let cmd = loop {
+                        match crate::Result::from(gbd.prompt()) {
+                            Ok(cmd) => break cmd,
+                            Err(err) => {
+                                eprintln!("{err}");
+                                continue;
+                            }
+                        };
+                    };
+                    // Return to prompt when no command provided
+                    let Some(cmd) = cmd else {
+                        continue;
+                    };
                     // Perform the command
-                    gbd.act(&mut emu, cmd);
+                    let res = gbd.act(&mut emu, cmd);
+                    match crate::Result::from(res) {
+                        Ok(_) => (),
+                        Err(err) => eprintln!("{err}"),
+                    }
+                }
+
+                // Return to prompt when not playing
+                if gbd.paused() {
+                    continue;
                 }
             }
 
