@@ -12,37 +12,37 @@ struct GbdParser;
 
 pub fn parse(src: &str) -> Result<Option<Command>, Error> {
     // Parse the input string
-    let mut pairs = GbdParser::parse(Rule::input, src)?;
+    let mut pairs = GbdParser::parse(Rule::Input, src)?;
     // Extract the top level pair
     let top = pairs.next().expect("missing top rule");
 
     // Match a command rule
     let cmd = match top.as_rule() {
-        Rule::r#break => {
+        Rule::Break => {
             let mut pairs = top.into_inner();
             let addr = parse::int(&pairs.next().expect("missing inner rule"))?;
             Command::Break(addr)
         }
-        Rule::r#continue => Command::Continue,
-        Rule::list => Command::List,
-        Rule::read => {
+        Rule::Continue => Command::Continue,
+        Rule::List => Command::List,
+        Rule::Read => {
             let mut pairs = top.into_inner();
             let addr = parse::int(&pairs.next().expect("missing inner rule"))?;
             Command::Read(addr)
         }
-        Rule::write => {
+        Rule::Write => {
             let mut pairs = top.into_inner();
             let addr = parse::uint(&pairs.next().expect("missing inner rule"))?;
             let byte = parse::int(&pairs.next().expect("missing inner rule"))?;
             Command::Write(addr, byte)
         }
-        Rule::skip => {
+        Rule::Skip => {
             let mut pairs = top.into_inner();
             let index = parse::uint(&pairs.next().expect("missing inner rule"))?;
             let many = parse::uint(&pairs.next().expect("missing inner rule"))?;
             Command::Skip(index, many)
         }
-        Rule::step => Command::Step,
+        Rule::Step => Command::Step,
         Rule::EOI => return Ok(None),
         rule => panic!("invalid rule: {rule:?}"),
     };
