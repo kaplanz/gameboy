@@ -6,7 +6,7 @@ use std::str::FromStr;
 use gameboy::core::cpu::{sm83, Processor};
 use gameboy::dmg::GameBoy;
 use indexmap::IndexMap;
-use log::{trace, warn};
+use log::{error, trace, warn};
 use remus::{Block, Machine};
 use thiserror::Error;
 
@@ -56,7 +56,7 @@ impl Debugger {
 
         // Parse the command
         let cmd = match input.parse() {
-            Err(Error::Empty) => return Ok(self.prev), // re-use the previous command
+            Err(Error::Empty) => return Ok(self.prev.clone()), // re-use the previous command
             res => res?,
         };
         trace!("parsed command: `{cmd:?}`");
@@ -69,14 +69,15 @@ impl Debugger {
     pub fn act(&mut self, emu: &mut GameBoy, cmd: Command) -> Result<()> {
         use Command::*;
         // Update internal bookkeeping data
-        self.sync(emu);        // sync with console
-        self.play = false;     // pause console
-        self.prev = Some(cmd); // recall previous command
+        self.sync(emu);                // sync with console
+        self.play = false;             // pause console
+        self.prev = Some(cmd.clone()); // recall previous command
 
         // Perform the command
         match cmd {
             Break(addr)       => self.r#break(addr),
             Continue          => self.r#continue(),
+            Help(what)        => self.help(what),
             List              => self.list(),
             Read(addr)        => self.read(emu, addr),
             Skip(point, many) => self.skip(point, many),
@@ -102,6 +103,16 @@ impl Debugger {
     fn r#continue(&mut self) -> Result<()> {
         self.skip = None; // reset skipped cycles
         self.play = true; // resume console
+
+        Ok(())
+    }
+
+    #[allow(clippy::unused_self)]
+    fn help(&self, what: Option<String>) -> Result<()> {
+        if let Some(what) = what {
+            trace!("help: `{what}`");
+        }
+        error!("help is not yet available");
 
         Ok(())
     }
@@ -171,10 +182,11 @@ impl Machine for Debugger {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum Command {
     Break(u16),
     Continue,
+    Help(Option<String>),
     List,
     Read(u16),
     Write(u16, u8),

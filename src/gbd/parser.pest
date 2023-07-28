@@ -10,18 +10,20 @@ Int           = @{ ("+" | "-")? ~ UInt }
     Dec       = @{ (ASCII_NONZERO_DIGIT ~ ASCII_DIGIT+ | ASCII_DIGIT) }
 
 Input         = _{ SOI ~ Command? ~ EOI }
-  Keyword     = _{ KBreak | KContinue | KList | KRead | KSkip | KStep |
+  Keyword     = _{ KBreak | KContinue | KHelp | KList | KRead | KSkip | KStep |
                    KWrite }
     KBreak    = _{ ^"break"    | ^"b" }
     KContinue = _{ ^"continue" | ^"c" }
+    KHelp     = _{ ^"help"     | ^"h" }
     KList     = _{ ^"list"     | ^"l" }
     KRead     = _{ ^"read"     | ^"r" }
     KSkip     = _{ ^"skip"            }
     KStep     = _{ ^"step"     | ^"s" }
     KWrite    = _{ ^"write"    | ^"w" }
-  Command     = _{ Break | Continue | List | Read | Skip | Step | Write }
+  Command     = _{ Break | Continue | Help | List | Read | Skip | Step | Write }
     Break     =  { KBreak ~ UInt }
     Continue  =  { KContinue }
+    Help      =  { KHelp ~ Keyword? }
     List      =  { KList }
     Read      =  { KRead ~ UInt }
     Skip      =  { KSkip ~ UInt ~ UInt }
