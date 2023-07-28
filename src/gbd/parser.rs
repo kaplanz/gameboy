@@ -24,6 +24,11 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
             Command::Break(addr)
         }
         Rule::Continue => Command::Continue,
+        Rule::Help => {
+            let mut pairs = top.into_inner();
+            let what = pairs.next().map(|pair| pair.to_string());
+            Command::Help(what)
+        }
         Rule::List => Command::List,
         Rule::Read => {
             let mut pairs = top.into_inner();
