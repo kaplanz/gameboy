@@ -18,7 +18,6 @@ use crate::hw::pic::Pic;
 mod insn;
 
 /// 16-bit register set.
-#[allow(dead_code)]
 pub enum Register {
     AF,
     BC,
@@ -48,12 +47,13 @@ pub struct Cpu {
 
 impl Cpu {
     /// Read the byte at the given address.
-    fn read(&self, addr: u16) -> u8 {
+    #[must_use]
+    pub fn read(&self, addr: u16) -> u8 {
         self.bus.borrow().read(addr as usize)
     }
 
     /// Write to the byte at the given address.
-    fn write(&self, addr: u16, byte: u8) {
+    pub fn write(&self, addr: u16, byte: u8) {
         self.bus.borrow_mut().write(addr as usize, byte);
     }
 
@@ -110,7 +110,8 @@ impl Cpu {
     }
 
     /// Prepares an introspective view of the state.
-    pub fn doctor(&self) -> Option<String> {
+    #[must_use]
+    pub(crate) fn doctor(&self) -> Option<String> {
         // Check if we're ready for the next doctor entry
         if let State::Execute(_) = self.state {
             None

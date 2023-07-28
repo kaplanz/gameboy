@@ -7,6 +7,7 @@ use log::debug;
 use minifb::{Key, Scale, Window, WindowOptions};
 use remus::{Clock, Machine};
 
+use crate::gbd::Debugger;
 use crate::pal::Palette;
 use crate::{Speed, FREQ};
 
@@ -24,16 +25,18 @@ pub struct App {
     pub win: Window,
     pub debug: Option<Debug>,
     pub doctor: Option<Doctor>,
+    pub gbd: Option<Debugger>,
 }
 
 impl App {
-    pub fn run(self) {
+    pub fn run(self) -> crate::Result<()> {
         let Self {
             opts,
             mut emu,
             mut win,
             mut debug,
             mut doctor,
+            mut gbd,
         } = self;
         let title = opts.title;
 
@@ -59,6 +62,11 @@ impl App {
             emu.doctor.enable();
         }
 
+        // Set up debugger when used
+        if let Some(gbd) = &mut gbd {
+            gbd.enable();
+        }
+
         // Emulation loop
         while win.is_open() {
             // Calculate wall-clock frequency
@@ -77,7 +85,22 @@ impl App {
                 fps = 0;
             }
 
+            // Optionally run the debugger
+            if let Some(gbd) = &mut gbd {
+                // Perform a debugger cycle
+                gbd.cycle();
+
+                // Perform debugger actions
+                if gbd.enabled() {
+                    // Fetch next debugger command
+                    let cmd = gbd.prompt()?;
+                    // Perform the command
+                    gbd.act(&mut emu, cmd);
+                }
+            }
+
             // Synchronize with wall-clock
+            // TODO: Pause when in GBD
             if cycles % divider == 0 && opts.speed != Speed::Max {
                 // Delay until clock is ready
                 clk.next();
@@ -87,15 +110,16 @@ impl App {
             emu.cycle();
 
             // Redraw the screen (if needed)
+            let mut winres = Ok(());
             emu.redraw(|screen: &Screen| {
                 let buf = screen
                     .iter()
                     .map(|&col| opts.pal[col as usize].into())
                     .collect::<Vec<_>>();
-                win.update_with_buffer(&buf, SCREEN.width, SCREEN.height)
-                    .unwrap();
+                winres = win.update_with_buffer(&buf, SCREEN.width, SCREEN.height);
                 fps += 1; // update frames drawn
             });
+            winres?; // return early if window update failed
 
             // Update the debug screens every second
             if let Some(debug) = &mut debug {
@@ -108,18 +132,9 @@ impl App {
                     let map1 = info.ppu.map1.map(|col| opts.pal[col as usize].into());
                     let map2 = info.ppu.map2.map(|col| opts.pal[col as usize].into());
                     // Display PPU state
-                    debug
-                        .tdat
-                        .update_with_buffer(&tdat, 16 * 8, 24 * 8)
-                        .unwrap();
-                    debug
-                        .map1
-                        .update_with_buffer(&map1, 32 * 8, 32 * 8)
-                        .unwrap();
-                    debug
-                        .map2
-                        .update_with_buffer(&map2, 32 * 8, 32 * 8)
-                        .unwrap();
+                    debug.tdat.update_with_buffer(&tdat, 16 * 8, 24 * 8)?;
+                    debug.map1.update_with_buffer(&map1, 32 * 8, 32 * 8)?;
+                    debug.map2.update_with_buffer(&map2, 32 * 8, 32 * 8)?;
                 }
             }
 
@@ -127,7 +142,7 @@ impl App {
             if let Some(doctor) = &mut doctor {
                 if let Some(entries) = emu.doctor.checkup() {
                     if !entries.is_empty() {
-                        writeln!(doctor.log, "{entries}").unwrap();
+                        writeln!(doctor.log, "{entries}")?;
                     }
                 }
             }
@@ -152,6 +167,8 @@ impl App {
             // Clock another cycle
             cycles += 1;
         }
+
+        Ok(())
     }
 }
 

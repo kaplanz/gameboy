@@ -23,6 +23,7 @@ color-eyre = { version = "0.6.2", default-features = false }
 env_logger = "0.10.0"
 gameboy-core = { path = "core" }
 hexicolor = { version = "0.1.0", path = "crates/hexicolor" }
+indexmap = "2.0.0"
 log = "0.4.19"
 minifb = "0.24.0"
 remus = { git = "https://github.com/kaplanz/remus.git" }

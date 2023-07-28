@@ -7,9 +7,9 @@
 #![allow(clippy::cast_sign_loss)]
 
 pub mod cart;
+pub mod cpu;
 
 pub(crate) mod apu;
-pub(crate) mod cpu;
 pub(crate) mod joypad;
 pub(crate) mod pic;
 pub(crate) mod ppu;

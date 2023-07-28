@@ -45,8 +45,8 @@ impl FromStr for Color {
                 let input = s.get(1..).ok_or(Error::Unsupported)?;
                 let hex = u32::from_str_radix(input, 16).map_err(Error::ParseInt)?;
                 match input.len() {
-                    3 => Ok(Color(hex << 12 | hex)),
-                    6 => Ok(Color(hex)),
+                    3 => Ok(Self(hex << 12 | hex)),
+                    6 => Ok(Self(hex)),
                     _ => Err(Error::Unsupported),
                 }
             }
