@@ -77,6 +77,7 @@ impl Debugger {
         match cmd {
             Break(addr)       => self.r#break(addr),
             Continue          => self.r#continue(),
+            Delete(point)     => self.delete(point),
             Help(what)        => self.help(what),
             List              => self.list(),
             Read(addr)        => self.read(emu, addr),
@@ -103,6 +104,16 @@ impl Debugger {
     fn r#continue(&mut self) -> Result<()> {
         self.skip = None; // reset skipped cycles
         self.play = true; // resume console
+
+        Ok(())
+    }
+
+    fn delete(&mut self, point: usize) -> Result<()> {
+        // Find the specified breakpoint
+        self.bpts
+            .swap_remove_index(point)
+            .ok_or(Error::PointNotFound)?;
+        println!("breakpoint {point} deleted (indices shifted downwards)");
 
         Ok(())
     }
@@ -186,6 +197,7 @@ impl Machine for Debugger {
 pub enum Command {
     Break(u16),
     Continue,
+    Delete(usize),
     Help(Option<String>),
     List,
     Read(u16),
