@@ -79,6 +79,7 @@ impl Debugger {
             Continue          => self.r#continue(),
             Delete(point)     => self.delete(point),
             Help(what)        => self.help(what),
+            Info(what)        => self.info(what),
             List              => self.list(),
             Read(addr)        => self.read(emu, addr),
             Skip(point, many) => self.skip(point, many),
@@ -124,6 +125,16 @@ impl Debugger {
             trace!("help: `{what}`");
         }
         error!("help is not yet available");
+
+        Ok(())
+    }
+
+    #[allow(clippy::unused_self)]
+    fn info(&self, what: Option<String>) -> Result<()> {
+        if let Some(what) = what {
+            trace!("info: `{what}`");
+        }
+        error!("info is not yet available");
 
         Ok(())
     }
@@ -199,6 +210,7 @@ pub enum Command {
     Continue,
     Delete(usize),
     Help(Option<String>),
+    Info(Option<String>),
     List,
     Read(u16),
     Write(u16, u8),
