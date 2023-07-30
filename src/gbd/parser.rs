@@ -34,6 +34,11 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
             let what = pairs.next().map(|pair| pair.to_string());
             Command::Help(what)
         }
+        Rule::Info => {
+            let mut pairs = top.into_inner();
+            let what = pairs.next().map(|pair| pair.to_string());
+            Command::Info(what)
+        }
         Rule::List => Command::List,
         Rule::Read => {
             let mut pairs = top.into_inner();
