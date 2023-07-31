@@ -69,7 +69,6 @@ impl Debugger {
     pub fn act(&mut self, emu: &mut GameBoy, cmd: Command) -> Result<()> {
         use Command::*;
         // Update internal bookkeeping data
-        self.sync(emu);                // sync with console
         self.play = false;             // pause console
         self.prev = Some(cmd.clone()); // recall previous command
 
