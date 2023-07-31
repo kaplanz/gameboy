@@ -98,31 +98,38 @@ impl App {
 
                 // Perform debugger actions
                 if gbd.enabled() {
-                    // Fetch next debugger command
-                    let cmd = loop {
-                        match crate::Result::from(gbd.prompt()) {
-                            Ok(cmd) => break cmd,
-                            Err(err) => {
-                                eprintln!("{err}");
-                                continue;
-                            }
+                    // Prompt and execute commands until emulation resumed
+                    loop {
+                        // Provide information to user before prompting for command
+                        gbd.inform(&emu);
+                        // Fetch next debugger command
+                        let cmd = loop {
+                            match crate::Result::from(gbd.prompt()) {
+                                Ok(cmd) => break cmd,
+                                Err(err) => {
+                                    eprintln!("{err}");
+                                    continue;
+                                }
+                            };
                         };
-                    };
-                    // Return to prompt when no command provided
-                    let Some(cmd) = cmd else {
-                        continue;
-                    };
-                    // Perform the command
-                    let res = gbd.act(&mut emu, cmd);
-                    match crate::Result::from(res) {
-                        Ok(_) => (),
-                        Err(err) => eprintln!("{err}"),
-                    }
-                }
+                        // Return to prompt when no command provided
+                        let Some(cmd) = cmd else {
+                            continue;
+                        };
+                        // Perform the command
+                        let res = gbd.act(&mut emu, cmd);
+                        match crate::Result::from(res) {
+                            Ok(_) => (),
+                            Err(err) => eprintln!("{err}"),
+                        }
 
-                // Return to prompt when not playing
-                if gbd.paused() {
-                    continue;
+                        // Return to prompt when not playing
+                        if gbd.paused() {
+                            continue;
+                        }
+
+                        break; // resume emulation
+                    }
                 }
             }
 
