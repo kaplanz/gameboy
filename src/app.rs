@@ -55,7 +55,7 @@ impl App {
 
         // Initialize timer, counters
         let mut now = std::time::Instant::now();
-        let mut cycles = 0;
+        let mut cycle = 0;
         let mut fps = 0;
 
         // Enable doctor when used
@@ -78,14 +78,14 @@ impl App {
                 // Print cycle stats
                 debug!(
                     "Frequency: {freq:0.4} MHz ({speedup:.1}%), FPS: {fps} Hz",
-                    freq = f64::from(cycles) / 1e6,
-                    speedup = 100. * f64::from(cycles) / f64::from(FREQ)
+                    freq = f64::from(cycle) / 1e6,
+                    speedup = 100. * f64::from(cycle) / f64::from(FREQ)
                 );
                 // Update the title to display the frequency
                 win.set_title(&format!("{title} ({fps} Hz)"));
                 // Reset timer, counters
                 now = std::time::Instant::now();
-                cycles = 0;
+                cycle = 0;
                 fps = 0;
             }
 
@@ -128,7 +128,7 @@ impl App {
 
             // Synchronize with wall-clock
             // TODO: Pause when in GBD
-            if cycles % divider == 0 && opts.speed != Speed::Max {
+            if cycle % divider == 0 && opts.speed != Speed::Max {
                 // Delay until clock is ready
                 clk.next();
             }
@@ -150,7 +150,7 @@ impl App {
 
             // Update the debug screens every second
             if let Some(debug) = &mut debug {
-                if cycles == 0 {
+                if cycle == 0 {
                     // Probe for debug info
                     let info = emu.debug();
 
@@ -175,7 +175,7 @@ impl App {
             }
 
             // Send joypad input (sampled every 64 cycles)
-            if cycles % 0x40 == 0 {
+            if cycle % 0x40 == 0 {
                 #[rustfmt::skip]
                 let keys = win.get_keys().into_iter().filter_map(|key| match key {
                     Key::Z     => Some(Button::A),
@@ -192,7 +192,7 @@ impl App {
             }
 
             // Clock another cycle
-            cycles += 1;
+            cycle += 1;
         }
 
         Ok(())
