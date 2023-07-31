@@ -2,12 +2,14 @@
 
 WHITESPACE    = _{ " " | "\t" | NEWLINE }
 
-Int           = @{ ("+" | "-")? ~ UInt }
-  UInt        = @{ Bin | Oct | Hex | Dec }
-    Bin       = @{ ^"0b" ~ ASCII_BIN_DIGIT+ }
-    Oct       = @{ ^"0o" ~ ASCII_OCT_DIGIT+ }
-    Hex       = @{ ^"0x" ~ ASCII_HEX_DIGIT+ }
-    Dec       = @{ (ASCII_NONZERO_DIGIT ~ ASCII_DIGIT+ | ASCII_DIGIT) }
+Int           = @{ Sign? ~ Num }
+  Sign        = ${ ("+" | "-") }
+UInt          = @{ Num }
+  Num         = @{ Bin | Oct | Hex | Dec }
+    Bin       = ${ ^"0b" ~ ASCII_BIN_DIGIT+ }
+    Oct       = ${ ^"0o" ~ ASCII_OCT_DIGIT+ }
+    Hex       = ${ ^"0x" ~ ASCII_HEX_DIGIT+ }
+    Dec       = ${         ASCII_DIGIT+ }
 
 Input         = _{ SOI ~ Command? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KHelp | KInfo | KList |
