@@ -145,6 +145,7 @@ impl Debugger {
 
     #[allow(clippy::unused_self)]
     fn read(&self, emu: &mut GameBoy, addr: u16) -> Result<()> {
+        // Perform a read
         let byte = emu.cpu().read(addr);
         println!("{addr:04x}: {byte:02x}");
 
@@ -169,11 +170,14 @@ impl Debugger {
 
     #[allow(clippy::unused_self)]
     fn write(&self, emu: &mut GameBoy, addr: u16, byte: u8) -> Result<()> {
+        // Perform the write
         emu.cpu().write(addr, byte);
         let read = emu.cpu().read(addr);
         if read != byte {
             warn!("{addr:04x}: {read:02x} (ignored write: {byte:02x})");
         }
+        // Read the written value
+        self.read(emu, addr)?;
 
         Ok(())
     }

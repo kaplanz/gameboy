@@ -10,6 +10,7 @@ use super::Command;
 #[grammar = "gbd/parser.pest"]
 struct GbdParser;
 
+#[allow(clippy::cast_sign_loss)]
 pub fn parse(src: &str) -> Result<Option<Command>, Error> {
     // Parse the input string
     let mut pairs = GbdParser::parse(Rule::Input, src)?;
@@ -20,13 +21,13 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
     let cmd = match top.as_rule() {
         Rule::Break => {
             let mut pairs = top.into_inner();
-            let addr = parse::int(&pairs.next().expect("missing inner rule"))?;
+            let addr = parse::int(pairs.next().expect("missing inner rule"))?;
             Command::Break(addr)
         }
         Rule::Continue => Command::Continue,
         Rule::Delete => {
             let mut pairs = top.into_inner();
-            let index = parse::uint(&pairs.next().expect("missing inner rule"))?;
+            let index = parse::int(pairs.next().expect("missing inner rule"))?;
             Command::Delete(index)
         }
         Rule::Help => {
@@ -42,24 +43,24 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
         Rule::List => Command::List,
         Rule::Read => {
             let mut pairs = top.into_inner();
-            let addr = parse::int(&pairs.next().expect("missing inner rule"))?;
+            let addr = parse::int(pairs.next().expect("missing inner rule"))?;
             Command::Read(addr)
         }
         Rule::Write => {
             let mut pairs = top.into_inner();
-            let addr = parse::uint(&pairs.next().expect("missing inner rule"))?;
-            let byte = parse::int(&pairs.next().expect("missing inner rule"))?;
+            let addr = parse::int(pairs.next().expect("missing inner rule"))?;
+            let byte = parse::int::<i8>(pairs.next().expect("missing inner rule"))? as u8;
             Command::Write(addr, byte)
         }
         Rule::Skip => {
             let mut pairs = top.into_inner();
-            let index = parse::uint(&pairs.next().expect("missing inner rule"))?;
-            let many = parse::uint(&pairs.next().expect("missing inner rule"))?;
+            let index = parse::int(pairs.next().expect("missing inner rule"))?;
+            let many = parse::int(pairs.next().expect("missing inner rule"))?;
             Command::Skip(index, many)
         }
         Rule::Step => Command::Step,
         Rule::EOI => return Ok(None),
-        rule => panic!("invalid rule: {rule:?}"),
+        rule => unreachable!("invalid rule: {rule:?}"),
     };
 
     Ok(Some(cmd))
@@ -67,25 +68,30 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
 
 mod parse {
     use std::num::ParseIntError;
-    use std::str::FromStr;
 
-    use num::{Integer, Unsigned};
+    use num::Integer;
     use pest::iterators::Pair;
 
     use super::Rule;
 
-    pub(super) fn int<I>(pair: &Pair<Rule>) -> Result<I, ParseIntError>
+    pub(super) fn int<I>(pair: Pair<Rule>) -> Result<I, ParseIntError>
     where
-        I: Integer + FromStr<Err = ParseIntError>,
+        I: Integer<FromStrRadixErr = ParseIntError>,
     {
-        str::parse(pair.as_str())
-    }
-
-    pub(super) fn uint<U>(pair: &Pair<Rule>) -> Result<U, ParseIntError>
-    where
-        U: Unsigned + FromStr<Err = ParseIntError>,
-    {
-        str::parse(pair.as_str())
+        // Extract the number and sign
+        let mut int = pair
+            .into_inner() // `Int` is composed of `Sign` and `Num`
+            .rev(); // since sign is optional, reverse to process it last
+        let num = int.next().expect("missing inner rule");
+        let sign = int.next().map_or("", |rule| rule.as_str()).to_string();
+        // Parse into an integer type
+        match num.as_rule() {
+            Rule::Bin => I::from_str_radix(&(sign + &num.as_str()[2..]), 2),
+            Rule::Oct => I::from_str_radix(&(sign + &num.as_str()[2..]), 8),
+            Rule::Dec => I::from_str_radix(&(sign + &num.as_str()[0..]), 10),
+            Rule::Hex => I::from_str_radix(&(sign + &num.as_str()[2..]), 16),
+            rule => unreachable!("invalid rule: {rule:?}"),
+        }
     }
 }
 
