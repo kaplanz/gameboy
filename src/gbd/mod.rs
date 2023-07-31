@@ -89,14 +89,15 @@ impl Debugger {
 
     fn r#break(&mut self, addr: u16) -> Result<()> {
         // Check if the breakpoint already exists
-        if let Some(point) = self.bpts.get_index_of(&addr) {
-            println!("breakpoint {point} exists");
-            return Ok(());
+        if let Some((point, _, skip)) = self.bpts.get_full_mut(&addr) {
+            // Reset an existing breakpoint
+            *skip = 0;
+            println!("breakpoint {point} exists; resetting skip count");
+        } else {
+            // Create a new breakpoint
+            self.bpts.insert(addr, 0);
+            println!("breakpoint {point} created", point = self.bpts.len() - 1);
         }
-
-        // Create a new breakpoint
-        self.bpts.insert(addr, 0);
-        println!("breakpoint {point} created", point = self.bpts.len() - 1);
 
         Ok(())
     }
