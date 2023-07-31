@@ -22,15 +22,15 @@ pub struct Instruction {
 }
 
 impl Instruction {
-    pub fn new(opcode: u8) -> Self {
+    pub(crate) fn new(opcode: u8) -> Self {
         DECODE[opcode as usize].clone()
     }
 
-    pub fn prefix(opcode: u8) -> Self {
+    pub(crate) fn prefix(opcode: u8) -> Self {
         PREFIX[opcode as usize].clone()
     }
 
-    pub fn int(int: Interrupt) -> Self {
+    pub(crate) fn int(int: Interrupt) -> Self {
         Self {
             opcode: 0x00,
             fmt: int.repr(),
@@ -39,8 +39,14 @@ impl Instruction {
         }
     }
 
-    pub fn exec(self, cpu: &mut Cpu) -> Option<Self> {
+    pub(crate) fn exec(self, cpu: &mut Cpu) -> Option<Self> {
         (self.exec)(self, cpu)
+    }
+
+    /// Gets the `Instruction`'s opcode.
+    #[must_use]
+    pub fn opcode(&self) -> u8 {
+        self.opcode
     }
 }
 
