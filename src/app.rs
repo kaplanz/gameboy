@@ -91,6 +91,8 @@ impl App {
 
             // Optionally run the debugger
             if let Some(gbd) = &mut gbd {
+                // Sync with console
+                gbd.sync(&emu);
                 // Perform a debugger cycle
                 gbd.cycle();
 
