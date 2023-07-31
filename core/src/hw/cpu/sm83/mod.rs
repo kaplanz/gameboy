@@ -11,11 +11,12 @@ use log::{debug, trace};
 use remus::bus::Bus;
 use remus::{reg, Block, Board, Device, Machine};
 
-use self::insn::Instruction;
 use super::Processor;
 use crate::hw::pic::Pic;
 
 mod insn;
+
+pub use self::insn::Instruction;
 
 /// 16-bit register set.
 pub enum Register {
@@ -159,7 +160,17 @@ impl Board for Cpu {
 }
 
 impl Processor for Cpu {
+    type Instruction = Instruction;
+
     type Register = Register;
+
+    fn insn(&self) -> Self::Instruction {
+        if let State::Execute(insn) = &self.state {
+            insn.clone()
+        } else {
+            Instruction::new(self.read(*self.regs.pc))
+        }
+    }
 
     fn goto(&mut self, pc: u16) {
         *self.regs.pc = pc;

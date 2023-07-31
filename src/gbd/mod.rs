@@ -79,7 +79,7 @@ impl Debugger {
             Delete(point)     => self.delete(point),
             Help(what)        => self.help(what),
             Info(what)        => self.info(what),
-            List              => self.list(),
+            List              => self.list(emu),
             Read(addr)        => self.read(emu, addr),
             Skip(point, many) => self.skip(point, many),
             Step              => self.step(),
@@ -139,8 +139,15 @@ impl Debugger {
         Ok(())
     }
 
-    fn list(&self) -> Result<()> {
-        todo!()
+    fn list(&self, emu: &mut GameBoy) -> Result<()> {
+        let insn = emu.cpu().insn();
+        println!(
+            "{addr:04x}: {opcode:02X} ; {insn}",
+            addr = self.pc,
+            opcode = insn.opcode()
+        );
+
+        Ok(())
     }
 
     #[allow(clippy::unused_self)]

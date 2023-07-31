@@ -17,8 +17,13 @@ pub use self::sm83::Cpu as Sm83;
 
 /// Unified processor interface.
 pub trait Processor: Block + Machine {
+    /// The processor's instruction set.
+    type Instruction;
     /// The processor's register set.
     type Register;
+
+    /// Gets the current instruction.
+    fn insn(&self) -> Self::Instruction;
 
     /// Gets the value of the requested register.
     fn get(&self, reg: Self::Register) -> u16;
