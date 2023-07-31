@@ -6,7 +6,7 @@ use std::str::FromStr;
 use gameboy::core::cpu::{sm83, Processor};
 use gameboy::dmg::GameBoy;
 use indexmap::IndexMap;
-use log::{error, trace, warn};
+use log::{error, info, trace, warn};
 use remus::{Block, Machine};
 use thiserror::Error;
 
@@ -16,6 +16,8 @@ type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Default)]
 pub struct Debugger {
+    // Application state
+    cycle: usize,
     // Console state
     pc: u16,
     // Internal state
@@ -44,9 +46,16 @@ impl Debugger {
         self.pc = emu.cpu().get(sm83::Register::PC);
     }
 
+    pub fn inform(&self, emu: &GameBoy) {
+        // Give context if recently paused
+        if self.play {
+            self.list(emu).unwrap();
+        }
+    }
+
     pub fn prompt(&mut self) -> Result<Option<Command>> {
         // Present the prompt
-        print!("({:04x})> ", self.pc);
+        print!("({} @ {:04x})> ", self.cycle, self.pc);
         io::stdout().flush().map_err(Error::Io)?;
 
         // Read input
@@ -68,6 +77,7 @@ impl Debugger {
     #[allow(clippy::enum_glob_use)]
     pub fn act(&mut self, emu: &mut GameBoy, cmd: Command) -> Result<()> {
         use Command::*;
+
         // Update internal bookkeeping data
         self.play = false;             // pause console
         self.prev = Some(cmd.clone()); // recall previous command
@@ -122,7 +132,7 @@ impl Debugger {
     #[allow(clippy::unused_self)]
     fn help(&self, what: Option<String>) -> Result<()> {
         if let Some(what) = what {
-            trace!("help: `{what}`");
+            info!("help: `{what}`");
         }
         error!("help is not yet available");
 
@@ -132,14 +142,14 @@ impl Debugger {
     #[allow(clippy::unused_self)]
     fn info(&self, what: Option<String>) -> Result<()> {
         if let Some(what) = what {
-            trace!("info: `{what}`");
+            info!("info: `{what}`");
         }
         error!("info is not yet available");
 
         Ok(())
     }
 
-    fn list(&self, emu: &mut GameBoy) -> Result<()> {
+    fn list(&self, emu: &GameBoy) -> Result<()> {
         let insn = emu.cpu().insn();
         println!(
             "{addr:04x}: {opcode:02X} ; {insn}",
@@ -164,7 +174,7 @@ impl Debugger {
         let (addr, skips) = self.bpts.get_index_mut(point).ok_or(Error::PointNotFound)?;
         // Update the amount of skips
         *skips = many;
-        trace!("breakpoint {point} @ {addr:04x}: skip {many} times");
+        println!("breakpoint {point} @ {addr:04x}: skip {many} times");
 
         Ok(())
     }
@@ -181,7 +191,7 @@ impl Debugger {
         emu.cpu().write(addr, byte);
         let read = emu.cpu().read(addr);
         if read != byte {
-            warn!("{addr:04x}: {read:02x} (ignored write: {byte:02x})");
+            warn!("ignored write {addr:04x} <- {byte:02x} (retained: {read:02x})");
         }
         // Read the written value
         self.read(emu, addr)?;
@@ -202,6 +212,8 @@ impl Machine for Debugger {
     }
 
     fn cycle(&mut self) {
+        // Update application cycle count
+        self.cycle += 1;
         // Handle skipped cycles
         if let Some(skip) = &mut self.skip {
             // Decrement skip count
