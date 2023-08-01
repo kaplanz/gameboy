@@ -47,6 +47,12 @@ pub struct Cpu {
 }
 
 impl Cpu {
+    /// Gets the `Cpu`'s state.
+    #[must_use]
+    pub fn state(&self) -> &State {
+        &self.state
+    }
+
     /// Read the byte at the given address.
     #[must_use]
     pub fn read(&self, addr: u16) -> u8 {
@@ -415,8 +421,8 @@ enum Status {
 }
 
 /// CPU execution state.
-#[derive(Debug, Default)]
-enum State {
+#[derive(Clone, Debug, Default)]
+pub enum State {
     #[default]
     Fetch,
     Execute(Instruction),

@@ -1,9 +1,11 @@
 #![allow(clippy::result_large_err)]
 
+use std::fmt::Display;
 use std::io::{self, Write};
 use std::str::FromStr;
 
-use gameboy::core::cpu::{sm83, Processor};
+use gameboy::core::cpu::sm83::{self, State};
+use gameboy::core::cpu::Processor;
 use gameboy::dmg::GameBoy;
 use indexmap::IndexMap;
 use log::{error, info, trace, warn};
@@ -14,14 +16,38 @@ mod parser;
 
 type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Clone, Copy, Debug, Default)]
+pub enum Cycle {
+    Dot,
+    #[default]
+    Mach,
+    Insn,
+}
+
+impl Display for Cycle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Dot => "dot",
+                Self::Mach => "machine",
+                Self::Insn => "instruction",
+            }
+        )
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Debugger {
     // Application state
     cycle: usize,
     // Console state
     pc: u16,
+    state: State,
     // Internal state
     play: bool,
+    freq: Cycle,
     bpts: IndexMap<u16, usize>,
     skip: Option<usize>,
     prev: Option<Command>,
@@ -37,6 +63,14 @@ impl Debugger {
         self.skip = Some(0);
     }
 
+    pub fn resume(&mut self) {
+        self.play = true;
+    }
+
+    pub fn pause(&mut self) {
+        self.play = false;
+    }
+
     pub fn paused(&self) -> bool {
         !self.play
     }
@@ -44,6 +78,7 @@ impl Debugger {
     pub fn sync(&mut self, emu: &GameBoy) {
         // Update program counter
         self.pc = emu.cpu().get(sm83::Register::PC);
+        self.state = emu.cpu().state().clone();
     }
 
     pub fn inform(&self, emu: &GameBoy) {
@@ -55,7 +90,7 @@ impl Debugger {
 
     pub fn prompt(&mut self) -> Result<Option<Command>> {
         // Present the prompt
-        print!("({} @ {:04x})> ", self.cycle, self.pc);
+        print!("(#{} @ {:#06x})> ", self.cycle, self.pc);
         io::stdout().flush().map_err(Error::Io)?;
 
         // Read input
@@ -79,7 +114,6 @@ impl Debugger {
         use Command::*;
 
         // Update internal bookkeeping data
-        self.play = false;             // pause console
         self.prev = Some(cmd.clone()); // recall previous command
 
         // Perform the command
@@ -87,6 +121,7 @@ impl Debugger {
             Break(addr)       => self.r#break(addr),
             Continue          => self.r#continue(),
             Delete(point)     => self.delete(point),
+            Freq(cycle)       => self.freq(cycle),
             Help(what)        => self.help(what),
             Info(what)        => self.info(what),
             List              => self.list(emu),
@@ -114,7 +149,7 @@ impl Debugger {
 
     fn r#continue(&mut self) -> Result<()> {
         self.skip = None; // reset skipped cycles
-        self.play = true; // resume console
+        self.resume(); // resume console
 
         Ok(())
     }
@@ -125,6 +160,14 @@ impl Debugger {
             .swap_remove_index(point)
             .ok_or(Error::PointNotFound)?;
         println!("breakpoint {point} deleted (indices shifted downwards)");
+
+        Ok(())
+    }
+
+    fn freq(&mut self, cycle: Cycle) -> Result<()> {
+        // Change the current frequency
+        self.freq = cycle;
+        println!("frequency set to {cycle}");
 
         Ok(())
     }
@@ -150,7 +193,10 @@ impl Debugger {
     }
 
     fn list(&self, emu: &GameBoy) -> Result<()> {
-        let insn = emu.cpu().insn();
+        let insn = match &emu.cpu().state() {
+            State::Execute(insn) => insn.clone(),
+            _ => emu.cpu().insn(),
+        };
         println!(
             "{addr:04x}: {opcode:02X} ; {insn}",
             addr = self.pc,
@@ -174,13 +220,14 @@ impl Debugger {
         let (addr, skips) = self.bpts.get_index_mut(point).ok_or(Error::PointNotFound)?;
         // Update the amount of skips
         *skips = many;
-        println!("breakpoint {point} @ {addr:04x}: skip {many} times");
+        println!("breakpoint {point} @ {addr:04x}: will ignore next {many} crossings");
 
         Ok(())
     }
 
     fn step(&mut self) -> Result<()> {
-        self.play = true; // resume console
+        self.skip = Some(0); // set no skipped cycles
+        self.resume(); // resume console
 
         Ok(())
     }
@@ -208,7 +255,15 @@ impl Block for Debugger {
 
 impl Machine for Debugger {
     fn enabled(&self) -> bool {
-        matches!(self.skip, Some(0)) || self.bpts.get(&self.pc).map_or(false, |&skips| skips == 0)
+        let mcycle = self.cycle % 4 == 0;
+        let step = match self.freq {
+            Cycle::Dot => true,
+            Cycle::Mach => mcycle,
+            Cycle::Insn => mcycle && matches!(self.state, State::Done),
+        };
+        let skip = !matches!(self.skip, Some(0));
+        let bkpt = self.bpts.get(&self.pc).map_or(false, |&skips| skips == 0);
+        step && (!skip || bkpt)
     }
 
     fn cycle(&mut self) {
@@ -232,6 +287,7 @@ pub enum Command {
     Break(u16),
     Continue,
     Delete(usize),
+    Freq(Cycle),
     Help(Option<String>),
     Info(Option<String>),
     List,
