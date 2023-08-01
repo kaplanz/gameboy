@@ -12,7 +12,7 @@ use remus::{Clock, Machine};
 
 use crate::gbd::Debugger;
 use crate::pal::Palette;
-use crate::{Speed, FREQ};
+use crate::{gbd, Speed, FREQ};
 
 #[derive(Debug)]
 pub struct Opts {
@@ -82,8 +82,7 @@ impl App {
                 if let Some(mut gbd) = gbd.try_lock_for(Duration::from_millis(10)) {
                     gbd.enable();
                 } else {
-                    println!("Exiting...");
-                    std::process::exit(0);
+                    Self::exit();
                 }
             })?;
         }
@@ -136,6 +135,7 @@ impl App {
                         let res = gbd.act(&mut emu, cmd);
                         match crate::Result::from(res) {
                             Ok(_) => (),
+                            Err(gbd::Error::Quit) => Self::exit(),
                             Err(err) => eprintln!("{err}"),
                         }
                     }
@@ -215,6 +215,11 @@ impl App {
         }
 
         Ok(())
+    }
+
+    pub fn exit() {
+        println!("Exiting...");
+        std::process::exit(0);
     }
 }
 
