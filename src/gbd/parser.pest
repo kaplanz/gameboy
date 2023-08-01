@@ -12,11 +12,12 @@ UInt          = @{ Num }
     Dec       = ${         ASCII_DIGIT+ }
 
 Input         = _{ SOI ~ Command? ~ EOI }
-  Keyword     = _{ KBreak | KContinue | KDelete | KHelp | KInfo | KList |
-                   KRead | KSkip | KStep | KWrite }
+  Keyword     = _{ KBreak | KContinue | KDelete | KFreq | KHelp | KInfo |
+                   KList | KRead | KSkip | KStep | KWrite }
     KBreak    = _{ ^"break"    | ^"b" }
     KContinue = _{ ^"continue" | ^"c" }
     KDelete   = _{ ^"delete"   | ^"d" }
+    KFreq     = _{ ^"freq"            }
     KHelp     = _{ ^"help"     | ^"h" }
     KInfo     = _{ ^"info"     | ^"i" }
     KList     = _{ ^"list"     | ^"l" }
@@ -24,11 +25,16 @@ Input         = _{ SOI ~ Command? ~ EOI }
     KSkip     = _{ ^"skip"            }
     KStep     = _{ ^"step"     | ^"s" }
     KWrite    = _{ ^"write"    | ^"w" }
-  Command     = _{ Break | Continue | Delete | Help | Info | List | Read |
-                   Skip | Step | Write }
+  Command     = _{ Break | Continue | Delete | Freq | Help | Info | List |
+                   Read | Skip | Step | Write }
     Break     =  { KBreak ~ UInt }
     Continue  =  { KContinue }
     Delete    =  { KDelete ~ UInt }
+    Freq      =  { KFreq ~ SFreq }
+      SFreq   = _{ Dot | Insn | Mach }
+        Dot   =  { ^"tstate" | ^"t" | ^"dot"  | ^"d" }
+        Insn  =  { ^"instruction"   | ^"insn" | ^"i" }
+        Mach  =  { ^"machine"       | ^"mach" | ^"m" }
     Help      =  { KHelp ~ Keyword? }
     Info      =  { KInfo ~ SInfo? }
       SInfo   = _{ KBreak }

@@ -93,15 +93,14 @@ impl App {
             if let Some(gbd) = &mut gbd {
                 // Sync with console
                 gbd.sync(&emu);
-                // Perform a debugger cycle
-                gbd.cycle();
 
                 // Perform debugger actions
                 if gbd.enabled() {
+                    // Provide information to user before prompting for command
+                    gbd.inform(&emu);
                     // Prompt and execute commands until emulation resumed
-                    loop {
-                        // Provide information to user before prompting for command
-                        gbd.inform(&emu);
+                    gbd.pause();
+                    while gbd.paused() {
                         // Fetch next debugger command
                         let cmd = loop {
                             match crate::Result::from(gbd.prompt()) {
@@ -112,7 +111,7 @@ impl App {
                                 }
                             };
                         };
-                        // Return to prompt when no command provided
+                        // Restart at prompt when no command provided
                         let Some(cmd) = cmd else {
                             continue;
                         };
@@ -122,15 +121,11 @@ impl App {
                             Ok(_) => (),
                             Err(err) => eprintln!("{err}"),
                         }
-
-                        // Return to prompt when not playing
-                        if gbd.paused() {
-                            continue;
-                        }
-
-                        break; // resume emulation
                     }
                 }
+
+                // Perform a debugger cycle
+                gbd.cycle();
             }
 
             // Synchronize with wall-clock

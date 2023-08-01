@@ -4,7 +4,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error;
 
-use super::Command;
+use super::{Command, Cycle};
 
 #[derive(Parser)]
 #[grammar = "gbd/parser.pest"]
@@ -29,6 +29,17 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
             let mut pairs = top.into_inner();
             let index = parse::int(pairs.next().expect("missing inner rule"))?;
             Command::Delete(index)
+        }
+        Rule::Freq => {
+            let mut pairs = top.into_inner();
+            let pair = pairs.next().expect("missing inner rule");
+            let cycle = match pair.as_rule() {
+                Rule::Dot => Cycle::Dot,
+                Rule::Insn => Cycle::Insn,
+                Rule::Mach => Cycle::Mach,
+                rule => unreachable!("invalid rule: {rule:?}"),
+            };
+            Command::Freq(cycle)
         }
         Rule::Help => {
             let mut pairs = top.into_inner();
