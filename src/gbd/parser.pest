@@ -13,7 +13,7 @@ UInt          = @{ Num }
 
 Input         = _{ SOI ~ Command? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KFreq | KHelp | KInfo |
-                   KList | KRead | KSkip | KStep | KWrite }
+                   KList | KQuit | KRead | KSkip | KStep | KWrite }
     KBreak    = _{ ^"break"    | ^"b" }
     KContinue = _{ ^"continue" | ^"c" }
     KDelete   = _{ ^"delete"   | ^"d" }
@@ -21,12 +21,13 @@ Input         = _{ SOI ~ Command? ~ EOI }
     KHelp     = _{ ^"help"     | ^"h" }
     KInfo     = _{ ^"info"     | ^"i" }
     KList     = _{ ^"list"     | ^"l" }
+    KQuit     = _{ ^"quit"     | ^"q" }
     KRead     = _{ ^"read"     | ^"r" }
     KSkip     = _{ ^"skip"            }
     KStep     = _{ ^"step"     | ^"s" }
     KWrite    = _{ ^"write"    | ^"w" }
   Command     = _{ Break | Continue | Delete | Freq | Help | Info | List |
-                   Read | Skip | Step | Write }
+                   Quit | Read | Skip | Step | Write }
     Break     =  { KBreak ~ UInt }
     Continue  =  { KContinue }
     Delete    =  { KDelete ~ UInt }
@@ -39,6 +40,7 @@ Input         = _{ SOI ~ Command? ~ EOI }
     Info      =  { KInfo ~ SInfo? }
       SInfo   = _{ KBreak }
     List      =  { KList }
+    Quit      =  { KQuit }
     Read      =  { KRead ~ UInt }
     Skip      =  { KSkip ~ UInt ~ UInt }
     Step      =  { KStep }

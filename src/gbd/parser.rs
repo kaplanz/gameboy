@@ -52,6 +52,7 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
             Command::Info(what)
         }
         Rule::List => Command::List,
+        Rule::Quit => Command::Quit,
         Rule::Read => {
             let mut pairs = top.into_inner();
             let addr = parse::int(pairs.next().expect("missing inner rule"))?;

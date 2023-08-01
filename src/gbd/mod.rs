@@ -125,6 +125,7 @@ impl Debugger {
             Help(what)        => self.help(what),
             Info(what)        => self.info(what),
             List              => self.list(emu),
+            Quit              => self.quit(),
             Read(addr)        => self.read(emu, addr),
             Skip(point, many) => self.skip(point, many),
             Step              => self.step(),
@@ -204,6 +205,11 @@ impl Debugger {
         );
 
         Ok(())
+    }
+
+    #[allow(clippy::unused_self)]
+    fn quit(&self) -> Result<()> {
+        Err(Error::Quit)
     }
 
     #[allow(clippy::unused_self)]
@@ -291,6 +297,7 @@ pub enum Command {
     Help(Option<String>),
     Info(Option<String>),
     List,
+    Quit,
     Read(u16),
     Write(u16, u8),
     Skip(usize, usize),
@@ -316,4 +323,6 @@ pub enum Error {
     PointNotFound,
     #[error("no input provided")]
     Empty,
+    #[error("requested quit")]
+    Quit,
 }
