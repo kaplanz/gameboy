@@ -20,6 +20,7 @@ members = [
 [dependencies]
 clap = { version = "4.3.19", features = ["derive", "env", "wrap_help"] }
 color-eyre = { version = "0.6.2", default-features = false }
+ctrlc = "3.4.0"
 env_logger = "0.10.0"
 gameboy-core = { path = "core" }
 hexicolor = { version = "0.1.0", path = "crates/hexicolor" }
@@ -27,6 +28,7 @@ indexmap = "2.0.0"
 log = "0.4.19"
 minifb = "0.24.0"
 num = "0.4.1"
+parking_lot = "0.12.1"
 pest = "2.7.1"
 pest_derive = "2.7.1"
 remus = { git = "https://github.com/kaplanz/remus.git" }
