@@ -58,12 +58,6 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
             let addr = parse::int(pairs.next().expect("missing inner rule"))?;
             Command::Read(addr)
         }
-        Rule::Write => {
-            let mut pairs = top.into_inner();
-            let addr = parse::int(pairs.next().expect("missing inner rule"))?;
-            let byte = parse::int::<i8>(pairs.next().expect("missing inner rule"))? as u8;
-            Command::Write(addr, byte)
-        }
         Rule::Skip => {
             let mut pairs = top.into_inner();
             let index = parse::int(pairs.next().expect("missing inner rule"))?;
@@ -71,6 +65,12 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
             Command::Skip(index, many)
         }
         Rule::Step => Command::Step,
+        Rule::Write => {
+            let mut pairs = top.into_inner();
+            let addr = parse::int(pairs.next().expect("missing inner rule"))?;
+            let byte = parse::int::<i8>(pairs.next().expect("missing inner rule"))? as u8;
+            Command::Write(addr, byte)
+        }
         Rule::EOI => return Ok(None),
         rule => unreachable!("invalid rule: {rule:?}"),
     };

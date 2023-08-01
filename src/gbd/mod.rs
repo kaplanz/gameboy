@@ -299,9 +299,9 @@ pub enum Command {
     List,
     Quit,
     Read(u16),
-    Write(u16, u8),
     Skip(usize, usize),
     Step,
+    Write(u16, u8),
 }
 
 impl FromStr for Command {
