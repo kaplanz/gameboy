@@ -1,10 +1,13 @@
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::sync::Arc;
+use std::time::Duration;
 
 use gameboy::core::Emulator;
 use gameboy::dmg::{Button, GameBoy, Screen, SCREEN};
 use log::debug;
 use minifb::{Key, Scale, Window, WindowOptions};
+use parking_lot::Mutex;
 use remus::{Clock, Machine};
 
 use crate::gbd::Debugger;
@@ -37,7 +40,7 @@ impl App {
             mut win,
             mut debug,
             mut doctor,
-            mut gbd,
+            gbd,
         } = self;
         let title = opts.title;
 
@@ -64,11 +67,25 @@ impl App {
         }
 
         // Prepare debugger when used
-        if let Some(gbd) = &mut gbd {
-            // Enable debugger
-            gbd.enable();
-            // Sync initial console state
-            gbd.sync(&emu);
+        let mut gbd = gbd.map(Mutex::new).map(Arc::new);
+        if let Some(gbd) = gbd.as_ref().map(Arc::clone) {
+            {
+                // Unlock the debugger
+                let mut gbd = gbd.lock();
+                // Enable debugger
+                gbd.enable();
+                // Sync initial console state
+                gbd.sync(&emu);
+            }
+            // Install SIGINT handler
+            ctrlc::try_set_handler(move || {
+                if let Some(mut gbd) = gbd.try_lock_for(Duration::from_millis(10)) {
+                    gbd.enable();
+                } else {
+                    println!("Exiting...");
+                    std::process::exit(0);
+                }
+            })?;
         }
 
         // Emulation loop
@@ -90,7 +107,7 @@ impl App {
             }
 
             // Optionally run the debugger
-            if let Some(gbd) = &mut gbd {
+            if let Some(mut gbd) = gbd.as_mut().map(|gbd| gbd.lock()) {
                 // Sync with console
                 gbd.sync(&emu);
 
