@@ -79,7 +79,9 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
         Rule::Write => {
             let mut pairs = top.into_inner();
             let addr = parse::int(pairs.next().expect("missing inner rule"))?;
-            let byte = parse::int::<i8>(pairs.next().expect("missing inner rule"))? as u8;
+            let pair = pairs.next().expect("missing inner rule");
+            let byte = parse::int(pair.clone()) // attempt both `u8` and `i8`
+                .or_else(|_| parse::int::<i8>(pair).map(|int| int as u8))?;
             Command::Write(addr, byte)
         }
         Rule::EOI => return Ok(None),
