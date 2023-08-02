@@ -40,6 +40,34 @@ impl Display for Cycle {
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum Command {
+    Break(u16),
+    Continue,
+    Delete(usize),
+    Freq(Cycle),
+    Help(Option<String>),
+    Info(Option<String>),
+    List,
+    Quit,
+    Read(u16),
+    ReadRange(Range<u16>),
+    Skip(usize, usize),
+    Step,
+    Write(u16, u8),
+    WriteRange(Range<u16>, u8),
+}
+
+impl FromStr for Command {
+    type Err = Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        parser::parse(s)
+            .map_err(Error::Parser)?
+            .ok_or(Error::NoInput)
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Debugger {
     // Application state
@@ -342,34 +370,6 @@ impl Machine for Debugger {
             // Decrement skip count
             *skip = skip.saturating_sub(1);
         }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum Command {
-    Break(u16),
-    Continue,
-    Delete(usize),
-    Freq(Cycle),
-    Help(Option<String>),
-    Info(Option<String>),
-    List,
-    Quit,
-    Read(u16),
-    ReadRange(Range<u16>),
-    Skip(usize, usize),
-    Step,
-    Write(u16, u8),
-    WriteRange(Range<u16>, u8),
-}
-
-impl FromStr for Command {
-    type Err = Error;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        parser::parse(s)
-            .map_err(Error::Parser)?
-            .ok_or(Error::NoInput)
     }
 }
 
