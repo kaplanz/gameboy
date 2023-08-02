@@ -52,4 +52,4 @@ Input         = _{ SOI ~ Command? ~ EOI }
     Read      =  { KRead ~ (RangeBounds | UInt) }
     Skip      =  { KSkip ~ UInt ~ UInt }
     Step      =  { KStep }
-    Write     =  { KWrite ~ UInt ~ Int }
+    Write     =  { KWrite ~ (RangeBounds | UInt) ~ Int }

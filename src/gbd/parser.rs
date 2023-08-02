@@ -56,6 +56,7 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
         Rule::Read => {
             let mut pairs = top.into_inner();
             let what = pairs.next().expect("missing inner rule");
+            // Match on address (range)
             match what.as_rule() {
                 Rule::UInt => {
                     let addr = parse::int(what)?;
@@ -78,11 +79,24 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
         Rule::Step => Command::Step,
         Rule::Write => {
             let mut pairs = top.into_inner();
-            let addr = parse::int(pairs.next().expect("missing inner rule"))?;
+            let what = pairs.next().expect("missing inner rule");
+            // Match on data byte
             let pair = pairs.next().expect("missing inner rule");
             let byte = parse::int(pair.clone()) // attempt both `u8` and `i8`
                 .or_else(|_| parse::int::<i8>(pair).map(|int| int as u8))?;
-            Command::Write(addr, byte)
+            // Match on address (range)
+            match what.as_rule() {
+                Rule::UInt => {
+                    let addr = parse::int(what)?;
+                    Command::Write(addr, byte)
+                }
+                Rule::RangeBounds => {
+                    let mut pairs = what.into_inner();
+                    let (start, end) = parse::range(pairs.next().expect("missing inner rule"))?;
+                    Command::WriteRange(start..end, byte)
+                }
+                rule => unreachable!("invalid rule: {rule:?}"),
+            }
         }
         Rule::EOI => return Ok(None),
         rule => unreachable!("invalid rule: {rule:?}"),

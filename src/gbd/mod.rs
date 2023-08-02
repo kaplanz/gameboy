@@ -133,6 +133,7 @@ impl Debugger {
             Skip(point, many) => self.skip(point, many),
             Step              => self.step(),
             Write(addr, byte) => self.write(emu, addr, byte),
+            WriteRange(range, byte) => self.write_range(emu, range, byte),
         }
     }
 
@@ -277,6 +278,36 @@ impl Debugger {
 
         Ok(())
     }
+
+    #[allow(clippy::unused_self)]
+    fn write_range(&self, emu: &mut GameBoy, range: Range<u16>, byte: u8) -> Result<()> {
+        // Allow range to wrap
+        let Range { start, end } = range;
+        let iter: Box<dyn Iterator<Item = u16>> = match start.cmp(&end) {
+            Ordering::Less => Box::new(start..end),
+            Ordering::Equal => return Ok(()),
+            Ordering::Greater => {
+                warn!("wrapping range for `write`");
+                Box::new((start..u16::MAX).chain(u16::MIN..end))
+            }
+        };
+        // Store all writes
+        let worked = iter
+            .map(|addr| {
+                // Perform the write
+                emu.cpu().write(addr, byte);
+                // Read the written value
+                emu.cpu().read(addr)
+            })
+            .all(|read| read == byte);
+        if !worked {
+            warn!("ignored some writes in range");
+        }
+        // Read the written values
+        self.read_range(emu, range)?;
+
+        Ok(())
+    }
 }
 
 impl Block for Debugger {
@@ -329,6 +360,7 @@ pub enum Command {
     Skip(usize, usize),
     Step,
     Write(u16, u8),
+    WriteRange(Range<u16>, u8),
 }
 
 impl FromStr for Command {
