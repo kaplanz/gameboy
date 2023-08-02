@@ -61,10 +61,9 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
                     let addr = parse::int(what)?;
                     Command::Read(addr)
                 }
-                Rule::Range => {
-                    let mut what = what.into_inner();
-                    let start = parse::int(what.next().expect("missing inner rule"))?;
-                    let end = parse::int(what.next().expect("missing inner rule"))?;
+                Rule::RangeBounds => {
+                    let mut pairs = what.into_inner();
+                    let (start, end) = parse::range(pairs.next().expect("missing inner rule"))?;
                     Command::ReadRange(start..end)
                 }
                 rule => unreachable!("invalid rule: {rule:?}"),
@@ -93,7 +92,8 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
 mod parse {
     use std::num::ParseIntError;
 
-    use num::Integer;
+    use num::traits::WrappingAdd;
+    use num::{Bounded, Integer};
     use pest::iterators::Pair;
 
     use super::Rule;
@@ -114,6 +114,53 @@ mod parse {
             Rule::Oct => I::from_str_radix(&(sign + &num.as_str()[2..]), 8),
             Rule::Dec => I::from_str_radix(&(sign + &num.as_str()[0..]), 10),
             Rule::Hex => I::from_str_radix(&(sign + &num.as_str()[2..]), 16),
+            rule => unreachable!("invalid rule: {rule:?}"),
+        }
+    }
+
+    pub(super) fn range<I>(pair: Pair<Rule>) -> Result<(I, I), ParseIntError>
+    where
+        I: Bounded + Integer<FromStrRadixErr = ParseIntError> + WrappingAdd,
+    {
+        // Extract the range rule
+        match pair.as_rule() {
+            Rule::Range => {
+                let mut range = pair.into_inner();
+                let start = self::int(range.next().expect("missing inner rule"))?;
+                let end = self::int(range.next().expect("missing inner rule"))?;
+                Ok((start, end))
+            }
+            Rule::RangeFrom => {
+                let mut range = pair.into_inner();
+                let start = self::int(range.next().expect("missing inner rule"))?;
+                let end = I::max_value();
+                Ok((start, end))
+            }
+            Rule::RangeFull => {
+                let start = I::min_value();
+                let end = I::max_value();
+                Ok((start, end))
+            }
+            Rule::RangeInc => {
+                let mut range = pair.into_inner();
+                let start = self::int(range.next().expect("missing inner rule"))?;
+                let end = self::int::<I>(range.next().expect("missing inner rule"))?
+                    .wrapping_add(&I::one());
+                Ok((start, end))
+            }
+            Rule::RangeTo => {
+                let mut range = pair.into_inner();
+                let start = I::min_value();
+                let end = self::int(range.next().expect("missing inner rule"))?;
+                Ok((start, end))
+            }
+            Rule::RangeToInc => {
+                let mut range = pair.into_inner();
+                let start = I::min_value();
+                let end = self::int::<I>(range.next().expect("missing inner rule"))?
+                    .wrapping_add(&I::one());
+                Ok((start, end))
+            }
             rule => unreachable!("invalid rule: {rule:?}"),
         }
     }
