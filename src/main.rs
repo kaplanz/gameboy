@@ -15,6 +15,7 @@ use crate::pal::Palette;
 
 mod app;
 mod gbd;
+mod hex;
 mod pal;
 
 /// Game Boy main clock frequency, set to 4,194,304 Hz.

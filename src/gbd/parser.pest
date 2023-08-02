@@ -10,6 +10,7 @@ UInt          = @{ Num }
     Oct       = ${ ^"0o" ~ ASCII_OCT_DIGIT+ }
     Hex       = ${ ^"0x" ~ ASCII_HEX_DIGIT+ }
     Dec       = ${         ASCII_DIGIT+ }
+Range         = ${ UInt ~ ".." ~ UInt }
 
 Input         = _{ SOI ~ Command? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KFreq | KHelp | KInfo |
@@ -41,7 +42,7 @@ Input         = _{ SOI ~ Command? ~ EOI }
       SInfo   = _{ KBreak }
     List      =  { KList }
     Quit      =  { KQuit }
-    Read      =  { KRead ~ UInt }
+    Read      =  { KRead ~ (Range | UInt) }
     Skip      =  { KSkip ~ UInt ~ UInt }
     Step      =  { KStep }
     Write     =  { KWrite ~ UInt ~ Int }
