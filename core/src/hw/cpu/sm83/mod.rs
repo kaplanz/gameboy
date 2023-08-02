@@ -19,6 +19,7 @@ mod insn;
 pub use self::insn::Instruction;
 
 /// 16-bit register set.
+#[derive(Clone, Copy, Debug)]
 pub enum Register {
     AF,
     BC,
