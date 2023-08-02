@@ -52,6 +52,7 @@ pub enum Command {
     Quit,
     Read(u16),
     ReadRange(Range<u16>),
+    Reset,
     Skip(usize, usize),
     Step,
     Write(u16, u8),
@@ -158,6 +159,7 @@ impl Debugger {
             Quit              => self.quit(),
             Read(addr)        => self.read(emu, addr),
             ReadRange(range)  => self.read_range(emu, range),
+            Reset             => Self::reset(self, emu),
             Skip(point, many) => self.skip(point, many),
             Step              => self.step(),
             Write(addr, byte) => self.write(emu, addr, byte),
@@ -272,6 +274,14 @@ impl Debugger {
             "{}",
             crate::hex::Printer::<u8>::new(start.into(), &data).display()
         );
+
+        Ok(())
+    }
+
+    #[allow(clippy::unused_self)]
+    fn reset(&self, emu: &mut GameBoy) -> Result<()> {
+        // Reset the console
+        emu.reset();
 
         Ok(())
     }
