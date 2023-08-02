@@ -1,7 +1,9 @@
 #![allow(clippy::result_large_err)]
 
+use std::cmp::Ordering;
 use std::fmt::Display;
 use std::io::{self, Write};
+use std::ops::Range;
 use std::str::FromStr;
 
 use gameboy::core::cpu::sm83::{self, State};
@@ -100,7 +102,7 @@ impl Debugger {
 
         // Parse the command
         let cmd = match input.parse() {
-            Err(Error::Empty) => return Ok(self.prev.clone()), // re-use the previous command
+            Err(Error::NoInput) => return Ok(self.prev.clone()), // re-use the previous command
             res => res?,
         };
         trace!("parsed command: `{cmd:?}`");
@@ -127,6 +129,7 @@ impl Debugger {
             List              => self.list(emu),
             Quit              => self.quit(),
             Read(addr)        => self.read(emu, addr),
+            ReadRange(range)  => self.read_range(emu, range),
             Skip(point, many) => self.skip(point, many),
             Step              => self.step(),
             Write(addr, byte) => self.write(emu, addr, byte),
@@ -199,7 +202,7 @@ impl Debugger {
             _ => emu.cpu().insn(),
         };
         println!(
-            "{addr:04x}: {opcode:02X} ; {insn}",
+            "{addr:#06x}: {opcode:02X} ; {insn}",
             addr = self.pc,
             opcode = insn.opcode()
         );
@@ -216,7 +219,30 @@ impl Debugger {
     fn read(&self, emu: &mut GameBoy, addr: u16) -> Result<()> {
         // Perform a read
         let byte = emu.cpu().read(addr);
-        println!("{addr:04x}: {byte:02x}");
+        println!("{addr:#06x}: {byte:02x}");
+
+        Ok(())
+    }
+
+    #[allow(clippy::unused_self)]
+    fn read_range(&self, emu: &mut GameBoy, range: Range<u16>) -> Result<()> {
+        // Allow range to wrap
+        let Range { start, end } = range;
+        let iter: Box<dyn Iterator<Item = u16>> = match start.cmp(&end) {
+            Ordering::Less => Box::new(start..end),
+            Ordering::Equal => return Ok(()),
+            Ordering::Greater => {
+                warn!("wrapping range for `read`");
+                Box::new((start..u16::MAX).chain(u16::MIN..end))
+            }
+        };
+        // Load all reads
+        let data: Vec<_> = iter.map(|addr| emu.cpu().read(addr)).collect();
+        // Display results
+        println!(
+            "{}",
+            crate::hex::Printer::<u8>::new(start.into(), &data).display()
+        );
 
         Ok(())
     }
@@ -226,7 +252,7 @@ impl Debugger {
         let (addr, skips) = self.bpts.get_index_mut(point).ok_or(Error::PointNotFound)?;
         // Update the amount of skips
         *skips = many;
-        println!("breakpoint {point} @ {addr:04x}: will ignore next {many} crossings");
+        println!("breakpoint {point} @ {addr:#06x}: will ignore next {many} crossings");
 
         Ok(())
     }
@@ -244,7 +270,7 @@ impl Debugger {
         emu.cpu().write(addr, byte);
         let read = emu.cpu().read(addr);
         if read != byte {
-            warn!("ignored write {addr:04x} <- {byte:02x} (retained: {read:02x})");
+            warn!("ignored write {addr:#06x} <- {byte:02x} (retained: {read:02x})");
         }
         // Read the written value
         self.read(emu, addr)?;
@@ -299,6 +325,7 @@ pub enum Command {
     List,
     Quit,
     Read(u16),
+    ReadRange(Range<u16>),
     Skip(usize, usize),
     Step,
     Write(u16, u8),
@@ -308,7 +335,9 @@ impl FromStr for Command {
     type Err = Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        parser::parse(s).map_err(Error::Parser)?.ok_or(Error::Empty)
+        parser::parse(s)
+            .map_err(Error::Parser)?
+            .ok_or(Error::NoInput)
     }
 }
 
@@ -322,7 +351,7 @@ pub enum Error {
     #[error("breakpoint not found")]
     PointNotFound,
     #[error("no input provided")]
-    Empty,
+    NoInput,
     #[error("requested quit")]
     Quit,
 }

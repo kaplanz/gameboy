@@ -55,8 +55,20 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
         Rule::Quit => Command::Quit,
         Rule::Read => {
             let mut pairs = top.into_inner();
-            let addr = parse::int(pairs.next().expect("missing inner rule"))?;
-            Command::Read(addr)
+            let what = pairs.next().expect("missing inner rule");
+            match what.as_rule() {
+                Rule::UInt => {
+                    let addr = parse::int(what)?;
+                    Command::Read(addr)
+                }
+                Rule::Range => {
+                    let mut what = what.into_inner();
+                    let start = parse::int(what.next().expect("missing inner rule"))?;
+                    let end = parse::int(what.next().expect("missing inner rule"))?;
+                    Command::ReadRange(start..end)
+                }
+                rule => unreachable!("invalid rule: {rule:?}"),
+            }
         }
         Rule::Skip => {
             let mut pairs = top.into_inner();
