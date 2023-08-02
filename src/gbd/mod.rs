@@ -48,6 +48,7 @@ pub enum Command {
     Freq(Cycle),
     Help(Option<String>),
     Info(Option<String>),
+    Jump(u16),
     List,
     Load(Register),
     Quit,
@@ -157,6 +158,7 @@ impl Debugger {
             Freq(cycle)       => self.freq(cycle),
             Help(what)        => self.help(what),
             Info(what)        => self.info(what),
+            Jump(addr)        => self.jump(emu, addr),
             List              => self.list(emu),
             Load(reg)         => self.load(emu, reg),
             Quit              => self.quit(),
@@ -217,6 +219,15 @@ impl Debugger {
             info!("help: `{what}`");
         }
         error!("help is not yet available");
+
+        Ok(())
+    }
+
+    fn jump(&mut self, emu: &mut GameBoy, addr: u16) -> Result<()> {
+        // Jump to specified address
+        emu.cpu_mut().goto(addr);
+        // Continue execution
+        self.r#continue()?;
 
         Ok(())
     }
