@@ -21,14 +21,15 @@ RangeBounds   =  { RangeInc | Range | RangeFrom | RangeToInc | RangeTo |
 
 Input         = _{ SOI ~ Command? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KFreq | KHelp | KInfo |
-                   KLoad | KList | KQuit | KRead | KReset | KSkip | KStore |
-                   KStep | KWrite }
+                   KJump | KLoad | KList | KQuit | KRead | KReset | KSkip |
+                   KStore | KStep | KWrite }
     KBreak    = _{ ^"break"    | ^"b"  }
     KContinue = _{ ^"continue" | ^"c"  }
     KDelete   = _{ ^"delete"   | ^"d"  }
     KFreq     = _{ ^"freq"             }
     KHelp     = _{ ^"help"     | ^"h"  }
     KInfo     = _{ ^"info"     | ^"i"  }
+    KJump     = _{ ^"jump"     | ^"j"  }
     KList     = _{ ^"list"     | ^"l"  }
     KLoad     = _{ ^"load"     | ^"lw" }
     KQuit     = _{ ^"quit"     | ^"q"  }
@@ -46,8 +47,9 @@ Input         = _{ SOI ~ Command? ~ EOI }
       HL      =  { ^"hl" }
       SP      =  { ^"sp" }
       PC      =  { ^"pc" }
-  Command     = _{ Break | Continue | Delete | Freq | Help | Info | Load |
-                   List | Quit | Read | Reset | Skip | Store | Step | Write }
+  Command     = _{ Break | Continue | Delete | Freq | Help | Info | Jump |
+                   Load | List | Quit | Read | Reset | Skip | Store | Step |
+                   Write }
     Break     =  { KBreak ~ UInt }
     Continue  =  { KContinue }
     Delete    =  { KDelete ~ UInt }
@@ -59,6 +61,7 @@ Input         = _{ SOI ~ Command? ~ EOI }
     Help      =  { KHelp ~ Keyword? }
     Info      =  { KInfo ~ SInfo? }
       SInfo   = _{ KBreak }
+    Jump      =  { KJump ~ UInt }
     List      =  { KList }
     Load      =  { KLoad ~ Register }
     Quit      =  { KQuit }
