@@ -70,6 +70,7 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
                 rule => unreachable!("invalid rule: {rule:?}"),
             }
         }
+        Rule::Reset => Command::Reset,
         Rule::Skip => {
             let mut pairs = top.into_inner();
             let index = parse::int(pairs.next().expect("missing inner rule"))?;
