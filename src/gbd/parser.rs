@@ -52,6 +52,11 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
             Command::Info(what)
         }
         Rule::List => Command::List,
+        Rule::Load => {
+            let mut pairs = top.into_inner();
+            let reg = parse::register(pairs.next().expect("missing inner rule"))?;
+            Command::Load(reg)
+        }
         Rule::Quit => Command::Quit,
         Rule::Read => {
             let mut pairs = top.into_inner();
@@ -78,6 +83,12 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
             Command::Skip(index, many)
         }
         Rule::Step => Command::Step,
+        Rule::Store => {
+            let mut pairs = top.into_inner();
+            let reg = parse::register(pairs.next().expect("missing inner rule"))?;
+            let word = parse::int(pairs.next().expect("missing inner rule"))?;
+            Command::Store(reg, word)
+        }
         Rule::Write => {
             let mut pairs = top.into_inner();
             let what = pairs.next().expect("missing inner rule");
@@ -109,11 +120,12 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
 mod parse {
     use std::num::ParseIntError;
 
+    use gameboy::core::cpu::sm83::Register;
     use num::traits::WrappingAdd;
     use num::{Bounded, Integer};
     use pest::iterators::Pair;
 
-    use super::Rule;
+    use super::{Error, Rule};
 
     pub(super) fn int<I>(pair: Pair<Rule>) -> Result<I, ParseIntError>
     where
@@ -180,6 +192,21 @@ mod parse {
             }
             rule => unreachable!("invalid rule: {rule:?}"),
         }
+    }
+
+    #[allow(clippy::needless_pass_by_value)]
+    #[allow(clippy::unnecessary_wraps)]
+    pub(super) fn register(pair: Pair<Rule>) -> Result<Register, Error> {
+        // Extract the register rule
+        Ok(match pair.as_rule() {
+            Rule::AF => Register::AF,
+            Rule::BC => Register::BC,
+            Rule::DE => Register::DE,
+            Rule::HL => Register::HL,
+            Rule::SP => Register::SP,
+            Rule::PC => Register::PC,
+            rule => unreachable!("invalid rule: {rule:?}"),
+        })
     }
 }
 

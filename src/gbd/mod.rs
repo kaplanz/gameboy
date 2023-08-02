@@ -6,7 +6,7 @@ use std::io::{self, Write};
 use std::ops::Range;
 use std::str::FromStr;
 
-use gameboy::core::cpu::sm83::{self, State};
+use gameboy::core::cpu::sm83::{self, Register, State};
 use gameboy::core::cpu::Processor;
 use gameboy::dmg::GameBoy;
 use indexmap::IndexMap;
@@ -49,12 +49,14 @@ pub enum Command {
     Help(Option<String>),
     Info(Option<String>),
     List,
+    Load(Register),
     Quit,
     Read(u16),
     ReadRange(Range<u16>),
     Reset,
     Skip(usize, usize),
     Step,
+    Store(Register, u16),
     Write(u16, u8),
     WriteRange(Range<u16>, u8),
 }
@@ -156,12 +158,14 @@ impl Debugger {
             Help(what)        => self.help(what),
             Info(what)        => self.info(what),
             List              => self.list(emu),
+            Load(reg)         => self.load(emu, reg),
             Quit              => self.quit(),
             Read(addr)        => self.read(emu, addr),
             ReadRange(range)  => self.read_range(emu, range),
             Reset             => Self::reset(self, emu),
             Skip(point, many) => self.skip(point, many),
             Step              => self.step(),
+            Store(reg, word)  => self.store(emu, reg, word),
             Write(addr, byte) => self.write(emu, addr, byte),
             WriteRange(range, byte) => self.write_range(emu, range, byte),
         }
@@ -242,13 +246,22 @@ impl Debugger {
     }
 
     #[allow(clippy::unused_self)]
+    fn load(&self, emu: &GameBoy, reg: Register) -> Result<()> {
+        // Perform the load
+        let word = emu.cpu().get(reg);
+        println!("{reg:?}: {word:#04x}");
+
+        Ok(())
+    }
+
+    #[allow(clippy::unused_self)]
     fn quit(&self) -> Result<()> {
         Err(Error::Quit)
     }
 
     #[allow(clippy::unused_self)]
     fn read(&self, emu: &mut GameBoy, addr: u16) -> Result<()> {
-        // Perform a read
+        // Perform the read
         let byte = emu.cpu().read(addr);
         println!("{addr:#06x}: {byte:02x}");
 
@@ -299,6 +312,16 @@ impl Debugger {
     fn step(&mut self) -> Result<()> {
         self.skip = Some(0); // set no skipped cycles
         self.resume(); // resume console
+
+        Ok(())
+    }
+
+    #[allow(clippy::unused_self)]
+    fn store(&self, emu: &mut GameBoy, reg: Register, word: u16) -> Result<()> {
+        // Perform the store
+        emu.cpu_mut().set(reg, word);
+        // Read the stored value
+        self.load(emu, reg)?;
 
         Ok(())
     }
