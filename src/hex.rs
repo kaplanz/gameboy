@@ -57,18 +57,34 @@ impl<'a> Internal<'a> {
         // Prepare format string
         let mut f = String::new();
         // Set up repeat tracking
+        let mut last = None;
         let mut repeat = None;
         let mut skip = false;
 
-        for (idx, line) in data.chunks(linesz * wordsz).enumerate() {
+        let mut data = data.chunks(linesz * wordsz).enumerate().peekable();
+        while let Some((idx, line)) = data.next() {
             // Check if this line repeats a single padding byte
             let pad = match line {
-                [head, tail @ ..] => tail.iter().all(|byte| byte == head).then_some(head),
+                [head, tail @ ..] => tail
+                    .iter()
+                    .all(|byte| byte == head)
+                    .then_some(head)
+                    .copied(),
                 _ => None,
             };
             // Ignore repeated lines
             if skip && pad == repeat {
                 continue;
+            }
+            // Escalate if this line repeats previous line's last byte
+            if last == pad {
+                repeat = pad;
+            }
+            // Check if we should draw this line with ellipses
+            let mut ellipses = !skip && pad.is_some() && repeat == pad;
+            // De-escalate if the next line breaks the pattern
+            if ellipses && Some(line) != data.peek().map(|(_, line)| line).copied() {
+                ellipses = false;
             }
 
             // Calculate this line's starting address
@@ -79,7 +95,7 @@ impl<'a> Internal<'a> {
                 writeln!(f).unwrap();
             }
             // Write address prefix
-            if !skip && pad.is_some() && repeat == pad {
+            if ellipses {
                 // Started repetition, write ellipses instead
                 write!(f, "{}:", ".".repeat(width)).unwrap();
                 // After printing this line, skip all future repeated lines
@@ -101,6 +117,9 @@ impl<'a> Internal<'a> {
                     write!(f, "{byte:02x}").unwrap();
                 }
             }
+
+            // Store this line's last byte
+            last = line.iter().last().copied();
         }
 
         f
