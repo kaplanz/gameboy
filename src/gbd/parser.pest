@@ -2,6 +2,7 @@
 
 WHITESPACE    = _{ " " | "\t" | NEWLINE }
 
+Identifier    = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")+ }
 Int           = @{ Sign? ~ Num }
   Sign        = ${ ("+" | "-") }
 UInt          = @{ Num }
@@ -19,10 +20,21 @@ RangeBounds   =  { RangeInc | Range | RangeFrom | RangeToInc | RangeTo |
   RangeTo     = ${        ".."  ~ UInt }
   RangeToInc  = ${        "..=" ~ UInt }
 
+Filter        = @{ Directive ~ ("," ~ Filter)? }
+  Directive   = @{ (Module ~ "=")? ~ Level }
+    Module    = @{ Identifier ~ ("::" ~ Module)? }
+    Level     = @{ LTrace | LDebug | LInfo | LWarn | LError | LOff }
+      LTrace  = _{ ^"trace" }
+      LDebug  = _{ ^"debug" }
+      LInfo   = _{ ^"info" }
+      LWarn   = _{ ^"warn" }
+      LError  = _{ ^"error" }
+      LOff    = _{ ^"off" }
+
 Input         = _{ SOI ~ Command? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KFreq | KHelp | KInfo |
-                   KJump | KLoad | KList | KQuit | KRead | KReset | KSkip |
-                   KStore | KStep | KWrite }
+                   KJump | KLoad | KLog | KList | KQuit | KRead | KReset |
+                   KSkip | KStore | KStep | KWrite }
     KBreak    = _{ ^"break"    | ^"b"  }
     KContinue = _{ ^"continue" | ^"c"  }
     KDelete   = _{ ^"delete"   | ^"d"  }
@@ -32,6 +44,7 @@ Input         = _{ SOI ~ Command? ~ EOI }
     KJump     = _{ ^"jump"     | ^"j"  }
     KList     = _{ ^"list"     | ^"l"  }
     KLoad     = _{ ^"load"     | ^"lw" }
+    KLog      = _{ ^"log"              }
     KQuit     = _{ ^"quit"     | ^"q"  }
     KRead     = _{ ^"read"     | ^"r"  }
     KReset    = _{ ^"reset"            }
@@ -48,8 +61,8 @@ Input         = _{ SOI ~ Command? ~ EOI }
       SP      =  { ^"sp" }
       PC      =  { ^"pc" }
   Command     = _{ Break | Continue | Delete | Freq | Help | Info | Jump |
-                   Load | List | Quit | Read | Reset | Skip | Store | Step |
-                   Write }
+                   Load | Log | List | Quit | Read | Reset | Skip | Store |
+                   Step | Write }
     Break     =  { KBreak ~ UInt }
     Continue  =  { KContinue }
     Delete    =  { KDelete ~ UInt }
@@ -64,6 +77,7 @@ Input         = _{ SOI ~ Command? ~ EOI }
     Jump      =  { KJump ~ UInt }
     List      =  { KList }
     Load      =  { KLoad ~ Register }
+    Log       =  { KLog ~ Filter? }
     Quit      =  { KQuit }
     Read      =  { KRead ~ (RangeBounds | UInt) }
     Reset     =  { KReset }
