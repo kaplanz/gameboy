@@ -54,6 +54,8 @@
 //!
 //! [Game Boy]: https://en.wikipedia.org/wiki/Game_Boy
 
+#![warn(clippy::pedantic)]
+
 pub use gameboy_core as core;
 
 pub use crate::core::dmg;

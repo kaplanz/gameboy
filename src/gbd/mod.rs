@@ -88,6 +88,7 @@ pub struct Debugger {
 }
 
 #[allow(clippy::unnecessary_wraps)]
+#[allow(clippy::unused_self)]
 impl Debugger {
     pub fn new() -> Self {
         Self::default()
@@ -213,7 +214,6 @@ impl Debugger {
         Ok(())
     }
 
-    #[allow(clippy::unused_self)]
     fn help(&self, what: Option<String>) -> Result<()> {
         if let Some(what) = what {
             info!("help: `{what}`");
@@ -232,7 +232,6 @@ impl Debugger {
         Ok(())
     }
 
-    #[allow(clippy::unused_self)]
     fn info(&self, what: Option<String>) -> Result<()> {
         if let Some(what) = what {
             info!("info: `{what}`");
@@ -256,7 +255,6 @@ impl Debugger {
         Ok(())
     }
 
-    #[allow(clippy::unused_self)]
     fn load(&self, emu: &GameBoy, reg: Register) -> Result<()> {
         // Perform the load
         let word = emu.cpu().get(reg);
@@ -265,12 +263,10 @@ impl Debugger {
         Ok(())
     }
 
-    #[allow(clippy::unused_self)]
     fn quit(&self) -> Result<()> {
         Err(Error::Quit)
     }
 
-    #[allow(clippy::unused_self)]
     fn read(&self, emu: &mut GameBoy, addr: u16) -> Result<()> {
         // Perform the read
         let byte = emu.cpu().read(addr);
@@ -279,7 +275,6 @@ impl Debugger {
         Ok(())
     }
 
-    #[allow(clippy::unused_self)]
     fn read_range(&self, emu: &mut GameBoy, range: Range<u16>) -> Result<()> {
         // Allow range to wrap
         let Range { start, end } = range;
@@ -302,7 +297,6 @@ impl Debugger {
         Ok(())
     }
 
-    #[allow(clippy::unused_self)]
     fn reset(&self, emu: &mut GameBoy) -> Result<()> {
         // Reset the console
         emu.reset();
@@ -327,7 +321,6 @@ impl Debugger {
         Ok(())
     }
 
-    #[allow(clippy::unused_self)]
     fn store(&self, emu: &mut GameBoy, reg: Register, word: u16) -> Result<()> {
         // Perform the store
         emu.cpu_mut().set(reg, word);
@@ -337,7 +330,6 @@ impl Debugger {
         Ok(())
     }
 
-    #[allow(clippy::unused_self)]
     fn write(&self, emu: &mut GameBoy, addr: u16, byte: u8) -> Result<()> {
         // Perform the write
         emu.cpu().write(addr, byte);
@@ -351,7 +343,6 @@ impl Debugger {
         Ok(())
     }
 
-    #[allow(clippy::unused_self)]
     fn write_range(&self, emu: &mut GameBoy, range: Range<u16>, byte: u8) -> Result<()> {
         // Allow range to wrap
         let Range { start, end } = range;

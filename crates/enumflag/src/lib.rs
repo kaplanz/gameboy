@@ -39,6 +39,8 @@
 //! assert_eq!(flag, 0b110);
 //! ```
 
+#![warn(clippy::pedantic)]
+
 /// Enum flag interface.
 pub trait Enumflag: Copy + Into<u8> {
     /// Gets the corresponding bit value from an integer flag.

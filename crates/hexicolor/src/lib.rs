@@ -2,6 +2,8 @@
 //!
 //! This library implements a string color parser for hexadecimal color values.
 
+#![warn(clippy::pedantic)]
+
 use std::fmt::Display;
 use std::num::ParseIntError;
 use std::str::FromStr;
