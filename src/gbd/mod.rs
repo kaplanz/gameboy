@@ -13,6 +13,9 @@ use indexmap::IndexMap;
 use log::{error, info, trace, warn};
 use remus::{Block, Machine};
 use thiserror::Error;
+use tracing_subscriber::reload;
+
+use super::Handle;
 
 mod parser;
 
@@ -77,6 +80,7 @@ impl FromStr for Command {
 pub struct Debugger {
     // Application state
     cycle: usize,
+    reload: Option<Handle>,
     // Console state
     pc: u16,
     state: State,
@@ -93,6 +97,11 @@ pub struct Debugger {
 impl Debugger {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn reload(mut self, handle: Handle) -> Self {
+        self.reload = Some(handle);
+        self
     }
 
     pub fn enable(&mut self) {
@@ -163,7 +172,7 @@ impl Debugger {
             Jump(addr)        => self.jump(emu, addr),
             List              => self.list(emu),
             Load(reg)         => self.load(emu, reg),
-            Log(str)          => self.log(str),
+            Log(filter)       => self.log(filter),
             Quit              => self.quit(),
             Read(addr)        => self.read(emu, addr),
             ReadRange(range)  => self.read_range(emu, range),
@@ -258,8 +267,19 @@ impl Debugger {
     }
 
     #[allow(clippy::needless_pass_by_value)]
-    fn log(&self, str: Option<String>) -> Result<()> {
-        todo!("{str:?}");
+    fn log(&mut self, filter: Option<String>) -> Result<()> {
+        // Extract the reload handle
+        let handle = self.reload.as_mut().ok_or(Error::MissingReloadHandle)?;
+
+        // Change the tracing filter
+        if let Some(filter) = filter {
+            handle.reload(filter)?;
+        }
+
+        // Print the current filter
+        handle.with_current(|filter| println!("filter: {filter}"))?;
+
+        Ok(())
     }
 
     fn load(&self, emu: &GameBoy, reg: Register) -> Result<()> {
@@ -424,6 +444,10 @@ pub enum Error {
     Parser(#[from] parser::Error),
     #[error("breakpoint not found")]
     PointNotFound,
+    #[error("missing reload handle")]
+    MissingReloadHandle,
+    #[error(transparent)]
+    Tracing(#[from] reload::Error),
     #[error("no input provided")]
     NoInput,
     #[error("requested quit")]

@@ -65,8 +65,8 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
         }
         Rule::Log => {
             let mut pairs = top.into_inner();
-            let str = pairs.next().map(|pair| pair.as_span().as_str().to_string());
-            Command::Log(str)
+            let filter = pairs.next().map(|pair| pair.as_span().as_str().to_string());
+            Command::Log(filter)
         }
         Rule::Quit => Command::Quit,
         Rule::Read => {

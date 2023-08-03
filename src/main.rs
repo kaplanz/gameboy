@@ -10,6 +10,9 @@ use gameboy::dmg::cart::Cartridge;
 use gameboy::dmg::{BootRom, GameBoy, SCREEN};
 use log::{info, warn};
 use minifb::{Scale, ScaleMode, Window, WindowOptions};
+use tracing_subscriber::fmt::Layer;
+use tracing_subscriber::layer::Layered;
+use tracing_subscriber::{reload, EnvFilter, Registry};
 
 use crate::app::{App, Doctor, Opts};
 use crate::gbd::Debugger;
@@ -19,6 +22,8 @@ mod app;
 mod gbd;
 mod hex;
 mod pal;
+
+type Handle = reload::Handle<EnvFilter, Layered<Layer<Registry>, Registry>>;
 
 /// Game Boy main clock frequency, set to 4,194,304 Hz.
 const FREQ: u32 = 0x0040_0000;
@@ -129,7 +134,11 @@ fn main() -> Result<()> {
     // Parse args
     let args = Args::parse();
     // Initialize logger
-    env_logger::builder().parse_filters(&args.log).init();
+    let log = tracing_subscriber::fmt()
+        .with_env_filter(&args.log)
+        .with_filter_reloading();
+    let handle = log.reload_handle();
+    log.init();
 
     // Read the boot ROM
     let boot = boot(args.boot)?;
@@ -176,7 +185,10 @@ fn main() -> Result<()> {
     let doctor = args.doctor.map(File::create).transpose()?.map(Doctor::new);
 
     // Declare debugger
-    let gbd = args.gbd.then_some(Debugger::new());
+    let gbd = args
+        .gbd
+        .then_some(Debugger::new())
+        .map(|gdb| gdb.reload(handle));
 
     // Prepare app, options
     let Args { pal, speed, .. } = args;
