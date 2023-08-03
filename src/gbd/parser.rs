@@ -11,6 +11,7 @@ use super::{Command, Cycle};
 struct GbdParser;
 
 #[allow(clippy::cast_sign_loss)]
+#[allow(clippy::too_many_lines)]
 pub fn parse(src: &str) -> Result<Option<Command>, Error> {
     // Parse the input string
     let mut pairs = GbdParser::parse(Rule::Input, src)?;
@@ -43,7 +44,7 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
         }
         Rule::Help => {
             let mut pairs = top.into_inner();
-            let what = pairs.next().map(|pair| pair.to_string());
+            let what = pairs.next().map(|pair| pair.as_str().to_string());
             Command::Help(what)
         }
         Rule::Info => {
@@ -61,6 +62,11 @@ pub fn parse(src: &str) -> Result<Option<Command>, Error> {
             let mut pairs = top.into_inner();
             let reg = parse::register(pairs.next().expect("missing inner rule"))?;
             Command::Load(reg)
+        }
+        Rule::Log => {
+            let mut pairs = top.into_inner();
+            let str = pairs.next().map(|pair| pair.as_span().as_str().to_string());
+            Command::Log(str)
         }
         Rule::Quit => Command::Quit,
         Rule::Read => {

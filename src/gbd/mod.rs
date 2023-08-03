@@ -51,6 +51,7 @@ pub enum Command {
     Jump(u16),
     List,
     Load(Register),
+    Log(Option<String>),
     Quit,
     Read(u16),
     ReadRange(Range<u16>),
@@ -162,6 +163,7 @@ impl Debugger {
             Jump(addr)        => self.jump(emu, addr),
             List              => self.list(emu),
             Load(reg)         => self.load(emu, reg),
+            Log(str)          => self.log(str),
             Quit              => self.quit(),
             Read(addr)        => self.read(emu, addr),
             ReadRange(range)  => self.read_range(emu, range),
@@ -253,6 +255,11 @@ impl Debugger {
         );
 
         Ok(())
+    }
+
+    #[allow(clippy::needless_pass_by_value)]
+    fn log(&self, str: Option<String>) -> Result<()> {
+        todo!("{str:?}");
     }
 
     fn load(&self, emu: &GameBoy, reg: Register) -> Result<()> {
