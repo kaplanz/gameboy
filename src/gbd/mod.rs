@@ -21,6 +21,11 @@ mod lang;
 
 type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Clone, Debug, Default)]
+struct Breakpoint {
+    skip: usize,
+}
+
 #[derive(Clone, Copy, Debug, Default)]
 pub enum Cycle {
     Dot,
@@ -56,7 +61,7 @@ pub struct Debugger {
     prog: Option<Program>,
     prev: Option<Command>,
     freq: Cycle,
-    bpts: IndexMap<u16, usize>,
+    bpts: IndexMap<u16, Option<Breakpoint>>,
     skip: Option<usize>,
 }
 
@@ -172,14 +177,13 @@ impl Debugger {
 
     fn r#break(&mut self, addr: u16) -> Result<()> {
         // Check if the breakpoint already exists
-        if let Some((point, _, skip)) = self.bpts.get_full_mut(&addr) {
-            // Reset an existing breakpoint
-            *skip = 0;
-            println!("breakpoint {point} exists; resetting skip count");
+        if let Some((point, _, Some(_))) = self.bpts.get_full_mut(&addr) {
+            // Inform of existing breakpoint
+            println!("breakpoint {point} found at {addr:#06x}");
         } else {
             // Create a new breakpoint
-            self.bpts.insert(addr, 0);
-            println!("breakpoint {point} created", point = self.bpts.len() - 1);
+            let (point, _) = self.bpts.insert_full(addr, Some(Breakpoint::default()));
+            println!("breakpoint {point} created");
         }
 
         Ok(())
@@ -194,10 +198,11 @@ impl Debugger {
 
     fn delete(&mut self, point: usize) -> Result<()> {
         // Find the specified breakpoint
-        self.bpts
-            .swap_remove_index(point)
-            .ok_or(Error::PointNotFound)?;
-        println!("breakpoint {point} deleted (indices shifted downwards)");
+        let Some((addr, bpt @ Some(_))) = self.bpts.get_index_mut(point) else {
+            return Err(Error::PointNotFound);
+        };
+        *bpt = None;
+        println!("breakpoint {point} at {addr:#06x} deleted");
 
         Ok(())
     }
@@ -318,9 +323,11 @@ impl Debugger {
 
     fn skip(&mut self, point: usize, many: usize) -> Result<()> {
         // Find the specified breakpoint
-        let (addr, skips) = self.bpts.get_index_mut(point).ok_or(Error::PointNotFound)?;
+        let Some((addr, Some(bpt))) = self.bpts.get_index_mut(point) else {
+            return Err(Error::PointNotFound);
+        };
         // Update the amount of skips
-        *skips = many;
+        bpt.skip = many;
         println!("breakpoint {point} @ {addr:#06x}: will ignore next {many} crossings");
 
         Ok(())
@@ -400,8 +407,12 @@ impl Machine for Debugger {
             Cycle::Insn => mcycle && matches!(self.state, State::Done),
         };
         let skip = !matches!(self.skip, Some(0));
-        let bkpt = self.bpts.get(&self.pc).map_or(false, |&skips| skips == 0);
-        step && (!skip || bkpt)
+        let bpt = self
+            .bpts
+            .get(&self.pc)
+            .and_then(Option::as_ref)
+            .map_or(false, |bpt| bpt.skip == 0);
+        step && (!skip || bpt)
     }
 
     fn cycle(&mut self) {
@@ -413,9 +424,9 @@ impl Machine for Debugger {
             *skip = skip.saturating_sub(1);
         }
         // Handle skipped breakpoints
-        if let Some(skip) = self.bpts.get_mut(&self.pc) {
+        if let Some(bpt) = self.bpts.get_mut(&self.pc).and_then(Option::as_mut) {
             // Decrement skip count
-            *skip = skip.saturating_sub(1);
+            bpt.skip = bpt.skip.saturating_sub(1);
         }
     }
 }
