@@ -117,22 +117,28 @@ impl App {
                     // Prompt and execute commands until emulation resumed
                     gbd.pause();
                     while gbd.paused() {
-                        // Fetch next debugger command
-                        let cmd = loop {
-                            match crate::Result::from(gbd.prompt()) {
-                                Ok(cmd) => break cmd,
-                                Err(err) => {
-                                    eprintln!("{err}");
-                                    continue;
-                                }
-                            };
-                        };
-                        // Restart at prompt when no command provided
-                        let Some(cmd) = cmd else {
+                        // Fetch next debugger program
+                        let Some(cmd) = gbd.fetch().or_else(|| {
+                            // Prompt until a valid program is parsed
+                            loop {
+                                match crate::Result::from(gbd.prompt()) {
+                                    Ok(_) => break,
+                                    Err(err) => {
+                                        eprintln!("{err}");
+                                        continue;
+                                    }
+                                };
+                            }
+                            // Attempt another fetch, with a fallback to the
+                            // previously executed command
+                            gbd.fetch().or_else(|| gbd.prev().cloned())
+                        }) else {
+                            // No command supplied, continue to next iteration
+                            // (this should always present prompt again)
                             continue;
                         };
-                        // Perform the command
-                        let res = gbd.act(&mut emu, cmd);
+                        // Execute a step of the program
+                        let res = gbd.exec(&mut emu, cmd);
                         match crate::Result::from(res) {
                             Ok(_) => (),
                             Err(gbd::Error::Quit) => Self::exit(),
@@ -141,7 +147,7 @@ impl App {
                     }
                 }
 
-                // Perform a debugger cycle
+                // Cycle debugger to remain synchronized with emulator
                 gbd.cycle();
             }
 

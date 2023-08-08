@@ -4,7 +4,6 @@ use std::cmp::Ordering;
 use std::fmt::Display;
 use std::io::{self, Write};
 use std::ops::Range;
-use std::str::FromStr;
 
 use gameboy::core::cpu::sm83::{self, Register, State};
 use gameboy::core::cpu::Processor;
@@ -15,9 +14,10 @@ use remus::{Block, Machine};
 use thiserror::Error;
 use tracing_subscriber::reload;
 
+use self::lang::{Command, Program};
 use super::Handle;
 
-mod parser;
+mod lang;
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -43,40 +43,7 @@ impl Display for Cycle {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum Command {
-    Break(u16),
-    Continue,
-    Delete(usize),
-    Freq(Cycle),
-    Help(Option<String>),
-    Info(Option<String>),
-    Jump(u16),
-    List,
-    Load(Register),
-    Log(Option<String>),
-    Quit,
-    Read(u16),
-    ReadRange(Range<u16>),
-    Reset,
-    Skip(usize, usize),
-    Step,
-    Store(Register, u16),
-    Write(u16, u8),
-    WriteRange(Range<u16>, u8),
-}
-
-impl FromStr for Command {
-    type Err = Error;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        parser::parse(s)
-            .map_err(Error::Parser)?
-            .ok_or(Error::NoInput)
-    }
-}
-
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Debugger {
     // Application state
     cycle: usize,
@@ -86,10 +53,11 @@ pub struct Debugger {
     state: State,
     // Internal state
     play: bool,
+    prog: Option<Program>,
+    prev: Option<Command>,
     freq: Cycle,
     bpts: IndexMap<u16, usize>,
     skip: Option<usize>,
-    prev: Option<Command>,
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -97,6 +65,15 @@ pub struct Debugger {
 impl Debugger {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    #[allow(dead_code)]
+    pub fn prog(&self) -> Option<&Program> {
+        self.prog.as_ref()
+    }
+
+    pub fn prev(&self) -> Option<&Command> {
+        self.prev.as_ref()
     }
 
     pub fn reload(mut self, handle: Handle) -> Self {
@@ -133,7 +110,7 @@ impl Debugger {
         }
     }
 
-    pub fn prompt(&mut self) -> Result<Option<Command>> {
+    pub fn prompt(&mut self) -> Result<()> {
         // Present the prompt
         print!("(#{} @ {:#06x})> ", self.cycle, self.pc);
         io::stdout().flush().map_err(Error::Io)?;
@@ -143,19 +120,27 @@ impl Debugger {
         io::stdin().read_line(&mut input)?;
         let input = input.trim();
 
-        // Parse the command
-        let cmd = match input.parse() {
-            Err(Error::NoInput) => return Ok(self.prev.clone()), // re-use the previous command
-            res => res?,
-        };
-        trace!("parsed command: `{cmd:?}`");
+        // Parse input
+        let prog: Program = input.parse()?;
+        trace!("parsed program: `{prog:?}`");
 
-        Ok(Some(cmd))
+        // Store program
+        if prog.is_empty() {
+            self.prog = None;
+        } else {
+            self.prog = Some(prog);
+        }
+
+        Ok(())
+    }
+
+    pub fn fetch(&mut self) -> Option<Command> {
+        self.prog.as_mut()?.pop_front()
     }
 
     #[rustfmt::skip]
     #[allow(clippy::enum_glob_use)]
-    pub fn act(&mut self, emu: &mut GameBoy, cmd: Command) -> Result<()> {
+    pub fn exec(&mut self, emu: &mut GameBoy, cmd: Command) -> Result<()> {
         use Command::*;
 
         // Update internal bookkeeping data
@@ -441,15 +426,13 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] io::Error),
     #[error(transparent)]
-    Parser(#[from] parser::Error),
+    Language(#[from] lang::Error),
     #[error("breakpoint not found")]
     PointNotFound,
     #[error("missing reload handle")]
     MissingReloadHandle,
     #[error(transparent)]
     Tracing(#[from] reload::Error),
-    #[error("no input provided")]
-    NoInput,
     #[error("requested quit")]
     Quit,
 }
