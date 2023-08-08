@@ -31,7 +31,7 @@ Filter        = @{ Directive ~ ("," ~ Filter)? }
       LError  = _{ ^"error" }
       LOff    = _{ ^"off" }
 
-Input         = _{ SOI ~ Command? ~ EOI }
+Program       = _{ SOI ~ Command? ~ (";" ~ Command?)* ~ ";"? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KFreq | KHelp | KInfo |
                    KJump | KLoad | KLog | KList | KQuit | KRead | KReset |
                    KSkip | KStore | KStep | KWrite }
