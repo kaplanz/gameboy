@@ -1,6 +1,7 @@
 //! Parser for `Debugger` commands.
 
-WHITESPACE    = _{ " " | "\t" | NEWLINE }
+WHITESPACE    = _{ " " | "\t" }
+EOL           = _{ ";" | NEWLINE }
 
 Identifier    = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")+ }
 Int           = @{ Sign? ~ Num }
@@ -31,7 +32,7 @@ Filter        = @{ Directive ~ ("," ~ Filter)? }
       LError  = _{ ^"error" }
       LOff    = _{ ^"off" }
 
-Program       = _{ SOI ~ Command? ~ (";" ~ Command?)* ~ ";"? ~ EOI }
+Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KFreq | KHelp | KInfo |
                    KJump | KLoad | KLog | KList | KQuit | KRead | KReset |
                    KSkip | KStore | KStep | KWrite }

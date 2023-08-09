@@ -121,29 +121,38 @@ impl App {
                     gbd.inform(&emu);
                     // Prompt and execute commands until emulation resumed
                     gbd.pause();
-                    while gbd.paused() {
-                        // Fetch next debugger program
-                        let Some(cmd) = gbd.fetch().or_else(|| {
-                            // Prompt until a valid program is parsed
-                            loop {
-                                match gbd.prompt() {
-                                    Ok(_) => break,
-                                    Err(err) => {
-                                        tell::error!("{err}");
-                                        continue;
-                                    }
-                                };
-                            }
-                            // Attempt another fetch, with a fallback to the
-                            // previously executed command
-                            gbd.fetch().or_else(|| gbd.prev().cloned())
-                        }) else {
-                            // No command supplied, continue to next iteration
-                            // (this should always present prompt again)
-                            continue;
+                    'gbd: while gbd.paused() {
+                        let res = 'res: {
+                            // Attempt to fetch command
+                            let cmd = {
+                                // Attempt to fetch the next command
+                                match gbd.fetch() {
+                                    // It worked; use it
+                                    cmd @ Some(_) => cmd,
+                                    // Couldn't fetch; prompt user
+                                    None => match gbd.prompt() {
+                                        // Program input; fetch next iteration
+                                        Ok(_) => continue 'gbd,
+                                        // No input; repeat previous command
+                                        Err(gbd::Error::NoInput) => gbd.prev().cloned(),
+                                        // Prompt error; handle upstream
+                                        err @ Err(_) => {
+                                            break 'res err;
+                                        }
+                                    },
+                                }
+                            };
+                            // Extract fetched command
+                            let Some(cmd) = cmd else {
+                                // Command still not found; this case should
+                                // only occur when no input has been provided,
+                                // as otherwise the previously executed command
+                                // should be repeated.
+                                continue 'gbd;
+                            };
+                            // Execute fetched command
+                            gbd.exec(&mut emu, cmd)
                         };
-                        // Execute a step of the program
-                        let res = gbd.exec(&mut emu, cmd);
                         match res {
                             Ok(_) => (),
                             Err(gbd::Error::Quit) => return Ok(()),
