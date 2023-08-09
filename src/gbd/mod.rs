@@ -12,6 +12,7 @@ use indexmap::IndexMap;
 use log::{debug, trace};
 use remus::{Block, Machine};
 use rustyline::error::ReadlineError;
+use rustyline::history::History;
 use rustyline::DefaultEditor as Readline;
 use thiserror::Error;
 use tracing_subscriber::reload;
@@ -134,6 +135,7 @@ impl Debugger {
             Err(ReadlineError::Eof) => return Err(Error::Quit),
             res => res?,
         };
+        line.history_mut().add(&input)?; // add input to history
 
         // Parse input
         let prog: Program = input.trim().parse()?;
