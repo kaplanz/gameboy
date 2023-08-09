@@ -2,7 +2,7 @@
 
 use std::cmp::Ordering;
 use std::fmt::Display;
-use std::io::{self, Write};
+use std::io;
 use std::ops::Range;
 
 use gameboy::core::cpu::sm83::{self, Register, State};
@@ -11,6 +11,8 @@ use gameboy::dmg::GameBoy;
 use indexmap::IndexMap;
 use log::{debug, trace};
 use remus::{Block, Machine};
+use rustyline::error::ReadlineError;
+use rustyline::DefaultEditor as Readline;
 use thiserror::Error;
 use tracing_subscriber::reload;
 
@@ -48,7 +50,7 @@ impl Display for Cycle {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Debug, Default)]
 pub struct Debugger {
     // Application state
     cycle: usize,
@@ -63,6 +65,7 @@ pub struct Debugger {
     freq: Cycle,
     bpts: IndexMap<u16, Option<Breakpoint>>,
     skip: Option<usize>,
+    line: Option<Readline>,
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -116,27 +119,38 @@ impl Debugger {
     }
 
     pub fn prompt(&mut self) -> Result<()> {
-        // Present the prompt
-        print!("(#{} @ {:#06x})> ", self.cycle, self.pc);
-        io::stdout().flush().map_err(Error::Io)?;
+        // Lazily initialize prompt
+        let line = if let Some(line) = &mut self.line {
+            line
+        } else {
+            self.line = Some(Readline::new()?);
+            self.line.as_mut().unwrap()
+        };
 
-        // Read input
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-        let input = input.trim();
+        // Present the prompt; get input
+        let fmt = format!("(#{} @ {:#06x})> ", self.cycle, self.pc);
+        let input = match line.readline(&fmt) {
+            Err(ReadlineError::Interrupted) => return Ok(()),
+            Err(ReadlineError::Eof) => return Err(Error::Quit),
+            res => res?,
+        };
 
         // Parse input
-        let prog: Program = input.parse()?;
+        let prog: Program = input.trim().parse()?;
         trace!("parsed program: `{prog:?}`");
 
-        // Store program
+        // Determine outcome
         if prog.is_empty() {
+            // Remove stored program
             self.prog = None;
-        } else {
-            self.prog = Some(prog);
-        }
 
-        Ok(())
+            Err(Error::NoInput)
+        } else {
+            // Store program
+            self.prog = Some(prog);
+
+            Ok(())
+        }
     }
 
     pub fn fetch(&mut self) -> Option<Command> {
@@ -440,9 +454,13 @@ impl Machine for Debugger {
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
+    Readline(#[from] ReadlineError),
+    #[error(transparent)]
     Io(#[from] io::Error),
     #[error(transparent)]
     Language(#[from] lang::Error),
+    #[error("no input provided")]
+    NoInput,
     #[error("breakpoint not found")]
     PointNotFound,
     #[error("missing reload handle")]
