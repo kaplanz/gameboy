@@ -15,12 +15,14 @@ members = [
     "core",
     "crates/enumflag",
     "crates/hexicolor",
+    "crates/tell",
 ]
 
 [dependencies]
 clap = { version = "4.3.19", features = ["derive", "env", "wrap_help"] }
-color-eyre = { version = "0.6.2", default-features = false }
+color-eyre = { version = "0.6.2" }
 ctrlc = "3.4.0"
+eyre = "0.6.8"
 gameboy-core = { path = "core" }
 hexicolor = { version = "0.1.0", path = "crates/hexicolor" }
 indexmap = "2.0.0"
@@ -31,5 +33,6 @@ parking_lot = "0.12.1"
 pest = "2.7.2"
 pest_derive = "2.7.2"
 remus = { git = "https://github.com/kaplanz/remus.git" }
+tell = { version = "0.1.0", path = "crates/tell" }
 thiserror = "1.0.44"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }

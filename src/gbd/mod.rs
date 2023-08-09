@@ -9,7 +9,7 @@ use gameboy::core::cpu::sm83::{self, Register, State};
 use gameboy::core::cpu::Processor;
 use gameboy::dmg::GameBoy;
 use indexmap::IndexMap;
-use log::{error, info, trace, warn};
+use log::{debug, trace};
 use remus::{Block, Machine};
 use thiserror::Error;
 use tracing_subscriber::reload;
@@ -179,11 +179,11 @@ impl Debugger {
         // Check if the breakpoint already exists
         if let Some((point, _, Some(_))) = self.bpts.get_full_mut(&addr) {
             // Inform of existing breakpoint
-            println!("breakpoint {point} found at {addr:#06x}");
+            tell::warn!("breakpoint {point} already exists at {addr:#06x}");
         } else {
             // Create a new breakpoint
             let (point, _) = self.bpts.insert_full(addr, Some(Breakpoint::default()));
-            println!("breakpoint {point} created");
+            tell::info!("breakpoint {point} created");
         }
 
         Ok(())
@@ -202,7 +202,7 @@ impl Debugger {
             return Err(Error::PointNotFound);
         };
         *bpt = None;
-        println!("breakpoint {point} at {addr:#06x} deleted");
+        tell::info!("breakpoint {point} at {addr:#06x} deleted");
 
         Ok(())
     }
@@ -210,16 +210,16 @@ impl Debugger {
     fn freq(&mut self, cycle: Cycle) -> Result<()> {
         // Change the current frequency
         self.freq = cycle;
-        println!("frequency set to {cycle}");
+        tell::info!("frequency set to {cycle}");
 
         Ok(())
     }
 
     fn help(&self, what: Option<String>) -> Result<()> {
         if let Some(what) = what {
-            info!("help: `{what}`");
+            debug!("help: `{what}`");
         }
-        error!("help is not yet available");
+        tell::error!("help is not yet available");
 
         Ok(())
     }
@@ -235,9 +235,9 @@ impl Debugger {
 
     fn info(&self, what: Option<String>) -> Result<()> {
         if let Some(what) = what {
-            info!("info: `{what}`");
+            debug!("info: `{what}`");
         }
-        error!("info is not yet available");
+        tell::error!("info is not yet available");
 
         Ok(())
     }
@@ -247,7 +247,7 @@ impl Debugger {
             State::Execute(insn) => insn.clone(),
             _ => emu.cpu().insn(),
         };
-        println!(
+        tell::info!(
             "{addr:#06x}: {opcode:02X} ; {insn}",
             addr = self.pc,
             opcode = insn.opcode()
@@ -267,7 +267,7 @@ impl Debugger {
         }
 
         // Print the current filter
-        handle.with_current(|filter| println!("filter: {filter}"))?;
+        handle.with_current(|filter| tell::info!("filter: {filter}"))?;
 
         Ok(())
     }
@@ -275,7 +275,7 @@ impl Debugger {
     fn load(&self, emu: &GameBoy, reg: Register) -> Result<()> {
         // Perform the load
         let word = emu.cpu().get(reg);
-        println!("{reg:?}: {word:#04x}");
+        tell::info!("{reg:?}: {word:#04x}");
 
         Ok(())
     }
@@ -287,7 +287,7 @@ impl Debugger {
     fn read(&self, emu: &mut GameBoy, addr: u16) -> Result<()> {
         // Perform the read
         let byte = emu.cpu().read(addr);
-        println!("{addr:#06x}: {byte:02x}");
+        tell::info!("{addr:#06x}: {byte:02x}");
 
         Ok(())
     }
@@ -299,14 +299,14 @@ impl Debugger {
             Ordering::Less => Box::new(start..end),
             Ordering::Equal => return Ok(()),
             Ordering::Greater => {
-                warn!("wrapping range for `read`");
+                tell::warn!("wrapping range for `read`");
                 Box::new((start..u16::MAX).chain(u16::MIN..end))
             }
         };
         // Load all reads
         let data: Vec<_> = iter.map(|addr| emu.cpu().read(addr)).collect();
         // Display results
-        println!(
+        tell::info!(
             "{}",
             crate::hex::Printer::<u8>::new(start.into(), &data).display()
         );
@@ -328,7 +328,7 @@ impl Debugger {
         };
         // Update the amount of skips
         bpt.skip = many;
-        println!("breakpoint {point} @ {addr:#06x}: will ignore next {many} crossings");
+        tell::info!("breakpoint {point} @ {addr:#06x}: will ignore next {many} crossings");
 
         Ok(())
     }
@@ -354,7 +354,7 @@ impl Debugger {
         emu.cpu().write(addr, byte);
         let read = emu.cpu().read(addr);
         if read != byte {
-            warn!("ignored write {addr:#06x} <- {byte:02x} (retained: {read:02x})");
+            tell::warn!("ignored write {addr:#06x} <- {byte:02x} (retained: {read:02x})");
         }
         // Read the written value
         self.read(emu, addr)?;
@@ -369,24 +369,29 @@ impl Debugger {
             Ordering::Less => Box::new(start..end),
             Ordering::Equal => return Ok(()),
             Ordering::Greater => {
-                warn!("wrapping range for `write`");
+                tell::warn!("wrapping range for `write`");
                 Box::new((start..u16::MAX).chain(u16::MIN..end))
             }
         };
         // Store all writes
-        let worked = iter
+        let data: Vec<_> = iter
             .map(|addr| {
                 // Perform the write
                 emu.cpu().write(addr, byte);
                 // Read the written value
                 emu.cpu().read(addr)
             })
-            .all(|read| read == byte);
+            .collect();
+        // See if it worked
+        let worked = data.iter().all(|&read| read == byte);
         if !worked {
-            warn!("ignored some writes in range");
+            tell::warn!("ignored some writes in {start:#06x}..{end:04x} <- {byte:02x}");
         }
-        // Read the written values
-        self.read_range(emu, range)?;
+        // Display results
+        tell::info!(
+            "{}",
+            crate::hex::Printer::<u8>::new(start.into(), &data).display()
+        );
 
         Ok(())
     }

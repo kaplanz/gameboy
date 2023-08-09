@@ -5,7 +5,7 @@ use std::io::Read;
 use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum, ValueHint};
-use color_eyre::eyre::{ensure, Result, WrapErr};
+use eyre::{ensure, Result, WrapErr};
 use gameboy::dmg::cart::Cartridge;
 use gameboy::dmg::{BootRom, GameBoy, SCREEN};
 use log::{info, warn};

@@ -79,10 +79,15 @@ impl App {
             }
             // Install SIGINT handler
             ctrlc::try_set_handler(move || {
+                // Attempt to acquire the debugger (with timeout)
                 if let Some(mut gbd) = gbd.try_lock_for(Duration::from_millis(10)) {
+                    // Pause the console and present the user with the debugger
+                    // prompt.
                     gbd.enable();
                 } else {
-                    Self::exit();
+                    // If unable to pause (likely due to prompt already
+                    // present), exit the program.
+                    std::process::exit(0);
                 }
             })?;
         }
@@ -121,10 +126,10 @@ impl App {
                         let Some(cmd) = gbd.fetch().or_else(|| {
                             // Prompt until a valid program is parsed
                             loop {
-                                match crate::Result::from(gbd.prompt()) {
+                                match gbd.prompt() {
                                     Ok(_) => break,
                                     Err(err) => {
-                                        eprintln!("{err}");
+                                        tell::error!("{err}");
                                         continue;
                                     }
                                 };
@@ -139,10 +144,10 @@ impl App {
                         };
                         // Execute a step of the program
                         let res = gbd.exec(&mut emu, cmd);
-                        match crate::Result::from(res) {
+                        match res {
                             Ok(_) => (),
-                            Err(gbd::Error::Quit) => Self::exit(),
-                            Err(err) => eprintln!("{err}"),
+                            Err(gbd::Error::Quit) => return Ok(()),
+                            Err(err) => tell::error!("{err}"),
                         }
                     }
                 }
@@ -221,11 +226,6 @@ impl App {
         }
 
         Ok(())
-    }
-
-    pub fn exit() {
-        println!("Exiting...");
-        std::process::exit(0);
     }
 }
 
