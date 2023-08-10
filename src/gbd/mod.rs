@@ -324,7 +324,7 @@ impl Debugger {
         // Display results
         tell::info!(
             "{}",
-            crate::hex::Printer::<u8>::new(start.into(), &data).display()
+            phex::Printer::<u8>::new(start.into(), &data).display()
         );
 
         Ok(())
@@ -406,7 +406,7 @@ impl Debugger {
         // Display results
         tell::info!(
             "{}",
-            crate::hex::Printer::<u8>::new(start.into(), &data).display()
+            phex::Printer::<u8>::new(start.into(), &data).display()
         );
 
         Ok(())
