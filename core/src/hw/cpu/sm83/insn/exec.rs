@@ -6,7 +6,7 @@
 
 use std::ops::{BitAnd, BitOr, BitXor};
 
-use enumflag::Enumflag;
+use enuf::Enuf;
 use remus::Device;
 
 use super::{helpers, Cpu, Flag, Ime, Instruction, Status};

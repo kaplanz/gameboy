@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::fmt::{Debug, Display, Write};
 use std::rc::Rc;
 
-use enumflag::Enumflag;
+use enuf::Enuf;
 use log::{debug, trace};
 use remus::bus::Bus;
 use remus::{reg, Block, Board, Device, Machine};
@@ -404,7 +404,7 @@ enum Flag {
     C = 0b0001_0000,
 }
 
-impl Enumflag for Flag {}
+impl Enuf for Flag {}
 
 impl From<Flag> for u8 {
     fn from(value: Flag) -> Self {

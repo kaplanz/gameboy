@@ -1,12 +1,12 @@
 //! Bit modifiable enum flags.
 //!
-//! `Enumflag` should be implemenmted on fieldless enumerations, and uses
+//! `Enuf` should be implemenmted on fieldless enumerations, and uses
 //! (usually mutually exclusive) discriminant values as flags.
 //!
 //! # Examples
 //!
 //! ```
-//! use enumflag::Enumflag;
+//! use enuf::Enuf;
 //!
 //! // Define `Flags` enum
 //! #[derive(Copy, Clone)]
@@ -16,7 +16,7 @@
 //!     C = 0b100, //       that there is no collision when using flags.
 //! }
 //!
-//! impl Enumflag for Flag {}
+//! impl Enuf for Flag {}
 //!
 //! impl From<Flag> for u8 {
 //!     fn from(value: Flag) -> Self {
@@ -42,7 +42,7 @@
 #![warn(clippy::pedantic)]
 
 /// Enum flag interface.
-pub trait Enumflag: Copy + Into<u8> {
+pub trait Enuf: Copy + Into<u8> {
     /// Gets the corresponding bit value from an integer flag.
     fn get(self, f: &u8) -> bool {
         *f & self.into() != 0
