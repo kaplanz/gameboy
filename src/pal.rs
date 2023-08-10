@@ -19,10 +19,10 @@ impl Display for Color {
 }
 
 impl FromStr for Color {
-    type Err = hexicolor::Error;
+    type Err = chex::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.parse::<hexicolor::Color>()?.into()))
+        Ok(Self(s.parse::<chex::Color>()?.into()))
     }
 }
 
@@ -86,7 +86,7 @@ impl Index<usize> for Palette {
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
-    Parse(#[from] hexicolor::Error),
+    Parse(#[from] chex::Error),
     #[error("missing palette colors: (found {0}, expected 4)")]
     Missing(usize),
     #[error("extra palette colors: (found {0}, expected 4)")]

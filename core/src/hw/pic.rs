@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::fmt::Display;
 use std::rc::Rc;
 
-use enumflag::Enumflag;
+use enuf::Enuf;
 use remus::bus::Bus;
 use remus::reg::Register;
 use remus::{Block, Board, SharedDevice};
@@ -114,7 +114,7 @@ impl Interrupt {
     }
 }
 
-impl Enumflag for Interrupt {}
+impl Enuf for Interrupt {}
 
 impl Display for Interrupt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

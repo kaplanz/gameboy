@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-enumflag = { version = "0.1.0", path = "../crates/enumflag" }
+enuf = { version = "0.1.0", path = "../crates/enuf" }
 itertools = "0.11.0"
 log = "0.4.19"
 remus = { git = "https://github.com/kaplanz/remus.git" }

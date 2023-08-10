@@ -13,8 +13,8 @@ debug = true
 [workspace]
 members = [
     "core",
-    "crates/enumflag",
-    "crates/hexicolor",
+    "crates/enuf",
+    "crates/chex",
     "crates/phex",
     "crates/tell",
 ]
@@ -25,7 +25,7 @@ color-eyre = { version = "0.6.2" }
 ctrlc = "3.4.0"
 eyre = "0.6.8"
 gameboy-core = { path = "core" }
-hexicolor = { version = "0.1.0", path = "crates/hexicolor" }
+chex = { version = "0.1.0", path = "crates/chex" }
 indexmap = "2.0.0"
 log = "0.4.19"
 minifb = "0.24.0"
