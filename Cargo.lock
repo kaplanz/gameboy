@@ -467,6 +467,7 @@ dependencies = [
  "parking_lot",
  "pest",
  "pest_derive",
+ "phex",
  "remus",
  "rustyline",
  "tell",
@@ -962,6 +963,13 @@ dependencies = [
  "once_cell",
  "pest",
  "sha2",
+]
+
+[[package]]
+name = "phex"
+version = "0.1.0"
+dependencies = [
+ "num",
 ]
 
 [[package]]

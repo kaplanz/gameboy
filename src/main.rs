@@ -20,7 +20,6 @@ use crate::pal::Palette;
 
 mod app;
 mod gbd;
-mod hex;
 mod pal;
 
 type Handle = reload::Handle<EnvFilter, Layered<Layer<Registry>, Registry>>;
