@@ -1,29 +1,44 @@
+//! Pretty hexadecimal printing for slices of bytes.
+//!
+//! Wrap any blob (big lump of bytes) in a [`Printer`] object to enable a simple
+//! and readable [`Display`] implementation.
+
+#![warn(clippy::pedantic)]
+
 use std::fmt::{Display, Write};
 use std::marker::PhantomData;
 
 use num::Unsigned;
 
+/// Formatter for slices of bytes that implements [`Display`].
 #[derive(Debug)]
 pub struct Printer<'a, W: Unsigned>(usize, &'a [u8], PhantomData<W>);
 
 impl<'a, W: Unsigned> Printer<'a, W> {
-    pub fn new(start: usize, data: &'a [u8]) -> Self {
-        Self(start, data, PhantomData)
+    /// Constructs a new [`Printer`] for the provided data.
+    #[must_use]
+    pub fn new(offset: usize, data: &'a [u8]) -> Self {
+        Self(offset, data, PhantomData)
     }
 }
 
 macro_rules! add_impl {
     ($(($t:ty, $i:expr))*) => ($(
         impl<'a> Printer<'a, $t> {
-            #[allow(unused)]
-            pub fn display(self) -> impl Display {
-                let Self(start, data, _) = self;
+            fn display(&self) -> impl Display {
+                let &Self(offset, data, _) = self;
                 Internal {
-                    start,
+                    offset,
                     data,
                     wordsz: std::mem::size_of::<$t>(),
                     linesz: $i,
                 }.display()
+            }
+        }
+
+        impl<'a> Display for Printer<'a, $t> {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", self.display())
             }
         }
     )*)
@@ -33,7 +48,7 @@ add_impl! { (usize, 2) (u8, 8) (u16, 4) (u32, 4) (u64, 2) (u128, 1) }
 
 #[derive(Debug)]
 struct Internal<'a> {
-    start: usize,
+    offset: usize,
     data: &'a [u8],
     wordsz: usize,
     linesz: usize,
@@ -44,12 +59,12 @@ impl<'a> Internal<'a> {
     fn display(self) -> impl Display {
         // Destructure self into constituent parts
         let Self {
-            start,
+            offset,
             data,
             wordsz,
             linesz,
         } = self;
-        let end = start + data.len();
+        let end = offset + data.len();
 
         // Calculate maximum width for formatted addresses
         let width = format!("{end:#x}").len();
@@ -88,7 +103,7 @@ impl<'a> Internal<'a> {
             }
 
             // Calculate this line's starting address
-            let addr = start + (idx * linesz * wordsz);
+            let addr = offset + (idx * linesz * wordsz);
 
             // Write newline between lines
             if idx != 0 {

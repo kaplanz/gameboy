@@ -322,10 +322,7 @@ impl Debugger {
         // Load all reads
         let data: Vec<_> = iter.map(|addr| emu.cpu().read(addr)).collect();
         // Display results
-        tell::info!(
-            "{}",
-            phex::Printer::<u8>::new(start.into(), &data).display()
-        );
+        tell::info!("{}", phex::Printer::<u8>::new(start.into(), &data));
 
         Ok(())
     }
@@ -404,10 +401,7 @@ impl Debugger {
             tell::warn!("ignored some writes in {start:#06x}..{end:04x} <- {byte:02x}");
         }
         // Display results
-        tell::info!(
-            "{}",
-            phex::Printer::<u8>::new(start.into(), &data).display()
-        );
+        tell::info!("{}", phex::Printer::<u8>::new(start.into(), &data));
 
         Ok(())
     }
