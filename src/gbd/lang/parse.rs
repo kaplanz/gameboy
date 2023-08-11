@@ -110,7 +110,10 @@ impl Language {
                 let many = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
                 Command::Skip(index, many)
             }
-            Rule::Step => Command::Step,
+            Rule::Step => {
+                let many = args.next().map(Self::int).transpose()?;
+                Command::Step(many)
+            }
             Rule::Store => {
                 let reg = Self::reg(args.next().ok_or(Error::ExpectedRule)?)?;
                 let word = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;

@@ -67,7 +67,7 @@ pub enum Command {
     ReadRange(Range<u16>),
     Reset,
     Skip(usize, usize),
-    Step,
+    Step(Option<usize>),
     Store(Register, u16),
     Write(u16, u8),
     WriteRange(Range<u16>, u8),
