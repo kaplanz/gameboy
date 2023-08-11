@@ -1,8 +1,7 @@
 #![allow(clippy::result_large_err)]
 
 use std::cmp::Ordering;
-use std::fmt::Display;
-use std::io;
+use std::fmt::{Display, Write};
 use std::ops::Range;
 
 use gameboy::core::cpu::sm83::{self, Register, State};
@@ -27,6 +26,24 @@ type Result<T> = std::result::Result<T, Error>;
 #[derive(Clone, Debug, Default)]
 struct Breakpoint {
     skip: usize,
+}
+
+impl Breakpoint {
+    fn display(&self, point: usize, addr: u16) -> impl Display {
+        let &Self { skip } = self;
+
+        // Prepare format string
+        let mut f = String::new();
+
+        // Format the point, addr
+        write!(f, "breakpoint {point} @ {addr:#06x}").unwrap();
+        // Format any skips
+        if skip > 0 {
+            write!(f, ": will ignore next {skip} crossings").unwrap();
+        }
+
+        f
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -214,7 +231,7 @@ impl Debugger {
 
     fn delete(&mut self, point: usize) -> Result<()> {
         // Find the specified breakpoint
-        let Some((addr, bpt @ Some(_))) = self.bpts.get_index_mut(point) else {
+        let Some((&addr, bpt @ Some(_))) = self.bpts.get_index_mut(point) else {
             return Err(Error::PointNotFound);
         };
         *bpt = None;
@@ -250,10 +267,37 @@ impl Debugger {
     }
 
     fn info(&self, what: Option<Keyword>) -> Result<()> {
-        if let Some(what) = what {
-            debug!("info: `{what:?}`");
+        // Extract keyword
+        let Some(kword) = what else {
+            // Print help message when no keyword supplied
+            tell::error!("missing keyword");
+            return self.help(Some(Keyword::Info));
+        };
+
+        // Handle keyword
+        match kword {
+            // Print breakpoints
+            Keyword::Break => {
+                let bpts: Vec<_> = self
+                    .bpts
+                    .iter()
+                    // Add breakpoint indices
+                    .enumerate()
+                    // Filter out deleted breakpoints
+                    .filter_map(|(point, (&addr, bpt))| bpt.as_ref().map(|bpt| (point, addr, bpt)))
+                    .collect();
+                if bpts.is_empty() {
+                    // Print empty message
+                    tell::info!("no breakpoints set");
+                } else {
+                    // Print each breakpoint
+                    for (point, addr, bpt) in bpts {
+                        tell::info!("{}", bpt.display(point, addr));
+                    }
+                }
+            }
+            _ => return Err(Error::Unsupported),
         }
-        tell::error!("info is not yet available");
 
         Ok(())
     }
@@ -336,12 +380,12 @@ impl Debugger {
 
     fn skip(&mut self, point: usize, many: usize) -> Result<()> {
         // Find the specified breakpoint
-        let Some((addr, Some(bpt))) = self.bpts.get_index_mut(point) else {
+        let Some((&addr, Some(bpt))) = self.bpts.get_index_mut(point) else {
             return Err(Error::PointNotFound);
         };
         // Update the amount of skips
         bpt.skip = many;
-        tell::info!("breakpoint {point} @ {addr:#06x}: will ignore next {many} crossings");
+        tell::info!("{}", bpt.display(point, addr));
 
         Ok(())
     }
@@ -451,18 +495,18 @@ impl Machine for Debugger {
 pub enum Error {
     #[error(transparent)]
     Readline(#[from] ReadlineError),
-    #[error(transparent)]
-    Io(#[from] io::Error),
-    #[error(transparent)]
-    Language(#[from] lang::Error),
     #[error("no input provided")]
     NoInput,
-    #[error("breakpoint not found")]
-    PointNotFound,
+    #[error(transparent)]
+    Language(#[from] lang::Error),
     #[error("missing reload handle")]
     MissingReloadHandle,
+    #[error("breakpoint not found")]
+    PointNotFound,
+    #[error("quit requested by user")]
+    Quit,
     #[error(transparent)]
     Tracing(#[from] reload::Error),
-    #[error("requested quit")]
-    Quit,
+    #[error("unsupported keyword")]
+    Unsupported,
 }
