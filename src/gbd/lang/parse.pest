@@ -36,25 +36,25 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KFreq | KHelp | KInfo |
                    KJump | KLoad | KLog | KList | KQuit | KRead | KReset |
                    KSkip | KStore | KStep | KWrite }
-    KBreak    = _{ ^"break" | ^"brea" | ^"bre" | ^"br" | ^"b" }
-    KContinue = _{ ^"continue" | ^"continu" | ^"contin" | ^"conti" | ^"cont" |
+    KBreak    =  { ^"break" | ^"brea" | ^"bre" | ^"br" | ^"b" }
+    KContinue =  { ^"continue" | ^"continu" | ^"contin" | ^"conti" | ^"cont" |
                    ^"con" | ^"co" | ^"c" }
-    KDelete   = _{ ^"delete" | ^"delet" | ^"dele" | ^"del" | ^"de" | ^"d" }
-    KFreq     = _{ ^"frequency" | ^"frequenc" | ^"frequen" | ^"freque" |
+    KDelete   =  { ^"delete" | ^"delet" | ^"dele" | ^"del" | ^"de" | ^"d" }
+    KFreq     =  { ^"frequency" | ^"frequenc" | ^"frequen" | ^"freque" |
                    ^"frequ" | ^"freq" | ^"fre" | ^"fr" | ^"f" }
-    KHelp     = _{ ^"help" | ^"hel" | ^"he" | ^"h" }
-    KInfo     = _{ ^"info" | ^"inf" | ^"in" | ^"i" }
-    KJump     = _{ ^"jump" | ^"jum" | ^"ju" | ^"j" }
-    KList     = _{ ^"list" | ^"lis" | ^"li" | ^"l" }
-    KLoad     = _{ ^"load" | ^"loa" | ^"lw" }
-    KLog      = _{ ^"log" | ^"lo" }
-    KQuit     = _{ ^"quit" | ^"qui" | ^"qu" | ^"q" }
-    KRead     = _{ ^"read" | ^"rea" | ^"re" | ^"r" }
-    KReset    = _{ ^"reset" | ^"rese" | ^"res" }
-    KSkip     = _{ ^"skip" | ^"ski" | ^"sk" }
-    KStep     = _{ ^"step" | ^"ste" | ^"st" | ^"s" }
-    KStore    = _{ ^"store" | ^"stor" | ^"sto" | ^"sw" }
-    KWrite    = _{ ^"write" | ^"writ" | ^"wri" | ^"wr" | ^"w" }
+    KHelp     =  { ^"help" | ^"hel" | ^"he" | ^"h" }
+    KInfo     =  { ^"info" | ^"inf" | ^"in" | ^"i" }
+    KJump     =  { ^"jump" | ^"jum" | ^"ju" | ^"j" }
+    KList     =  { ^"list" | ^"lis" | ^"li" | ^"l" }
+    KLoad     =  { ^"load" | ^"loa" | ^"lw" }
+    KLog      =  { ^"log" | ^"lo" }
+    KQuit     =  { ^"quit" | ^"qui" | ^"qu" | ^"q" }
+    KRead     =  { ^"read" | ^"rea" | ^"re" | ^"r" }
+    KReset    =  { ^"reset" | ^"rese" | ^"res" }
+    KSkip     =  { ^"skip" | ^"ski" | ^"sk" }
+    KStep     =  { ^"step" | ^"ste" | ^"st" | ^"s" }
+    KStore    =  { ^"store" | ^"stor" | ^"sto" | ^"sw" }
+    KWrite    =  { ^"write" | ^"writ" | ^"wri" | ^"wr" | ^"w" }
   Register    = _{ WRegister }
     WRegister = _{ AF | BC | DE | HL | SP | PC }
       AF      =  { ^"af" }

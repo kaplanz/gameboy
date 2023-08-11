@@ -56,8 +56,8 @@ pub enum Command {
     Continue,
     Delete(usize),
     Freq(Cycle),
-    Help(Option<String>),
-    Info(Option<String>),
+    Help(Option<Keyword>),
+    Info(Option<Keyword>),
     Jump(u16),
     List,
     Load(Register),
@@ -71,4 +71,25 @@ pub enum Command {
     Store(Register, u16),
     Write(u16, u8),
     WriteRange(Range<u16>, u8),
+}
+
+#[derive(Clone, Debug)]
+pub enum Keyword {
+    Break,
+    Continue,
+    Delete,
+    Freq,
+    Help,
+    Info,
+    Jump,
+    List,
+    Load,
+    Log,
+    Quit,
+    Read,
+    Reset,
+    Skip,
+    Step,
+    Store,
+    Write,
 }

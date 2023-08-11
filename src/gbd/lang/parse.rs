@@ -1,5 +1,6 @@
 use std::num::ParseIntError;
 
+use log::trace;
 use num::traits::WrappingAdd;
 use num::{Bounded, Integer};
 use pest::iterators::Pair;
@@ -7,7 +8,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error;
 
-use super::{Command, Cycle, Program, Register};
+use super::{Command, Cycle, Keyword, Program, Register};
 
 pub fn prog(src: &str) -> Result<Program, Error> {
     Language::prog(src)
@@ -31,24 +32,32 @@ impl Language {
     }
 
     #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::similar_names)]
     #[allow(clippy::too_many_lines)]
     fn cmd(input: Pair<Rule>) -> Result<Command, Error> {
-        // Match a command rule
-        let cmd = match input.as_rule() {
+        // Extract keyword and args
+        let rule = input.as_rule();
+        let mut args = input.into_inner();
+        let kword = args.next().ok_or(Error::ExpectedRule)?;
+        trace!(
+            "keyword: {kword:?}, args: {args:?}",
+            kword = kword.as_rule(),
+            args = args.clone().map(|arg| arg.as_rule()).collect::<Vec<_>>()
+        );
+
+        // Parse individual command
+        let cmd = match rule {
             Rule::Break => {
-                let mut pairs = input.into_inner();
-                let addr = Self::int(pairs.next().ok_or(Error::ExpectedRule)?)?;
+                let addr = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
                 Command::Break(addr)
             }
             Rule::Continue => Command::Continue,
             Rule::Delete => {
-                let mut pairs = input.into_inner();
-                let index = Self::int(pairs.next().ok_or(Error::ExpectedRule)?)?;
+                let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
                 Command::Delete(index)
             }
             Rule::Freq => {
-                let mut pairs = input.into_inner();
-                let pair = pairs.next().ok_or(Error::ExpectedRule)?;
+                let pair = args.next().ok_or(Error::ExpectedRule)?;
                 let cycle = match pair.as_rule() {
                     Rule::Dot => Cycle::Dot,
                     Rule::Insn => Cycle::Insn,
@@ -58,35 +67,29 @@ impl Language {
                 Command::Freq(cycle)
             }
             Rule::Help => {
-                let mut pairs = input.into_inner();
-                let what = pairs.next().map(|pair| pair.as_str().to_string());
+                let what = args.next().map(Self::kword).transpose()?;
                 Command::Help(what)
             }
             Rule::Info => {
-                let mut pairs = input.into_inner();
-                let what = pairs.next().map(|pair| pair.to_string());
+                let what = args.next().map(Self::kword).transpose()?;
                 Command::Info(what)
             }
             Rule::Jump => {
-                let mut pairs = input.into_inner();
-                let addr = Self::int(pairs.next().ok_or(Error::ExpectedRule)?)?;
+                let addr = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
                 Command::Jump(addr)
             }
             Rule::List => Command::List,
             Rule::Load => {
-                let mut pairs = input.into_inner();
-                let reg = Self::reg(pairs.next().ok_or(Error::ExpectedRule)?)?;
+                let reg = Self::reg(args.next().ok_or(Error::ExpectedRule)?)?;
                 Command::Load(reg)
             }
             Rule::Log => {
-                let mut pairs = input.into_inner();
-                let filter = pairs.next().map(|pair| pair.as_span().as_str().to_string());
+                let filter = args.next().map(|pair| pair.as_span().as_str().to_string());
                 Command::Log(filter)
             }
             Rule::Quit => Command::Quit,
             Rule::Read => {
-                let mut pairs = input.into_inner();
-                let what = pairs.next().ok_or(Error::ExpectedRule)?;
+                let what = args.next().ok_or(Error::ExpectedRule)?;
                 // Match on address (range)
                 match what.as_rule() {
                     Rule::UInt => {
@@ -103,23 +106,20 @@ impl Language {
             }
             Rule::Reset => Command::Reset,
             Rule::Skip => {
-                let mut pairs = input.into_inner();
-                let index = Self::int(pairs.next().ok_or(Error::ExpectedRule)?)?;
-                let many = Self::int(pairs.next().ok_or(Error::ExpectedRule)?)?;
+                let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                let many = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
                 Command::Skip(index, many)
             }
             Rule::Step => Command::Step,
             Rule::Store => {
-                let mut pairs = input.into_inner();
-                let reg = Self::reg(pairs.next().ok_or(Error::ExpectedRule)?)?;
-                let word = Self::int(pairs.next().ok_or(Error::ExpectedRule)?)?;
+                let reg = Self::reg(args.next().ok_or(Error::ExpectedRule)?)?;
+                let word = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
                 Command::Store(reg, word)
             }
             Rule::Write => {
-                let mut pairs = input.into_inner();
-                let what = pairs.next().ok_or(Error::ExpectedRule)?;
+                let what = args.next().ok_or(Error::ExpectedRule)?;
                 // Match on data byte
-                let pair = pairs.next().ok_or(Error::ExpectedRule)?;
+                let pair = args.next().ok_or(Error::ExpectedRule)?;
                 let byte = Self::int(pair.clone()) // attempt both `u8` and `i8`
                     .or_else(|_| Self::int::<i8>(pair).map(|int| int as u8))?;
                 // Match on address (range)
@@ -208,6 +208,33 @@ impl Language {
             }
             rule => unreachable!("invalid rule: {rule:?}"),
         }
+    }
+
+    #[rustfmt::skip]
+    #[allow(clippy::needless_pass_by_value)]
+    #[allow(clippy::unnecessary_wraps)]
+    fn kword(pair: Pair<Rule>) -> Result<Keyword, Error> {
+        // Extract the keyword rule
+        Ok(match pair.as_rule() {
+            Rule::KBreak    => Keyword::Break,
+            Rule::KContinue => Keyword::Continue,
+            Rule::KDelete   => Keyword::Delete,
+            Rule::KFreq     => Keyword::Freq,
+            Rule::KHelp     => Keyword::Help,
+            Rule::KInfo     => Keyword::Info,
+            Rule::KJump     => Keyword::Jump,
+            Rule::KList     => Keyword::List,
+            Rule::KLoad     => Keyword::Load,
+            Rule::KLog      => Keyword::Log,
+            Rule::KQuit     => Keyword::Quit,
+            Rule::KRead     => Keyword::Read,
+            Rule::KReset    => Keyword::Reset,
+            Rule::KSkip     => Keyword::Skip,
+            Rule::KStep     => Keyword::Step,
+            Rule::KStore    => Keyword::Store,
+            Rule::KWrite    => Keyword::Write,
+            rule => unreachable!("invalid rule: {rule:?}"),
+        })
     }
 
     #[allow(clippy::needless_pass_by_value)]

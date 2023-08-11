@@ -9,7 +9,7 @@ use gameboy::core::cpu::sm83::{self, Register, State};
 use gameboy::core::cpu::Processor;
 use gameboy::dmg::GameBoy;
 use indexmap::IndexMap;
-use log::{debug, trace};
+use log::debug;
 use remus::{Block, Machine};
 use rustyline::error::ReadlineError;
 use rustyline::history::History;
@@ -17,7 +17,7 @@ use rustyline::DefaultEditor as Readline;
 use thiserror::Error;
 use tracing_subscriber::reload;
 
-use self::lang::{Command, Program};
+use self::lang::{Command, Keyword, Program};
 use super::Handle;
 
 mod lang;
@@ -139,7 +139,7 @@ impl Debugger {
 
         // Parse input
         let prog: Program = input.trim().parse()?;
-        trace!("parsed program: `{prog:?}`");
+        debug!("parsed program: `{prog:?}`");
 
         // Determine outcome
         if prog.is_empty() {
@@ -231,9 +231,9 @@ impl Debugger {
         Ok(())
     }
 
-    fn help(&self, what: Option<String>) -> Result<()> {
+    fn help(&self, what: Option<Keyword>) -> Result<()> {
         if let Some(what) = what {
-            debug!("help: `{what}`");
+            debug!("help: `{what:?}`");
         }
         tell::error!("help is not yet available");
 
@@ -249,9 +249,9 @@ impl Debugger {
         Ok(())
     }
 
-    fn info(&self, what: Option<String>) -> Result<()> {
+    fn info(&self, what: Option<Keyword>) -> Result<()> {
         if let Some(what) = what {
-            debug!("info: `{what}`");
+            debug!("info: `{what:?}`");
         }
         tell::error!("info is not yet available");
 
