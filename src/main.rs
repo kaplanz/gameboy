@@ -95,7 +95,15 @@ fn main() -> Result<()> {
     };
 
     // Open doctor logfile
-    let doctor = args.doctor.map(File::create).transpose()?.map(Doctor::new);
+    let doctor = if let Some(path) = args.doctor {
+        Some(&path)
+            .map(File::create)
+            .transpose()
+            .with_context(|| format!("failed to open doctor logfile: `{}`", path.display()))?
+            .map(Doctor::new)
+    } else {
+        None
+    };
 
     // Declare debugger
     let gbd = args
