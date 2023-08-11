@@ -201,7 +201,7 @@ impl Debugger {
             ReadRange(range)  => self.read_range(emu, range),
             Reset             => Self::reset(self, emu),
             Skip(point, many) => self.skip(point, many),
-            Step              => self.step(),
+            Step(many)        => self.step(many),
             Store(reg, word)  => self.store(emu, reg, word),
             Write(addr, byte) => self.write(emu, addr, byte),
             WriteRange(range, byte) => self.write_range(emu, range, byte),
@@ -390,8 +390,8 @@ impl Debugger {
         Ok(())
     }
 
-    fn step(&mut self) -> Result<()> {
-        self.skip = Some(0); // set no skipped cycles
+    fn step(&mut self, many: Option<usize>) -> Result<()> {
+        self.skip = many.or(Some(0)); // set skipped cycles
         self.resume(); // resume console
 
         Ok(())

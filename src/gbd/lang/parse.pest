@@ -85,6 +85,6 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
     Read      =  { KRead ~ (RangeBounds | UInt) }
     Reset     =  { KReset }
     Skip      =  { KSkip ~ UInt ~ UInt }
-    Step      =  { KStep }
+    Step      =  { KStep ~ UInt? }
     Store     =  { KStore ~ Register ~ Int }
     Write     =  { KWrite ~ (RangeBounds | UInt) ~ Int }
