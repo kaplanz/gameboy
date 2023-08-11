@@ -3,6 +3,7 @@ use std::io::{BufWriter, Write};
 use std::sync::Arc;
 use std::time::Duration;
 
+use eyre::Context;
 use gameboy::core::Emulator;
 use gameboy::dmg::{Button, GameBoy, Screen, SCREEN};
 use log::debug;
@@ -89,7 +90,8 @@ impl App {
                     // present), exit the program.
                     std::process::exit(0);
                 }
-            })?;
+            })
+            .context("failed to install SIGINT handler")?;
         }
 
         // Emulation loop
@@ -185,7 +187,7 @@ impl App {
                 winres = win.update_with_buffer(&buf, SCREEN.width, SCREEN.height);
                 fps += 1; // update frames drawn
             });
-            winres?; // return early if window update failed
+            winres.context("failed to redraw screen")?; // return early if window update failed
 
             // Update the debug screens every second
             if let Some(debug) = &mut debug {
@@ -198,9 +200,18 @@ impl App {
                     let map1 = info.ppu.map1.map(|col| opts.pal[col as usize].into());
                     let map2 = info.ppu.map2.map(|col| opts.pal[col as usize].into());
                     // Display PPU state
-                    debug.tdat.update_with_buffer(&tdat, 16 * 8, 24 * 8)?;
-                    debug.map1.update_with_buffer(&map1, 32 * 8, 32 * 8)?;
-                    debug.map2.update_with_buffer(&map2, 32 * 8, 32 * 8)?;
+                    debug
+                        .tdat
+                        .update_with_buffer(&tdat, 16 * 8, 24 * 8)
+                        .context("failed to redraw tile data")?;
+                    debug
+                        .map1
+                        .update_with_buffer(&map1, 32 * 8, 32 * 8)
+                        .context("failed to redraw tile map 1")?;
+                    debug
+                        .map2
+                        .update_with_buffer(&map2, 32 * 8, 32 * 8)
+                        .context("failed to redraw tile map 2")?;
                 }
             }
 
@@ -208,7 +219,7 @@ impl App {
             if let Some(doctor) = &mut doctor {
                 if let Some(entries) = emu.doctor.checkup() {
                     if !entries.is_empty() {
-                        writeln!(doctor.log, "{entries}")?;
+                        writeln!(doctor.log, "{entries}").context("failed to write doctor log")?;
                     }
                 }
             }
