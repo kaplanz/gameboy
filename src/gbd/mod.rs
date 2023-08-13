@@ -25,12 +25,13 @@ type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Clone, Debug, Default)]
 struct Breakpoint {
+    off: bool,
     skip: usize,
 }
 
 impl Breakpoint {
     fn display(&self, point: usize, addr: u16) -> impl Display {
-        let &Self { skip } = self;
+        let &Self { off: disable, skip } = self;
 
         // Prepare format string
         let mut f = String::new();
@@ -189,6 +190,8 @@ impl Debugger {
             Break(addr)       => self.r#break(addr),
             Continue          => self.r#continue(),
             Delete(point)     => self.delete(point),
+            Disable(point)    => self.disable(point),
+            Enable(point)     => self.benable(point),
             Freq(cycle)       => self.freq(cycle),
             Help(what)        => self.help(what),
             Info(what)        => self.info(what),
@@ -234,8 +237,33 @@ impl Debugger {
         let Some((&addr, bpt @ Some(_))) = self.bpts.get_index_mut(point) else {
             return Err(Error::PointNotFound);
         };
+        // Mark it as deleted
         *bpt = None;
-        tell::info!("breakpoint {point} at {addr:#06x} deleted");
+        tell::info!("breakpoint {point} @ {addr:#06x} deleted");
+
+        Ok(())
+    }
+
+    fn disable(&mut self, point: usize) -> Result<()> {
+        // Find the specified breakpoint
+        let Some((&addr, Some(bpt))) = self.bpts.get_index_mut(point) else {
+            return Err(Error::PointNotFound);
+        };
+        // Disable it
+        bpt.off = true;
+        tell::info!("breakpoint {point} @ {addr:#06x} disabled");
+
+        Ok(())
+    }
+
+    fn benable(&mut self, point: usize) -> Result<()> {
+        // Find the specified breakpoint
+        let Some((&addr, Some(bpt))) = self.bpts.get_index_mut(point) else {
+            return Err(Error::PointNotFound);
+        };
+        // Enable it
+        bpt.off = false;
+        tell::info!("breakpoint {point} @ {addr:#06x} enabled");
 
         Ok(())
     }
@@ -470,7 +498,7 @@ impl Machine for Debugger {
             .bpts
             .get(&self.pc)
             .and_then(Option::as_ref)
-            .map_or(false, |bpt| bpt.skip == 0);
+            .map_or(false, |bpt| !bpt.off && bpt.skip == 0);
         step && (!skip || bpt)
     }
 

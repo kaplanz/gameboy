@@ -33,13 +33,16 @@ Filter        = @{ Directive ~ ("," ~ Filter)? }
       LOff    = _{ ^"off" }
 
 Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
-  Keyword     = _{ KBreak | KContinue | KDelete | KFreq | KHelp | KInfo |
-                   KJump | KLoad | KLog | KList | KQuit | KRead | KReset |
-                   KSkip | KStore | KStep | KWrite }
+  Keyword     = _{ KBreak | KContinue | KDelete | KDisable | KEnable | KFreq |
+                   KHelp | KInfo | KJump | KLoad | KLog | KList | KQuit |
+                   KRead | KReset | KSkip | KStore | KStep | KWrite }
     KBreak    =  { ^"break" | ^"brea" | ^"bre" | ^"br" | ^"b" }
     KContinue =  { ^"continue" | ^"continu" | ^"contin" | ^"conti" | ^"cont" |
                    ^"con" | ^"co" | ^"c" }
-    KDelete   =  { ^"delete" | ^"delet" | ^"dele" | ^"del" | ^"de" | ^"d" }
+    KDelete   =  { ^"delete" | ^"delet" | ^"dele" | ^"del" | ^"de" }
+    KDisable  =  { ^"disable" | ^"disabl" | ^"disab" | ^"disa" | ^"dis" | ^"di"
+                    | ^"d"}
+    KEnable   =  { ^"enable" | ^"enabl" | ^"enab" | ^"ena" | ^"en" | ^"e" }
     KFreq     =  { ^"frequency" | ^"frequenc" | ^"frequen" | ^"freque" |
                    ^"frequ" | ^"freq" | ^"fre" | ^"fr" | ^"f" }
     KHelp     =  { ^"help" | ^"hel" | ^"he" | ^"h" }
@@ -63,12 +66,14 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
       HL      =  { ^"hl" }
       SP      =  { ^"sp" }
       PC      =  { ^"pc" }
-  Command     = _{ Break | Continue | Delete | Freq | Help | Info | Jump |
-                   Load | Log | List | Quit | Read | Reset | Skip | Store |
-                   Step | Write }
+  Command     = _{ Break | Continue | Delete | Disable | Enable | Freq | Help |
+                   Info | Jump | Load | Log | List | Quit | Read | Reset |
+                   Skip | Store | Step | Write }
     Break     =  { KBreak ~ UInt }
     Continue  =  { KContinue }
     Delete    =  { KDelete ~ UInt }
+    Disable   =  { KDisable ~ UInt }
+    Enable    =  { KEnable ~ UInt }
     Freq      =  { KFreq ~ SFreq }
       SFreq   = _{ Dot | Insn | Mach }
         Dot   =  { ^"tstate" | ^"t" | ^"dot"  | ^"d" }

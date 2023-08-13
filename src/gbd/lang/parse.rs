@@ -56,6 +56,14 @@ impl Language {
                 let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
                 Command::Delete(index)
             }
+            Rule::Disable => {
+                let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                Command::Disable(index)
+            }
+            Rule::Enable => {
+                let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                Command::Enable(index)
+            }
             Rule::Freq => {
                 let pair = args.next().ok_or(Error::ExpectedRule)?;
                 let cycle = match pair.as_rule() {
@@ -222,6 +230,8 @@ impl Language {
             Rule::KBreak    => Keyword::Break,
             Rule::KContinue => Keyword::Continue,
             Rule::KDelete   => Keyword::Delete,
+            Rule::KDisable  => Keyword::Disable,
+            Rule::KEnable   => Keyword::Enable,
             Rule::KFreq     => Keyword::Freq,
             Rule::KHelp     => Keyword::Help,
             Rule::KInfo     => Keyword::Info,
