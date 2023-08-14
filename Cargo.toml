@@ -39,3 +39,4 @@ rustyline = "12.0.0"
 tell = { version = "0.1.0", path = "crates/tell" }
 thiserror = "1.0.44"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+bytecount = "0.6.3"

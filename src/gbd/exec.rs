@@ -273,7 +273,7 @@ pub fn write_range(emu: &mut GameBoy, range: Range<u16>, byte: u8) -> Result<()>
         })
         .collect();
     // Check if it worked
-    let nbytes = data.iter().filter(|&&read| read == byte).count();
+    let nbytes = bytecount::count(&data, byte);
     if nbytes < data.len() {
         tell::warn!("ignored some writes in {start:#06x}..{end:04x} <- {byte:02x}");
     }
