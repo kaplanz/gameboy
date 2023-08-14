@@ -1,10 +1,8 @@
 #![allow(clippy::result_large_err)]
 
-use std::cmp::Ordering;
 use std::fmt::{Display, Write};
-use std::ops::Range;
 
-use gameboy::core::cpu::sm83::{self, Register, State};
+use gameboy::core::cpu::sm83::{self, State};
 use gameboy::core::cpu::Processor;
 use gameboy::dmg::GameBoy;
 use indexmap::IndexMap;
@@ -16,9 +14,10 @@ use rustyline::DefaultEditor as Readline;
 use thiserror::Error;
 use tracing_subscriber::reload;
 
-use self::lang::{Command, Keyword, Program};
+use self::lang::{Command, Program};
 use super::Handle;
 
+mod exec;
 mod lang;
 
 type Result<T> = std::result::Result<T, Error>;
@@ -31,15 +30,17 @@ struct Breakpoint {
 
 impl Breakpoint {
     fn display(&self, point: usize, addr: u16) -> impl Display {
-        let &Self { off: disable, skip } = self;
+        let &Self { off, skip } = self;
 
         // Prepare format string
         let mut f = String::new();
 
         // Format the point, addr
         write!(f, "breakpoint {point} @ {addr:#06x}").unwrap();
-        // Format any skips
-        if skip > 0 {
+        // Format characteristics
+        if off {
+            write!(f, ": disabled").unwrap();
+        } else if skip > 0 {
             write!(f, ": will ignore next {skip} crossings").unwrap();
         }
 
@@ -87,8 +88,6 @@ pub struct Debugger {
     line: Option<Readline>,
 }
 
-#[allow(clippy::unnecessary_wraps)]
-#[allow(clippy::unused_self)]
 impl Debugger {
     pub fn new() -> Self {
         Self::default()
@@ -133,7 +132,7 @@ impl Debugger {
     pub fn inform(&self, emu: &GameBoy) {
         // Give context if recently paused
         if self.play {
-            self.list(emu).unwrap();
+            exec::list(self, emu).unwrap();
         }
     }
 
@@ -187,295 +186,28 @@ impl Debugger {
 
         // Perform the command
         match cmd {
-            Break(addr)       => self.r#break(addr),
-            Continue          => self.r#continue(),
-            Delete(point)     => self.delete(point),
-            Disable(point)    => self.disable(point),
-            Enable(point)     => self.benable(point),
-            Freq(cycle)       => self.freq(cycle),
-            Help(what)        => self.help(what),
-            Info(what)        => self.info(what),
-            Jump(addr)        => self.jump(emu, addr),
-            List              => self.list(emu),
-            Load(reg)         => self.load(emu, reg),
-            Log(filter)       => self.log(filter),
-            Quit              => self.quit(),
-            Read(addr)        => self.read(emu, addr),
-            ReadRange(range)  => self.read_range(emu, range),
-            Reset             => Self::reset(self, emu),
-            Skip(point, many) => self.skip(point, many),
-            Step(many)        => self.step(many),
-            Store(reg, word)  => self.store(emu, reg, word),
-            Write(addr, byte) => self.write(emu, addr, byte),
-            WriteRange(range, byte) => self.write_range(emu, range, byte),
+            Break(addr)       => exec::r#break(self, addr),
+            Continue          => exec::r#continue(self, ),
+            Delete(point)     => exec::delete(self, point),
+            Disable(point)    => exec::disable(self, point),
+            Enable(point)     => exec::enable(self, point),
+            Freq(cycle)       => exec::freq(self, cycle),
+            Help(what)        => exec::help(what),
+            Info(what)        => exec::info(self, what),
+            Jump(addr)        => exec::jump(self, emu, addr),
+            List              => exec::list(self, emu),
+            Load(reg)         => exec::load(emu, reg),
+            Log(filter)       => exec::log(self, filter),
+            Quit              => exec::quit(),
+            Read(addr)        => exec::read(emu, addr),
+            ReadRange(range)  => exec::read_range(emu, range),
+            Reset             => exec::reset(emu),
+            Skip(point, many) => exec::skip(self, point, many),
+            Step(many)        => exec::step(self, many),
+            Store(reg, word)  => exec::store(emu, reg, word),
+            Write(addr, byte) => exec::write(emu, addr, byte),
+            WriteRange(range, byte) => exec::write_range(emu, range, byte),
         }
-    }
-
-    fn r#break(&mut self, addr: u16) -> Result<()> {
-        // Check if the breakpoint already exists
-        if let Some((point, _, Some(_))) = self.bpts.get_full_mut(&addr) {
-            // Inform of existing breakpoint
-            tell::warn!("breakpoint {point} already exists at {addr:#06x}");
-        } else {
-            // Create a new breakpoint
-            let (point, _) = self.bpts.insert_full(addr, Some(Breakpoint::default()));
-            tell::info!("breakpoint {point} created");
-        }
-
-        Ok(())
-    }
-
-    fn r#continue(&mut self) -> Result<()> {
-        self.skip = None; // reset skipped cycles
-        self.resume(); // resume console
-
-        Ok(())
-    }
-
-    fn delete(&mut self, point: usize) -> Result<()> {
-        // Find the specified breakpoint
-        let Some((&addr, bpt @ Some(_))) = self.bpts.get_index_mut(point) else {
-            return Err(Error::PointNotFound);
-        };
-        // Mark it as deleted
-        *bpt = None;
-        tell::info!("breakpoint {point} @ {addr:#06x} deleted");
-
-        Ok(())
-    }
-
-    fn disable(&mut self, point: usize) -> Result<()> {
-        // Find the specified breakpoint
-        let Some((&addr, Some(bpt))) = self.bpts.get_index_mut(point) else {
-            return Err(Error::PointNotFound);
-        };
-        // Disable it
-        bpt.off = true;
-        tell::info!("breakpoint {point} @ {addr:#06x} disabled");
-
-        Ok(())
-    }
-
-    fn benable(&mut self, point: usize) -> Result<()> {
-        // Find the specified breakpoint
-        let Some((&addr, Some(bpt))) = self.bpts.get_index_mut(point) else {
-            return Err(Error::PointNotFound);
-        };
-        // Enable it
-        bpt.off = false;
-        tell::info!("breakpoint {point} @ {addr:#06x} enabled");
-
-        Ok(())
-    }
-
-    fn freq(&mut self, cycle: Cycle) -> Result<()> {
-        // Change the current frequency
-        self.freq = cycle;
-        tell::info!("frequency set to {cycle}");
-
-        Ok(())
-    }
-
-    fn help(&self, what: Option<Keyword>) -> Result<()> {
-        if let Some(what) = what {
-            debug!("help: `{what:?}`");
-        }
-        tell::error!("help is not yet available");
-
-        Ok(())
-    }
-
-    fn jump(&mut self, emu: &mut GameBoy, addr: u16) -> Result<()> {
-        // Jump to specified address
-        emu.cpu_mut().goto(addr);
-        // Continue execution
-        self.r#continue()?;
-
-        Ok(())
-    }
-
-    fn info(&self, what: Option<Keyword>) -> Result<()> {
-        // Extract keyword
-        let Some(kword) = what else {
-            // Print help message when no keyword supplied
-            tell::error!("missing keyword");
-            return self.help(Some(Keyword::Info));
-        };
-
-        // Handle keyword
-        match kword {
-            // Print breakpoints
-            Keyword::Break => {
-                let bpts: Vec<_> = self
-                    .bpts
-                    .iter()
-                    // Add breakpoint indices
-                    .enumerate()
-                    // Filter out deleted breakpoints
-                    .filter_map(|(point, (&addr, bpt))| bpt.as_ref().map(|bpt| (point, addr, bpt)))
-                    .collect();
-                if bpts.is_empty() {
-                    // Print empty message
-                    tell::info!("no breakpoints set");
-                } else {
-                    // Print each breakpoint
-                    for (point, addr, bpt) in bpts {
-                        tell::info!("{}", bpt.display(point, addr));
-                    }
-                }
-            }
-            _ => return Err(Error::Unsupported),
-        }
-
-        Ok(())
-    }
-
-    fn list(&self, emu: &GameBoy) -> Result<()> {
-        let insn = match &emu.cpu().state() {
-            State::Execute(insn) => insn.clone(),
-            _ => emu.cpu().insn(),
-        };
-        tell::info!(
-            "{addr:#06x}: {opcode:02X} ; {insn}",
-            addr = self.pc,
-            opcode = insn.opcode()
-        );
-
-        Ok(())
-    }
-
-    #[allow(clippy::needless_pass_by_value)]
-    fn log(&mut self, filter: Option<String>) -> Result<()> {
-        // Extract the reload handle
-        let handle = self.reload.as_mut().ok_or(Error::MissingReloadHandle)?;
-
-        // Change the tracing filter
-        if let Some(filter) = filter {
-            handle.reload(filter)?;
-        }
-
-        // Print the current filter
-        handle.with_current(|filter| tell::info!("filter: {filter}"))?;
-
-        Ok(())
-    }
-
-    fn load(&self, emu: &GameBoy, reg: Register) -> Result<()> {
-        // Perform the load
-        let word = emu.cpu().get(reg);
-        tell::info!("{reg:?}: {word:#04x}");
-
-        Ok(())
-    }
-
-    fn quit(&self) -> Result<()> {
-        Err(Error::Quit)
-    }
-
-    fn read(&self, emu: &mut GameBoy, addr: u16) -> Result<()> {
-        // Perform the read
-        let byte = emu.cpu().read(addr);
-        tell::info!("{addr:#06x}: {byte:02x}");
-
-        Ok(())
-    }
-
-    fn read_range(&self, emu: &mut GameBoy, range: Range<u16>) -> Result<()> {
-        // Allow range to wrap
-        let Range { start, end } = range;
-        let iter: Box<dyn Iterator<Item = u16>> = match start.cmp(&end) {
-            Ordering::Less => Box::new(start..end),
-            Ordering::Equal => return Ok(()),
-            Ordering::Greater => {
-                tell::warn!("wrapping range for `read`");
-                Box::new((start..u16::MAX).chain(u16::MIN..end))
-            }
-        };
-        // Load all reads
-        let data: Vec<_> = iter.map(|addr| emu.cpu().read(addr)).collect();
-        // Display results
-        tell::info!("{}", phex::Printer::<u8>::new(start.into(), &data));
-
-        Ok(())
-    }
-
-    fn reset(&self, emu: &mut GameBoy) -> Result<()> {
-        // Reset the console
-        emu.reset();
-
-        Ok(())
-    }
-
-    fn skip(&mut self, point: usize, many: usize) -> Result<()> {
-        // Find the specified breakpoint
-        let Some((&addr, Some(bpt))) = self.bpts.get_index_mut(point) else {
-            return Err(Error::PointNotFound);
-        };
-        // Update the amount of skips
-        bpt.skip = many;
-        tell::info!("{}", bpt.display(point, addr));
-
-        Ok(())
-    }
-
-    fn step(&mut self, many: Option<usize>) -> Result<()> {
-        self.skip = many.or(Some(0)); // set skipped cycles
-        self.resume(); // resume console
-
-        Ok(())
-    }
-
-    fn store(&self, emu: &mut GameBoy, reg: Register, word: u16) -> Result<()> {
-        // Perform the store
-        emu.cpu_mut().set(reg, word);
-        // Read the stored value
-        self.load(emu, reg)?;
-
-        Ok(())
-    }
-
-    fn write(&self, emu: &mut GameBoy, addr: u16, byte: u8) -> Result<()> {
-        // Perform the write
-        emu.cpu().write(addr, byte);
-        let read = emu.cpu().read(addr);
-        if read != byte {
-            tell::warn!("ignored write {addr:#06x} <- {byte:02x} (retained: {read:02x})");
-        }
-        // Read the written value
-        self.read(emu, addr)?;
-
-        Ok(())
-    }
-
-    fn write_range(&self, emu: &mut GameBoy, range: Range<u16>, byte: u8) -> Result<()> {
-        // Allow range to wrap
-        let Range { start, end } = range;
-        let iter: Box<dyn Iterator<Item = u16>> = match start.cmp(&end) {
-            Ordering::Less => Box::new(start..end),
-            Ordering::Equal => return Ok(()),
-            Ordering::Greater => {
-                tell::warn!("wrapping range for `write`");
-                Box::new((start..u16::MAX).chain(u16::MIN..end))
-            }
-        };
-        // Store all writes
-        let data: Vec<_> = iter
-            .map(|addr| {
-                // Perform the write
-                emu.cpu().write(addr, byte);
-                // Read the written value
-                emu.cpu().read(addr)
-            })
-            .collect();
-        // See if it worked
-        let worked = data.iter().all(|&read| read == byte);
-        if !worked {
-            tell::warn!("ignored some writes in {start:#06x}..{end:04x} <- {byte:02x}");
-        }
-        // Display results
-        tell::info!("{}", phex::Printer::<u8>::new(start.into(), &data));
-
-        Ok(())
     }
 }
 
