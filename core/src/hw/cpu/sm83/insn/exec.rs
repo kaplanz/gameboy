@@ -833,12 +833,15 @@ pub mod int {
         // Disable interrupts
         cpu.ime = Ime::Disabled;
 
+        // Proceed
         insn.exec = nop;
         Some(insn)
     }
 
     pub fn nop(mut insn: Instruction, _: &mut Cpu) -> Option<Instruction> {
         // Execute NOP
+
+        // Proceed
         insn.exec = push;
         Some(insn)
     }
