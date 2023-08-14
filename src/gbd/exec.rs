@@ -195,7 +195,11 @@ pub fn read_range(emu: &mut GameBoy, range: Range<u16>) -> Result<()> {
     // Load all reads
     let data: Vec<_> = iter.map(|addr| emu.cpu().read(addr)).collect();
     // Display results
-    tell::info!("{}", phex::Printer::<u8>::new(start.into(), &data));
+    tell::info!(
+        "read {nbytes} bytes:\n{data}",
+        nbytes = data.len(),
+        data = phex::Printer::<u8>::new(start.into(), &data)
+    );
 
     Ok(())
 }
@@ -264,17 +268,20 @@ pub fn write_range(emu: &mut GameBoy, range: Range<u16>, byte: u8) -> Result<()>
         .map(|addr| {
             // Perform the write
             emu.cpu().write(addr, byte);
-            // Read the written value
+            // Check the written value
             emu.cpu().read(addr)
         })
         .collect();
-    // See if it worked
-    let worked = data.iter().all(|&read| read == byte);
-    if !worked {
+    // Check if it worked
+    let nbytes = data.iter().filter(|&&read| read == byte).count();
+    if nbytes < data.len() {
         tell::warn!("ignored some writes in {start:#06x}..{end:04x} <- {byte:02x}");
     }
     // Display results
-    tell::info!("{}", phex::Printer::<u8>::new(start.into(), &data));
+    tell::info!(
+        "wrote {nbytes} bytes:\n{data}",
+        data = phex::Printer::<u8>::new(start.into(), &data)
+    );
 
     Ok(())
 }
