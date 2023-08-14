@@ -11,6 +11,8 @@ use remus::reg::Register;
 use remus::{mem, Block, Board, SharedDevice};
 use thiserror::Error;
 
+use crate::dev::ReadOnly;
+
 /// Boot ROM management [`Device`](Device).
 #[derive(Debug, Default)]
 pub struct Rom {
@@ -36,7 +38,7 @@ impl Rom {
     /// Gets a reference to the boot ROM.
     #[must_use]
     pub fn rom(&self) -> SharedDevice {
-        self.bank.clone()
+        ReadOnly::from(self.bank.clone() as SharedDevice).to_shared()
     }
 
     /// Gets a reference to the boot ROM's disable register.
