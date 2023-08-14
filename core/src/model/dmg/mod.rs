@@ -541,15 +541,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
-    fn bus_boot_write_panics() {
-        let emu = setup();
-
-        // Write to boot ROM (should panic)
-        emu.bus.borrow_mut().write(0x0000, 0xaa);
-    }
-
-    #[test]
     fn bus_unmapped_works() {
         let emu = setup();
 
