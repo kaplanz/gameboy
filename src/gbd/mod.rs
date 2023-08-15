@@ -24,13 +24,13 @@ type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Clone, Debug, Default)]
 struct Breakpoint {
-    off: bool,
-    skip: usize,
+    disable: bool,
+    ignore: usize,
 }
 
 impl Breakpoint {
     fn display(&self, point: usize, addr: u16) -> impl Display {
-        let &Self { off, skip } = self;
+        let &Self { disable, ignore } = self;
 
         // Prepare format string
         let mut f = String::new();
@@ -38,10 +38,10 @@ impl Breakpoint {
         // Format the point, addr
         write!(f, "breakpoint {point} @ {addr:#06x}").unwrap();
         // Format characteristics
-        if off {
+        if disable {
             write!(f, ": disabled").unwrap();
-        } else if skip > 0 {
-            write!(f, ": will ignore next {skip} crossings").unwrap();
+        } else if ignore > 0 {
+            write!(f, ": will ignore next {ignore} crossings").unwrap();
         }
 
         f
@@ -80,12 +80,12 @@ pub struct Debugger {
     state: State,
     // Internal state
     play: bool,
+    freq: Cycle,
+    step: Option<usize>,
+    line: Option<Readline>,
     prog: Option<Program>,
     prev: Option<Command>,
-    freq: Cycle,
     bpts: IndexMap<u16, Option<Breakpoint>>,
-    skip: Option<usize>,
-    line: Option<Readline>,
 }
 
 impl Debugger {
@@ -108,7 +108,7 @@ impl Debugger {
     }
 
     pub fn enable(&mut self) {
-        self.skip = Some(0);
+        self.step = Some(0);
     }
 
     pub fn resume(&mut self) {
@@ -186,27 +186,42 @@ impl Debugger {
 
         // Perform the command
         match cmd {
-            Break(addr)       => exec::r#break(self, addr),
-            Continue          => exec::r#continue(self, ),
-            Delete(point)     => exec::delete(self, point),
-            Disable(point)    => exec::disable(self, point),
-            Enable(point)     => exec::enable(self, point),
-            Freq(cycle)       => exec::freq(self, cycle),
-            Help(what)        => exec::help(what),
-            Info(what)        => exec::info(self, what),
-            Jump(addr)        => exec::jump(self, emu, addr),
-            List              => exec::list(self, emu),
-            Load(reg)         => exec::load(emu, reg),
-            Log(filter)       => exec::log(self, filter),
-            Quit              => exec::quit(),
-            Read(addr)        => exec::read(emu, addr),
-            ReadRange(range)  => exec::read_range(emu, range),
-            Reset             => exec::reset(emu),
-            Skip(point, many) => exec::skip(self, point, many),
-            Step(many)        => exec::step(self, many),
-            Store(reg, word)  => exec::store(emu, reg, word),
-            Write(addr, byte) => exec::write(emu, addr, byte),
+            Break(addr)             => exec::r#break(self, addr),
+            Continue                => exec::r#continue(self, ),
+            Delete(point)           => exec::delete(self, point),
+            Disable(point)          => exec::disable(self, point),
+            Enable(point)           => exec::enable(self, point),
+            Freq(cycle)             => exec::freq(self, cycle),
+            Help(what)              => exec::help(what),
+            Ignore(point, many)     => exec::ignore(self, point, many),
+            Info(what)              => exec::info(self, what),
+            Jump(addr)              => exec::jump(self, emu, addr),
+            List                    => exec::list(self, emu),
+            Load(reg)               => exec::load(emu, reg),
+            Log(filter)             => exec::log(self, filter),
+            Quit                    => exec::quit(),
+            Read(addr)              => exec::read(emu, addr),
+            ReadRange(range)        => exec::read_range(emu, range),
+            Reset                   => exec::reset(emu),
+            Step(many)              => exec::step(self, many),
+            Store(reg, word)        => exec::store(emu, reg, word),
+            Write(addr, byte)       => exec::write(emu, addr, byte),
             WriteRange(range, byte) => exec::write_range(emu, range, byte),
+        }
+    }
+
+    /// Returns whether the current cycle is an active edge cycle.
+    ///
+    /// Depending on the [`Debugger`]'s frequency setting, the definition of an
+    /// edge may differ.
+    fn edge(&self) -> bool {
+        // Pre-calculate machine cycle
+        let mcycle = self.cycle % 4 == 0;
+        // Check if this is an edge cycle
+        match self.freq {
+            Cycle::Dot => true,
+            Cycle::Mach => mcycle,
+            Cycle::Insn => mcycle && matches!(self.state, State::Done),
         }
     }
 }
@@ -219,33 +234,36 @@ impl Block for Debugger {
 
 impl Machine for Debugger {
     fn enabled(&self) -> bool {
-        let mcycle = self.cycle % 4 == 0;
-        let step = match self.freq {
-            Cycle::Dot => true,
-            Cycle::Mach => mcycle,
-            Cycle::Insn => mcycle && matches!(self.state, State::Done),
-        };
-        let skip = !matches!(self.skip, Some(0));
+        // Is this an edge cycle?
+        let edge = self.edge();
+        // Is this cycle being stepped over?
+        let step = self.step != Some(0);
+        // Are we at a breakpoint?
         let bpt = self
             .bpts
             .get(&self.pc)
             .and_then(Option::as_ref)
-            .map_or(false, |bpt| !bpt.off && bpt.skip == 0);
-        step && (!skip || bpt)
+            .map_or(false, |bpt| !bpt.disable && bpt.ignore == 0);
+        // Should we enable the debugger?
+        edge && (!step || bpt)
     }
 
     fn cycle(&mut self) {
         // Update application cycle count
         self.cycle += 1;
-        // Handle skipped cycles
-        if let Some(skip) = &mut self.skip {
-            // Decrement skip count
-            *skip = skip.saturating_sub(1);
+        // Yield on non-edge cycles
+        if !self.edge() {
+            return;
         }
-        // Handle skipped breakpoints
+        // Handle stepped over cycles
+        if let Some(step) = &mut self.step {
+            // Decrement step count
+            *step = step.saturating_sub(1);
+        }
+        // Handle ignored breakpoints
         if let Some(bpt) = self.bpts.get_mut(&self.pc).and_then(Option::as_mut) {
-            // Decrement skip count
-            bpt.skip = bpt.skip.saturating_sub(1);
+            // Decrement ignore count
+            bpt.ignore = bpt.ignore.saturating_sub(1);
         }
     }
 }

@@ -78,6 +78,11 @@ impl Language {
                 let what = args.next().map(Self::kword).transpose()?;
                 Command::Help(what)
             }
+            Rule::Ignore => {
+                let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                let many = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                Command::Ignore(index, many)
+            }
             Rule::Info => {
                 let what = args.next().map(Self::kword).transpose()?;
                 Command::Info(what)
@@ -113,11 +118,6 @@ impl Language {
                 }
             }
             Rule::Reset => Command::Reset,
-            Rule::Skip => {
-                let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
-                let many = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
-                Command::Skip(index, many)
-            }
             Rule::Step => {
                 let many = args.next().map(Self::int).transpose()?;
                 Command::Step(many)
@@ -234,6 +234,7 @@ impl Language {
             Rule::KEnable   => Keyword::Enable,
             Rule::KFreq     => Keyword::Freq,
             Rule::KHelp     => Keyword::Help,
+            Rule::KIgnore   => Keyword::Ignore,
             Rule::KInfo     => Keyword::Info,
             Rule::KJump     => Keyword::Jump,
             Rule::KList     => Keyword::List,
@@ -242,7 +243,6 @@ impl Language {
             Rule::KQuit     => Keyword::Quit,
             Rule::KRead     => Keyword::Read,
             Rule::KReset    => Keyword::Reset,
-            Rule::KSkip     => Keyword::Skip,
             Rule::KStep     => Keyword::Step,
             Rule::KStore    => Keyword::Store,
             Rule::KWrite    => Keyword::Write,

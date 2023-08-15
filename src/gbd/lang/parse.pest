@@ -34,8 +34,8 @@ Filter        = @{ Directive ~ ("," ~ Filter)? }
 
 Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KDisable | KEnable | KFreq |
-                   KHelp | KInfo | KJump | KLoad | KLog | KList | KQuit |
-                   KRead | KReset | KSkip | KStore | KStep | KWrite }
+                   KHelp | KIgnore | KInfo | KJump | KLoad | KLog | KList |
+                   KQuit | KRead | KReset | KStore | KStep | KWrite }
     KBreak    =  { ^"break" | ^"brea" | ^"bre" | ^"br" | ^"b" }
     KContinue =  { ^"continue" | ^"continu" | ^"contin" | ^"conti" | ^"cont" |
                    ^"con" | ^"co" | ^"c" }
@@ -46,6 +46,7 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
     KFreq     =  { ^"frequency" | ^"frequenc" | ^"frequen" | ^"freque" |
                    ^"frequ" | ^"freq" | ^"fre" | ^"fr" | ^"f" }
     KHelp     =  { ^"help" | ^"hel" | ^"he" | ^"h" }
+    KIgnore   =  { ^"ignore" | ^"ignor" | ^"igno" | ^"ign" | ^"ig" }
     KInfo     =  { ^"info" | ^"inf" | ^"in" | ^"i" }
     KJump     =  { ^"jump" | ^"jum" | ^"ju" | ^"j" }
     KList     =  { ^"list" | ^"lis" | ^"li" | ^"l" }
@@ -54,7 +55,6 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
     KQuit     =  { ^"quit" | ^"qui" | ^"qu" | ^"q" }
     KRead     =  { ^"read" | ^"rea" | ^"re" | ^"r" }
     KReset    =  { ^"reset" | ^"rese" | ^"res" }
-    KSkip     =  { ^"skip" | ^"ski" | ^"sk" }
     KStep     =  { ^"step" | ^"ste" | ^"st" | ^"s" }
     KStore    =  { ^"store" | ^"stor" | ^"sto" | ^"sw" }
     KWrite    =  { ^"write" | ^"writ" | ^"wri" | ^"wr" | ^"w" }
@@ -67,8 +67,8 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
       SP      =  { ^"sp" }
       PC      =  { ^"pc" }
   Command     = _{ Break | Continue | Delete | Disable | Enable | Freq | Help |
-                   Info | Jump | Load | Log | List | Quit | Read | Reset |
-                   Skip | Store | Step | Write }
+                   Ignore | Info | Jump | Load | Log | List | Quit | Read |
+                   Reset | Store | Step | Write }
     Break     =  { KBreak ~ UInt }
     Continue  =  { KContinue }
     Delete    =  { KDelete ~ UInt }
@@ -80,6 +80,7 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
         Insn  =  { ^"instruction"   | ^"insn" | ^"i" }
         Mach  =  { ^"machine"       | ^"mach" | ^"m" }
     Help      =  { KHelp ~ Keyword? }
+    Ignore    =  { KIgnore ~ UInt ~ UInt }
     Info      =  { KInfo ~ SInfo? }
       SInfo   = _{ KBreak }
     Jump      =  { KJump ~ UInt }
@@ -89,7 +90,6 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
     Quit      =  { KQuit }
     Read      =  { KRead ~ (RangeBounds | UInt) }
     Reset     =  { KReset }
-    Skip      =  { KSkip ~ UInt ~ UInt }
     Step      =  { KStep ~ UInt? }
     Store     =  { KStore ~ Register ~ Int }
     Write     =  { KWrite ~ (RangeBounds | UInt) ~ Int }
