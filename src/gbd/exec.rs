@@ -27,7 +27,7 @@ pub fn r#break(gbd: &mut Debugger, addr: u16) -> Result<()> {
 }
 
 pub fn r#continue(gbd: &mut Debugger) -> Result<()> {
-    gbd.skip = None; // reset skipped cycles
+    gbd.step = None; // reset step count
     gbd.resume(); // resume console
 
     Ok(())
@@ -51,7 +51,7 @@ pub fn disable(gbd: &mut Debugger, point: usize) -> Result<()> {
         return Err(Error::PointNotFound);
     };
     // Disable it
-    bpt.off = true;
+    bpt.disable = true;
     tell::info!("breakpoint {point} @ {addr:#06x} disabled");
 
     Ok(())
@@ -63,7 +63,7 @@ pub fn enable(gbd: &mut Debugger, point: usize) -> Result<()> {
         return Err(Error::PointNotFound);
     };
     // Enable it
-    bpt.off = false;
+    bpt.disable = false;
     tell::info!("breakpoint {point} @ {addr:#06x} enabled");
 
     Ok(())
@@ -91,6 +91,18 @@ pub fn jump(gbd: &mut Debugger, emu: &mut GameBoy, addr: u16) -> Result<()> {
     emu.cpu_mut().goto(addr);
     // Continue execution
     r#continue(gbd)?;
+
+    Ok(())
+}
+
+pub fn ignore(gbd: &mut Debugger, point: usize, many: usize) -> Result<()> {
+    // Find the specified breakpoint
+    let Some((&addr, Some(bpt))) = gbd.bpts.get_index_mut(point) else {
+        return Err(Error::PointNotFound);
+    };
+    // Update ignore count
+    bpt.ignore = many;
+    tell::info!("{}", bpt.display(point, addr));
 
     Ok(())
 }
@@ -211,20 +223,8 @@ pub fn reset(emu: &mut GameBoy) -> Result<()> {
     Ok(())
 }
 
-pub fn skip(gbd: &mut Debugger, point: usize, many: usize) -> Result<()> {
-    // Find the specified breakpoint
-    let Some((&addr, Some(bpt))) = gbd.bpts.get_index_mut(point) else {
-        return Err(Error::PointNotFound);
-    };
-    // Update the amount of skips
-    bpt.skip = many;
-    tell::info!("{}", bpt.display(point, addr));
-
-    Ok(())
-}
-
 pub fn step(gbd: &mut Debugger, many: Option<usize>) -> Result<()> {
-    gbd.skip = many.or(Some(0)); // set skipped cycles
+    gbd.step = many.or(Some(0)); // set step count
     gbd.resume(); // resume console
 
     Ok(())
