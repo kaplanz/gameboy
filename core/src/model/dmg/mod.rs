@@ -40,7 +40,7 @@ pub const SCREEN: screen::Spec = screen::Spec {
 #[derive(Debug, Default)]
 pub struct GameBoy {
     // Debug
-    pub doctor: Doctor,
+    pub doc: Doctor,
     // State
     clock: usize,
     // Processors
@@ -283,9 +283,9 @@ impl Machine for GameBoy {
             }
 
             // Collect doctor entries (if enabled)
-            if self.doctor.enabled() {
+            if self.doc.enabled() {
                 if let Some(entry) = self.cpu.doctor() {
-                    self.doctor.notice(entry);
+                    self.doc.notice(entry);
                 }
             }
 

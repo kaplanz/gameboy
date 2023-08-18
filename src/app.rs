@@ -1,19 +1,29 @@
-use std::fs::File;
-use std::io::{BufWriter, Write};
+#[cfg(feature = "doc")]
+use std::io::Write;
+#[cfg(feature = "gbd")]
 use std::sync::Arc;
+#[cfg(feature = "gbd")]
 use std::time::Duration;
 
 use eyre::Context;
 use gameboy::core::Emulator;
 use gameboy::dmg::{Button, GameBoy, Screen, SCREEN};
 use log::debug;
-use minifb::{Key, Scale, Window, WindowOptions};
+use minifb::{Key, Window};
+#[cfg(feature = "gbd")]
 use parking_lot::Mutex;
 use remus::{Clock, Machine};
 
+#[cfg(feature = "doc")]
+use crate::doc::Doctor;
+#[cfg(feature = "gbd")]
+use crate::gbd;
+#[cfg(feature = "gbd")]
 use crate::gbd::Debugger;
 use crate::pal::Palette;
-use crate::{gbd, Speed, FREQ};
+#[cfg(feature = "view")]
+use crate::view::View;
+use crate::{Speed, FREQ};
 
 #[derive(Debug)]
 pub struct Opts {
@@ -27,9 +37,12 @@ pub struct App {
     pub opts: Opts,
     pub emu: GameBoy,
     pub win: Window,
-    pub debug: Option<Debug>,
-    pub doctor: Option<Doctor>,
+    #[cfg(feature = "doc")]
+    pub doc: Option<Doctor>,
+    #[cfg(feature = "gbd")]
     pub gbd: Option<Debugger>,
+    #[cfg(feature = "view")]
+    pub view: Option<View>,
 }
 
 impl App {
@@ -39,9 +52,12 @@ impl App {
             opts,
             mut emu,
             mut win,
-            mut debug,
-            mut doctor,
+            #[cfg(feature = "doc")]
+            mut doc,
+            #[cfg(feature = "gbd")]
             gbd,
+            #[cfg(feature = "view")]
+            mut view,
         } = self;
         let title = opts.title;
 
@@ -63,12 +79,15 @@ impl App {
         let mut fps = 0;
 
         // Enable doctor when used
-        if doctor.is_some() {
-            emu.doctor.enable();
+        #[cfg(feature = "doc")]
+        if doc.is_some() {
+            emu.doc.enable();
         }
 
         // Prepare debugger when used
+        #[cfg(feature = "gbd")]
         let mut gbd = gbd.map(Mutex::new).map(Arc::new);
+        #[cfg(feature = "gbd")]
         if let Some(gbd) = gbd.as_ref().map(Arc::clone) {
             {
                 // Unlock the debugger
@@ -113,6 +132,7 @@ impl App {
             }
 
             // Optionally run the debugger
+            #[cfg(feature = "gbd")]
             if let Some(mut gbd) = gbd.as_mut().map(|gbd| gbd.lock()) {
                 // Sync with console
                 gbd.sync(&emu);
@@ -189,8 +209,9 @@ impl App {
             });
             winres.context("failed to redraw screen")?; // return early if window update failed
 
-            // Update the debug screens every second
-            if let Some(debug) = &mut debug {
+            // Update the debug view every second
+            #[cfg(feature = "view")]
+            if let Some(view) = &mut view {
                 if cycle == 0 {
                     // Probe for debug info
                     let info = emu.debug();
@@ -200,26 +221,24 @@ impl App {
                     let map1 = info.ppu.map1.map(|col| opts.pal[col as usize].into());
                     let map2 = info.ppu.map2.map(|col| opts.pal[col as usize].into());
                     // Display PPU state
-                    debug
-                        .tdat
+                    view.tdat
                         .update_with_buffer(&tdat, 16 * 8, 24 * 8)
                         .context("failed to redraw tile data")?;
-                    debug
-                        .map1
+                    view.map1
                         .update_with_buffer(&map1, 32 * 8, 32 * 8)
                         .context("failed to redraw tile map 1")?;
-                    debug
-                        .map2
+                    view.map2
                         .update_with_buffer(&map2, 32 * 8, 32 * 8)
                         .context("failed to redraw tile map 2")?;
                 }
             }
 
             // Log doctor entries
-            if let Some(doctor) = &mut doctor {
-                if let Some(entries) = emu.doctor.checkup() {
+            #[cfg(feature = "doc")]
+            if let Some(doc) = &mut doc {
+                if let Some(entries) = emu.doc.checkup() {
                     if !entries.is_empty() {
-                        writeln!(doctor.log, "{entries}").context("failed to write doctor log")?;
+                        writeln!(doc.log, "{entries}").context("failed to write doctor log")?;
                     }
                 }
             }
@@ -246,53 +265,5 @@ impl App {
         }
 
         Ok(())
-    }
-}
-
-#[derive(Debug)]
-pub struct Debug {
-    tdat: Window,
-    map1: Window,
-    map2: Window,
-}
-
-impl Debug {
-    pub fn new(opts: WindowOptions) -> Self {
-        Self {
-            tdat: Window::new("Tile Data", 16 * 8, 24 * 8, opts).unwrap(),
-            map1: Window::new(
-                "Tile Map 1",
-                32 * 8,
-                32 * 8,
-                WindowOptions {
-                    scale: Scale::X1,
-                    ..opts
-                },
-            )
-            .unwrap(),
-            map2: Window::new(
-                "Tile Map 2",
-                32 * 8,
-                32 * 8,
-                WindowOptions {
-                    scale: Scale::X1,
-                    ..opts
-                },
-            )
-            .unwrap(),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct Doctor {
-    log: BufWriter<File>,
-}
-
-impl Doctor {
-    pub fn new(log: File) -> Self {
-        Self {
-            log: BufWriter::new(log),
-        }
     }
 }

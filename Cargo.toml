@@ -19,10 +19,17 @@ members = [
     "crates/tell",
 ]
 
+[features]
+default = ["debug"]
+debug = ["doc", "gbd", "view"]
+doc = []
+gbd = ["dep:ctrlc", "dep:phex", "dep:parking_lot"]
+view = []
+
 [dependencies]
 clap = { version = "4.3.19", features = ["derive", "env", "wrap_help"] }
 color-eyre = { version = "0.6.2" }
-ctrlc = "3.4.0"
+ctrlc = { version = "3.4.0", optional = true }
 eyre = "0.6.8"
 gameboy-core = { path = "core" }
 chex = { version = "0.1.0", path = "crates/chex" }
@@ -30,10 +37,10 @@ indexmap = "2.0.0"
 log = "0.4.19"
 minifb = "0.24.0"
 num = "0.4.1"
-parking_lot = "0.12.1"
+parking_lot = { version = "0.12.1", optional = true }
 pest = "2.7.2"
 pest_derive = "2.7.2"
-phex = { version = "0.1.0", path = "crates/phex" }
+phex = { version = "0.1.0", path = "crates/phex", optional = true }
 remus = { git = "https://github.com/kaplanz/remus.git" }
 rustyline = "12.0.0"
 tell = { version = "0.1.0", path = "crates/tell" }
