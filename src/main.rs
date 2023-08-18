@@ -10,19 +10,33 @@ use gameboy::dmg::cart::Cartridge;
 use gameboy::dmg::{BootRom, GameBoy, SCREEN};
 use log::{info, warn};
 use minifb::{Scale, ScaleMode, Window, WindowOptions};
+#[cfg(feature = "gbd")]
 use tracing_subscriber::fmt::Layer;
+#[cfg(feature = "gbd")]
 use tracing_subscriber::layer::Layered;
+#[cfg(feature = "gbd")]
 use tracing_subscriber::{reload, EnvFilter, Registry};
 
-use crate::app::{App, Doctor, Opts};
+use crate::app::{App, Opts};
 use crate::cli::Args;
+#[cfg(feature = "doc")]
+use crate::doc::Doctor;
+#[cfg(feature = "gbd")]
 use crate::gbd::Debugger;
+#[cfg(feature = "view")]
+use crate::view::View;
 
 mod app;
 mod cli;
+#[cfg(feature = "doc")]
+mod doc;
+#[cfg(feature = "gbd")]
 mod gbd;
 mod pal;
+#[cfg(feature = "view")]
+mod view;
 
+#[cfg(feature = "gbd")]
 type Handle = reload::Handle<EnvFilter, Layered<Layer<Registry>, Registry>>;
 
 /// Game Boy main clock frequency, set to 4,194,304 Hz.
@@ -50,6 +64,7 @@ fn main() -> Result<()> {
     let log = tracing_subscriber::fmt()
         .with_env_filter(&args.log)
         .with_filter_reloading();
+    #[cfg(feature = "gbd")]
     let handle = log.reload_handle();
     log.init();
 
@@ -58,7 +73,7 @@ fn main() -> Result<()> {
     // Read the cartridge
     let cart = cart(args.rom, args.chk, args.force)?;
     let title = match cart.header().title.replace('\0', " ").trim() {
-        "" => "Game Boy",
+        "" => "Untitled",
         title => title,
     } // extract title from cartridge
     .to_string();
@@ -87,15 +102,17 @@ fn main() -> Result<()> {
     // Create main window
     let win = Window::new(&title, SCREEN.width, SCREEN.height, opts).unwrap();
 
-    // Create debug info
-    let debug = if args.debug {
-        Some(app::Debug::new(opts))
+    // Create debug views
+    #[cfg(feature = "view")]
+    let view = if args.view {
+        Some(View::new(opts))
     } else {
         None
     };
 
+    #[cfg(feature = "doc")]
     // Open doctor logfile
-    let doctor = if let Some(path) = args.doctor {
+    let doc = if let Some(path) = args.doc {
         Some(&path)
             .map(File::create)
             .transpose()
@@ -106,6 +123,7 @@ fn main() -> Result<()> {
     };
 
     // Declare debugger
+    #[cfg(feature = "gbd")]
     let gbd = args
         .gbd
         .then_some(Debugger::new())
@@ -118,9 +136,12 @@ fn main() -> Result<()> {
         opts,
         emu,
         win,
-        debug,
-        doctor,
+        #[cfg(feature = "doc")]
+        doc,
+        #[cfg(feature = "gbd")]
         gbd,
+        #[cfg(feature = "view")]
+        view,
     };
 
     // Run the app

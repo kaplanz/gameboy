@@ -53,27 +53,6 @@ pub struct Args {
     #[arg(short = 'x', long)]
     pub exit: bool,
 
-    /// Launch in debug mode.
-    ///
-    /// Causes the emulator to run in debug mode. Provided debugging options
-    /// include rendering the PPU's video RAM contents.
-    #[arg(long)]
-    pub debug: bool,
-
-    /// Doctor logfile path.
-    ///
-    /// Enables logging at the provided path of the emulator's state after every
-    /// instruction in the format used by Gameboy Doctor.
-    #[arg(long)]
-    #[arg(value_hint = ValueHint::FilePath)]
-    pub doctor: Option<PathBuf>,
-
-    /// Launch with Game Boy Debugger.
-    ///
-    /// Starts emulation with the the Game Boy Debugger (GBD) prompt enabled.
-    #[arg(long)]
-    pub gbd: bool,
-
     /// DMG-01 color palette.
     ///
     /// Defines the 2-bit color palette for the DMG-01 Game Boy model. The
@@ -90,4 +69,31 @@ pub struct Args {
     #[arg(short, long)]
     #[arg(value_enum, default_value_t = Speed::Full)]
     pub speed: Speed,
+
+    #[cfg(feature = "doc")]
+    /// Doctor logfile path.
+    ///
+    /// Enables logging at the provided path of the emulator's state after every
+    /// instruction in the format used by Gameboy Doctor.
+    #[arg(long = "doctor")]
+    #[arg(help_heading = "Debug")]
+    #[arg(value_hint = ValueHint::FilePath)]
+    pub doc: Option<PathBuf>,
+
+    #[cfg(feature = "gbd")]
+    /// Enable interactive Game Boy Debugger.
+    ///
+    /// Starts emulation with the the Game Boy Debugger (GBD) prompt enabled.
+    #[arg(short = 'i', long)]
+    #[arg(help_heading = "Debug")]
+    pub gbd: bool,
+
+    #[cfg(feature = "view")]
+    /// Open debug view windows.
+    ///
+    /// Causes the emulator to open the debug views, providing graphical
+    /// rendering of video RAM contents.
+    #[arg(long)]
+    #[arg(help_heading = "Debug")]
+    pub view: bool,
 }
