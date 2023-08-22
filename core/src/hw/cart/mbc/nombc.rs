@@ -1,7 +1,4 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use remus::{Block, SharedDevice};
+use remus::{Block, Device, Dynamic, Shared};
 
 use super::Mbc;
 use crate::dev::ReadOnly;
@@ -9,15 +6,16 @@ use crate::dev::ReadOnly;
 /// Rom (+ RAM) only; no MBC.
 #[derive(Debug)]
 pub struct NoMbc {
-    rom: Rc<RefCell<ReadOnly>>,
-    ram: SharedDevice,
+    rom: Shared<ReadOnly<Dynamic>>,
+    ram: Dynamic,
 }
 
 impl NoMbc {
     /// Constructs a new `NoMbc` with the provided configuration.
-    pub fn with(rom: SharedDevice, ram: SharedDevice) -> Self {
+    #[must_use]
+    pub fn with(rom: Dynamic, ram: Dynamic) -> Self {
         Self {
-            rom: Rc::new(RefCell::new(ReadOnly::from(rom))),
+            rom: ReadOnly::from(rom).into(),
             ram,
         }
     }
@@ -26,18 +24,18 @@ impl NoMbc {
 impl Block for NoMbc {
     fn reset(&mut self) {
         // Reset ROM
-        self.rom.borrow_mut().reset();
+        self.rom.reset();
         // Reset RAM
-        self.ram.borrow_mut().reset();
+        self.ram.reset();
     }
 }
 
 impl Mbc for NoMbc {
-    fn rom(&self) -> SharedDevice {
-        self.rom.clone()
+    fn rom(&self) -> Dynamic {
+        self.rom.clone().to_dynamic()
     }
 
-    fn ram(&self) -> SharedDevice {
-        self.ram.clone()
+    fn ram(&self) -> Dynamic {
+        self.ram.clone().to_dynamic()
     }
 }

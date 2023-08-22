@@ -8,7 +8,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error;
 
-use super::{Command, Cycle, Keyword, Program, Register};
+use super::{reg, Command, Cycle, Keyword, Program};
 
 pub fn prog(src: &str) -> Result<Program, Error> {
     Language::prog(src)
@@ -252,15 +252,15 @@ impl Language {
 
     #[allow(clippy::needless_pass_by_value)]
     #[allow(clippy::unnecessary_wraps)]
-    fn reg(pair: Pair<Rule>) -> Result<Register, Error> {
+    fn reg(pair: Pair<Rule>) -> Result<reg::Word, Error> {
         // Extract the register rule
         Ok(match pair.as_rule() {
-            Rule::AF => Register::AF,
-            Rule::BC => Register::BC,
-            Rule::DE => Register::DE,
-            Rule::HL => Register::HL,
-            Rule::SP => Register::SP,
-            Rule::PC => Register::PC,
+            Rule::AF => reg::Word::AF,
+            Rule::BC => reg::Word::BC,
+            Rule::DE => reg::Word::DE,
+            Rule::HL => reg::Word::HL,
+            Rule::SP => reg::Word::SP,
+            Rule::PC => reg::Word::PC,
             rule => unreachable!("invalid rule: {rule:?}"),
         })
     }

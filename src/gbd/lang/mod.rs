@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut, Range};
 use std::str::FromStr;
 
-use gameboy::core::cpu::sm83::Register;
+use gameboy::core::cpu::sm83::reg;
 
 pub use self::parse::Error;
 use super::Cycle;
@@ -63,14 +63,14 @@ pub enum Command {
     Info(Option<Keyword>),
     Jump(u16),
     List,
-    Load(Register),
+    Load(reg::Word),
     Log(Option<String>),
     Quit,
     Read(u16),
     ReadRange(Range<u16>),
     Reset,
     Step(Option<usize>),
-    Store(Register, u16),
+    Store(reg::Word, u16),
     Write(u16, u8),
     WriteRange(Range<u16>, u8),
 }

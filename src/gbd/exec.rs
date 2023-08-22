@@ -3,10 +3,10 @@
 use std::cmp::Ordering;
 use std::ops::Range;
 
-use gameboy::core::cpu::sm83::{Register, State};
-use gameboy::core::cpu::Processor;
+use gameboy::core::cpu::sm83::{reg, State};
+use gameboy::core::cpu::Model;
 use log::debug;
-use remus::Block;
+use remus::{Block, Processor};
 
 use super::lang::Keyword;
 use super::{Cycle, Debugger, Error, GameBoy, Result};
@@ -173,9 +173,9 @@ pub fn log(gbd: &mut Debugger, filter: Option<String>) -> Result<()> {
     Ok(())
 }
 
-pub fn load(emu: &GameBoy, reg: Register) -> Result<()> {
+pub fn load(emu: &GameBoy, reg: reg::Word) -> Result<()> {
     // Perform the load
-    let word = emu.cpu().get(reg);
+    let word: u16 = emu.cpu().load(reg);
     tell::info!("{reg:?}: {word:#04x}");
 
     Ok(())
@@ -230,9 +230,9 @@ pub fn step(gbd: &mut Debugger, many: Option<usize>) -> Result<()> {
     Ok(())
 }
 
-pub fn store(emu: &mut GameBoy, reg: Register, word: u16) -> Result<()> {
+pub fn store(emu: &mut GameBoy, reg: reg::Word, word: u16) -> Result<()> {
     // Perform the store
-    emu.cpu_mut().set(reg, word);
+    emu.cpu_mut().store(reg, word);
     // Read the stored value
     load(emu, reg)?;
 
@@ -241,7 +241,7 @@ pub fn store(emu: &mut GameBoy, reg: Register, word: u16) -> Result<()> {
 
 pub fn write(emu: &mut GameBoy, addr: u16, byte: u8) -> Result<()> {
     // Perform the write
-    emu.cpu().write(addr, byte);
+    emu.cpu_mut().write(addr, byte);
     let data = emu.cpu().read(addr);
     if data != byte {
         tell::warn!("ignored write {addr:#06x} <- {byte:02x} (retained: {data:02x})");
@@ -267,7 +267,7 @@ pub fn write_range(emu: &mut GameBoy, range: Range<u16>, byte: u8) -> Result<()>
     let data: Vec<_> = iter
         .map(|addr| {
             // Perform the write
-            emu.cpu().write(addr, byte);
+            emu.cpu_mut().write(addr, byte);
             // Check the written value
             emu.cpu().read(addr)
         })

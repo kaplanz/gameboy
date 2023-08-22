@@ -1,12 +1,9 @@
 //! Memory ports.
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use remus::bus::adapt::View;
 use remus::bus::Bus;
 use remus::mem::Ram;
-use remus::{Block, Board, Device};
+use remus::{Block, Board, Device, Shared};
 
 use super::BootRom;
 
@@ -26,26 +23,47 @@ pub struct Memory {
     // │  8 KiB │ Work │ RAM │ WRAM  │
     // │  127 B │ High │ RAM │ HRAM  │
     // └────────┴──────┴─────┴───────┘
-    pub(super) boot: Rc<RefCell<BootRom>>,
-    pub(super) wram: Rc<RefCell<Wram>>,
-    pub(super) hram: Rc<RefCell<Hram>>,
+    boot: Shared<BootRom>,
+    wram: Shared<Wram>,
+    hram: Shared<Hram>,
 }
 
 impl Memory {
     /// Constructs a new `Memory` using provided [`BootRom`].
     pub fn with(boot: BootRom) -> Self {
         Self {
-            boot: Rc::new(RefCell::new(boot)),
+            boot: boot.into(),
             ..Default::default()
         }
+    }
+
+    /// Gets the boot ROM.
+    #[allow(unused)]
+    pub(super) fn boot(&self) -> Shared<BootRom> {
+        self.boot.clone()
+    }
+
+    /// Gets the work RAM.
+    pub(super) fn wram(&self) -> Shared<Wram> {
+        self.wram.clone()
+    }
+
+    /// Gets a view of the echo RAM.
+    pub(super) fn echo(&self) -> Shared<impl Device> {
+        View::new(self.wram(), 0x0000..=0x1dff).to_shared()
+    }
+
+    /// Gets the high RAM.
+    pub(super) fn hram(&self) -> Shared<Hram> {
+        self.hram.clone()
     }
 }
 
 impl Block for Memory {
     fn reset(&mut self) {
-        self.boot.borrow_mut().reset();
-        self.wram.borrow_mut().reset();
-        self.hram.borrow_mut().reset();
+        self.boot.reset();
+        self.wram.reset();
+        self.hram.reset();
     }
 }
 
@@ -56,9 +74,9 @@ impl Board for Memory {
         self.boot.borrow().connect(bus);
 
         // Extract devices
-        let wram = self.wram.clone();
-        let echo = View::new(wram.clone(), 0x0000..=0x1dff).to_shared();
-        let hram = self.hram.clone();
+        let wram = self.wram().to_dynamic();
+        let echo = self.echo().to_dynamic();
+        let hram = self.hram().to_dynamic();
 
         // Map devices on bus  // ┌──────┬────────┬──────┬─────┐
                                // │ Addr │  Size  │ Name │ Dev │

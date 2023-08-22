@@ -11,5 +11,6 @@ license = "MIT OR Apache-2.0"
 enuf = { version = "0.1.0", path = "../crates/enuf" }
 itertools = "0.11.0"
 log = "0.4.19"
+phex = { version = "0.1.0", path = "../crates/phex" }
 remus = { git = "https://github.com/kaplanz/remus.git" }
 thiserror = "1.0.44"

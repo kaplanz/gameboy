@@ -17,7 +17,7 @@ impl HBlank {
             Mode::HBlank(self)
         } else {
             // Extract scanline info
-            let ly = &mut **ppu.ctl.ly.borrow_mut();
+            let ly = &mut **ppu.file.ly.borrow_mut();
             // Increment scanline and reset dot-clock
             *ly += 1;
             ppu.dot = 0;

@@ -23,7 +23,7 @@ pub struct Header {
     /// SGB model support.
     pub sgb: bool,
     /// Cartridge information.
-    pub cart: CartridgeType,
+    pub cart: Kind,
     /// Size of this ROM.
     pub romsz: usize,
     /// Size of external RAM.
@@ -48,7 +48,7 @@ impl Header {
             dmg: false,
             cgb: false,
             sgb: false,
-            cart: CartridgeType::NoMbc {
+            cart: Kind::NoMbc {
                 ram: false,
                 battery: false,
             },
@@ -265,7 +265,7 @@ impl TryFrom<&[u8]> for Header {
 
 /// Cartridge information.
 #[derive(Debug, Eq, PartialEq)]
-pub enum CartridgeType {
+pub enum Kind {
     NoMbc {
         ram: bool,
         battery: bool,
@@ -306,7 +306,7 @@ pub enum CartridgeType {
     },
 }
 
-impl Display for CartridgeType {
+impl Display for Kind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NoMbc { .. } => "ROM",
@@ -325,115 +325,115 @@ impl Display for CartridgeType {
     }
 }
 
-impl TryFrom<u8> for CartridgeType {
+impl TryFrom<u8> for Kind {
     type Error = Error;
 
     #[allow(clippy::too_many_lines)]
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0x00 => Ok(CartridgeType::NoMbc {
+            0x00 => Ok(Kind::NoMbc {
                 ram: false,
                 battery: false,
             }),
-            0x01 => Ok(CartridgeType::Mbc1 {
+            0x01 => Ok(Kind::Mbc1 {
                 ram: false,
                 battery: false,
             }),
-            0x02 => Ok(CartridgeType::Mbc1 {
+            0x02 => Ok(Kind::Mbc1 {
                 ram: true,
                 battery: false,
             }),
-            0x03 => Ok(CartridgeType::Mbc1 {
+            0x03 => Ok(Kind::Mbc1 {
                 ram: true,
                 battery: true,
             }),
-            0x05 => Ok(CartridgeType::Mbc2 { battery: false }),
-            0x06 => Ok(CartridgeType::Mbc2 { battery: true }),
-            0x08 => Ok(CartridgeType::NoMbc {
+            0x05 => Ok(Kind::Mbc2 { battery: false }),
+            0x06 => Ok(Kind::Mbc2 { battery: true }),
+            0x08 => Ok(Kind::NoMbc {
                 ram: true,
                 battery: false,
             }),
-            0x09 => Ok(CartridgeType::NoMbc {
+            0x09 => Ok(Kind::NoMbc {
                 ram: true,
                 battery: true,
             }),
-            0x0b => Ok(CartridgeType::Mmm01 {
+            0x0b => Ok(Kind::Mmm01 {
                 ram: false,
                 battery: false,
             }),
-            0x0c => Ok(CartridgeType::Mmm01 {
+            0x0c => Ok(Kind::Mmm01 {
                 ram: true,
                 battery: false,
             }),
-            0x0d => Ok(CartridgeType::Mmm01 {
+            0x0d => Ok(Kind::Mmm01 {
                 ram: true,
                 battery: true,
             }),
-            0x0f => Ok(CartridgeType::Mbc3 {
+            0x0f => Ok(Kind::Mbc3 {
                 timer: true,
                 ram: false,
                 battery: true,
             }),
-            0x10 => Ok(CartridgeType::Mbc3 {
+            0x10 => Ok(Kind::Mbc3 {
                 timer: true,
                 ram: true,
                 battery: true,
             }),
-            0x11 => Ok(CartridgeType::Mbc3 {
+            0x11 => Ok(Kind::Mbc3 {
                 timer: false,
                 ram: false,
                 battery: false,
             }),
-            0x12 => Ok(CartridgeType::Mbc3 {
+            0x12 => Ok(Kind::Mbc3 {
                 timer: false,
                 ram: true,
                 battery: false,
             }),
-            0x13 => Ok(CartridgeType::Mbc3 {
+            0x13 => Ok(Kind::Mbc3 {
                 timer: false,
                 ram: true,
                 battery: true,
             }),
-            0x19 => Ok(CartridgeType::Mbc5 {
+            0x19 => Ok(Kind::Mbc5 {
                 rumble: false,
                 ram: false,
                 battery: false,
             }),
-            0x1a => Ok(CartridgeType::Mbc5 {
+            0x1a => Ok(Kind::Mbc5 {
                 rumble: false,
                 ram: true,
                 battery: false,
             }),
-            0x1b => Ok(CartridgeType::Mbc5 {
+            0x1b => Ok(Kind::Mbc5 {
                 rumble: false,
                 ram: true,
                 battery: true,
             }),
-            0x1c => Ok(CartridgeType::Mbc5 {
+            0x1c => Ok(Kind::Mbc5 {
                 rumble: true,
                 ram: false,
                 battery: false,
             }),
-            0x1d => Ok(CartridgeType::Mbc5 {
+            0x1d => Ok(Kind::Mbc5 {
                 rumble: true,
                 ram: true,
                 battery: false,
             }),
-            0x1e => Ok(CartridgeType::Mbc5 {
+            0x1e => Ok(Kind::Mbc5 {
                 rumble: true,
                 ram: true,
                 battery: true,
             }),
-            0x20 => Ok(CartridgeType::Mbc6),
-            0x22 => Ok(CartridgeType::Mbc7 {
+            0x20 => Ok(Kind::Mbc6),
+            0x22 => Ok(Kind::Mbc7 {
                 sensor: true,
                 rumble: true,
                 ram: true,
                 battery: true,
             }),
-            0xfc => Ok(CartridgeType::PocketCamera),
-            0xfe => Ok(CartridgeType::HuC3),
-            0xff => Ok(CartridgeType::HuC1 {
+            0xfc => Ok(Kind::PocketCamera),
+            0xfe => Ok(Kind::HuC3),
+            0xff => Ok(Kind::HuC1 {
                 ram: true,
                 battery: true,
             }),
@@ -509,7 +509,7 @@ mod tests {
                 dmg: true,
                 cgb: false,
                 sgb: false,
-                cart: CartridgeType::NoMbc {
+                cart: Kind::NoMbc {
                     ram: true,
                     battery: false
                 },

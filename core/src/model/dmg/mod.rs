@@ -7,14 +7,15 @@ use std::rc::Rc;
 
 use itertools::Itertools;
 use remus::bus::Bus;
-use remus::{Block, Board, Device, Machine};
+use remus::{Address, Block, Board, Device, Machine, Processor, Shared};
 
 use self::mem::Memory;
+use crate::cpu::Model;
 use crate::dev::Unmapped;
 use crate::emu::{screen, Emulator};
 use crate::hw::apu::Apu;
 use crate::hw::cart::Cartridge;
-use crate::hw::cpu::{Processor, Sm83 as Cpu};
+use crate::hw::cpu::Sm83 as Cpu;
 use crate::hw::joypad::Joypad;
 use crate::hw::pic::Pic;
 use crate::hw::ppu::{self, Ppu};
@@ -55,7 +56,7 @@ pub struct GameBoy {
     cart: Option<Cartridge>,
     mem: Memory,
     // Connections
-    bus: Rc<RefCell<Bus>>,
+    bus: Shared<Bus>,
     pic: Rc<RefCell<Pic>>,
 }
 
@@ -93,7 +94,7 @@ impl GameBoy {
     /// replaced.
     pub fn load(&mut self, cart: Cartridge) {
         // Disconnect any connected cartridge from the bus
-        let bus = &mut *self.bus.borrow_mut();
+        let bus = &mut self.bus.borrow_mut();
         if let Some(cart) = &self.cart {
             cart.disconnect(bus);
         }
@@ -148,25 +149,25 @@ impl GameBoy {
 
     /// Simulate booting for `GameBoy`s with no [`Cartridge`].
     fn boot(mut self) -> Self {
-        type Register = <Cpu as Processor>::Register;
+        type Register = <Cpu as Processor<u16>>::Register;
 
         // Execute setup code
         self.cpu.exec(0xfb); // ei ; enable interrupts
 
         // Initialize registers
-        self.cpu.set(Register::AF, 0x01b0);
-        self.cpu.set(Register::BC, 0x0013);
-        self.cpu.set(Register::DE, 0x00d8);
-        self.cpu.set(Register::HL, 0x014d);
-        self.cpu.set(Register::SP, 0xfffe);
+        self.cpu.store(Register::AF, 0x01b0u16);
+        self.cpu.store(Register::BC, 0x0013u16);
+        self.cpu.store(Register::DE, 0x00d8u16);
+        self.cpu.store(Register::HL, 0x014du16);
+        self.cpu.store(Register::SP, 0xfffeu16);
 
         // Move the PC to the ROM's start
         self.cpu.goto(0x0100);
 
         // Enable the LCD
-        self.bus.borrow_mut().write(0xff40, 0x91);
+        self.bus.write(0xff40, 0x91);
         // Disable the boot ROM
-        self.bus.borrow_mut().write(0xff50, 0x01);
+        self.bus.write(0xff50, 0x01);
 
         self
     }
@@ -192,7 +193,7 @@ impl Block for GameBoy {
         self.mem.reset();
 
         // Reset connections
-        self.bus.borrow_mut().reset();
+        self.bus.reset();
         self.pic.borrow_mut().reset();
     }
 }
@@ -248,7 +249,7 @@ impl Board for GameBoy {
                                // └──────┴────────┴────────────┴─────┘
 
         // NOTE: use fallback to report invalid reads as `0xff`
-        let unmap = Unmapped::<0x10000>::new().to_shared();
+        let unmap = Unmapped::<0x10000>::new().to_dynamic();
         bus.map(0x0000, unmap);
     }
 }
@@ -352,8 +353,6 @@ impl Doctor {
 
 #[cfg(test)]
 mod tests {
-    use remus::Device;
-
     use super::*;
 
     // Boot ROM contents.
@@ -420,22 +419,22 @@ mod tests {
 
     #[test]
     fn boot_disable_works() {
-        let emu = setup();
+        let mut emu = setup();
 
         // Ensure boot ROM starts enabled:
         // - Perform comparison against boot ROM contents
         (0x0000..=0x0100)
-            .map(|addr| emu.bus.borrow().read(addr))
+            .map(|addr| emu.bus.read(addr))
             .zip(BOOTROM)
             .for_each(|(read, rom)| assert_eq!(read, rom));
 
         // Disable boot ROM
-        emu.bus.borrow_mut().write(0xff50, 0x01);
+        emu.bus.write(0xff50, 0x01);
 
         // Check if disable was successful:
         // - Perform comparison against cartridge ROM contents
         (0x0000..=0x0100)
-            .map(|addr| emu.bus.borrow().read(addr))
+            .map(|addr| emu.bus.read(addr))
             .zip(HEADER)
             .for_each(|(read, rom)| assert_eq!(read, rom));
     }
@@ -443,106 +442,106 @@ mod tests {
     #[test]
     fn bus_all_works() {
         // NOTE: Test reads (and writes) for each component separately
-        let emu = setup();
+        let mut emu = setup();
 
         // Boot ROM
         (0x0000..=0x00ff)
-            .map(|addr| emu.mem.boot.borrow().rom().borrow().read(addr))
+            .map(|addr| emu.mem.boot().borrow().rom().read(addr))
             .any(|byte| byte != 0x01);
         // Cartridge ROM
         if let Some(cart) = &emu.cart {
-            (0x0100..=0x7fff).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x02));
+            (0x0100..=0x7fff).for_each(|addr| emu.bus.write(addr, 0x02));
             assert!((0x0100..=0x7fff)
-                .map(|addr| cart.rom().borrow().read(addr))
+                .map(|addr| cart.rom().read(addr))
                 .any(|byte| byte != 0x02));
         }
         // Video RAM
-        (0x8000..=0x9fff).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x03));
+        (0x8000..=0x9fff).for_each(|addr| emu.bus.write(addr, 0x03));
         (0x0000..=0x1fff)
-            .map(|addr| emu.ppu.vram().borrow().read(addr))
+            .map(|addr| emu.ppu.vram().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x03));
         // External RAM
         if let Some(cart) = &emu.cart {
-            (0xa000..=0xbfff).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x04));
+            (0xa000..=0xbfff).for_each(|addr| emu.bus.write(addr, 0x04));
             (0x0000..=0x1fff)
-                .map(|addr| cart.ram().borrow().read(addr))
+                .map(|addr| cart.ram().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0x04));
         }
         // Object RAM
-        (0xfe00..=0xfe9f).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x05));
+        (0xfe00..=0xfe9f).for_each(|addr| emu.bus.write(addr, 0x05));
         (0x0000..=0x009f)
-            .map(|addr| emu.ppu.oam().borrow().read(addr))
+            .map(|addr| emu.ppu.oam().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x05));
         // Controller
-        (0xff00..=0xff00).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x60));
+        (0xff00..=0xff00).for_each(|addr| emu.bus.write(addr, 0x60));
         (0x0000..=0x0000) // NOTE: Only bits 0x30 are writable
-            .map(|addr| emu.joypad.con().borrow().read(addr))
+            .map(|addr| emu.joypad.con().read(addr))
             .for_each(|byte| assert_eq!(byte, 0xef));
         // Serial
-        (0xff01..=0xff03).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x07));
+        (0xff01..=0xff03).for_each(|addr| emu.bus.write(addr, 0x07));
         (0x0000..=0x0002)
             .map(|_| 0x07) // FIXME
             .for_each(|byte| assert_eq!(byte, 0x07));
         // Timer
-        (0xff04..=0xff07).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x08));
+        (0xff04..=0xff07).for_each(|addr| emu.bus.write(addr, 0x08));
         (0x0000..=0x0003)
             .zip([Timer::div, Timer::tima, Timer::tma, Timer::tac])
-            .map(|(_, get)| get(&emu.timer).borrow().read(0))
+            .map(|(_, get)| get(&emu.timer).read(0))
             .for_each(|byte| assert_eq!(byte, 0x08));
         // Interrupt Active
-        (0xff0f..=0xff0f).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x09));
+        (0xff0f..=0xff0f).for_each(|addr| emu.bus.write(addr, 0x09));
         (0x0000..=0x0000)
-            .map(|addr| emu.pic.borrow().active().borrow().read(addr))
+            .map(|addr| emu.pic.borrow().active().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x09));
         // Audio
-        (0xff10..=0xff27).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x0a));
+        (0xff10..=0xff27).for_each(|addr| emu.bus.write(addr, 0x0a));
         (0x0000..=0x0017)
             .map(|_| 0x0a) // FIXME
             .for_each(|byte| assert_eq!(byte, 0x0a));
         // Waveform RAM
-        (0xff30..=0xff3f).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x0b));
+        (0xff30..=0xff3f).for_each(|addr| emu.bus.write(addr, 0x0b));
         (0x0000..=0x000f)
             .map(|_| 0x0b) // FIXME
             .for_each(|byte| assert_eq!(byte, 0x0b));
         // LCD
-        (0xff40..=0xff4b).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x0c));
+        (0xff40..=0xff4b).for_each(|addr| emu.bus.write(addr, 0x0c));
         (0x0000..=0x000b)
             .zip([
-                Ppu::lcdc,
-                Ppu::stat,
-                Ppu::scy,
-                Ppu::scx,
-                Ppu::ly,
-                Ppu::lyc,
-                Ppu::dma,
-                Ppu::bgp,
-                Ppu::obp0,
-                Ppu::obp1,
-                Ppu::wy,
-                Ppu::wx,
+                <Ppu as Processor<u8>>::Register::Lcdc,
+                <Ppu as Processor<u8>>::Register::Stat,
+                <Ppu as Processor<u8>>::Register::Scy,
+                <Ppu as Processor<u8>>::Register::Scx,
+                <Ppu as Processor<u8>>::Register::Ly,
+                <Ppu as Processor<u8>>::Register::Lyc,
+                <Ppu as Processor<u8>>::Register::Dma,
+                <Ppu as Processor<u8>>::Register::Bgp,
+                <Ppu as Processor<u8>>::Register::Obp0,
+                <Ppu as Processor<u8>>::Register::Obp1,
+                <Ppu as Processor<u8>>::Register::Wy,
+                <Ppu as Processor<u8>>::Register::Wx,
             ])
-            .map(|(_, get)| get(&emu.ppu).borrow().read(0))
+            .map(|(_, reg)| emu.ppu.load(reg))
             .for_each(|byte| assert_eq!(byte, 0x0c));
         // Boot ROM Disable
-        (0xff50..=0xff50).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x0d));
+        (0xff50..=0xff50).for_each(|addr| emu.bus.write(addr, 0x0d));
         (0x0000..=0x0000)
-            .map(|addr| emu.mem.boot.borrow().disable().borrow().read(addr))
+            .map(|addr| emu.mem.boot().borrow().disable().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x0d));
         // High RAM
-        (0xff80..=0xfffe).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x0e));
+        (0xff80..=0xfffe).for_each(|addr| emu.bus.write(addr, 0x0e));
         (0x0000..=0x007e)
-            .map(|addr| emu.mem.hram.borrow().read(addr))
+            .map(|addr| emu.mem.hram().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x0e));
         // Interrupt Enable
-        (0xffff..=0xffff).for_each(|addr| emu.bus.borrow_mut().write(addr, 0x0f));
+        (0xffff..=0xffff).for_each(|addr| emu.bus.write(addr, 0x0f));
         (0x0000..=0x0000)
-            .map(|addr| emu.pic.borrow().enable().borrow().read(addr))
+            .map(|addr| emu.pic.borrow().enable().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x0f));
     }
 
     #[test]
     fn bus_unmapped_works() {
-        let emu = setup();
+        let mut emu = setup();
 
         // Define unmapped addresses
         let unmapped = [0xfea0..=0xfeff, 0xff03..=0xff03, 0xff27..=0xff2f];
@@ -551,9 +550,9 @@ mod tests {
         for gap in unmapped {
             for addr in gap {
                 // Write to every unmapped address
-                emu.bus.borrow_mut().write(addr, 0xaa);
+                emu.bus.write(addr, 0xaa);
                 // Check the write didn't work
-                assert_eq!(emu.bus.borrow().read(addr), 0xff, "{addr:#06x}");
+                assert_eq!(emu.bus.read(addr), 0xff, "{addr:#06x}");
             }
         }
     }

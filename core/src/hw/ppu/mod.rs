@@ -7,7 +7,7 @@ use itertools::Itertools;
 use remus::bus::Bus;
 use remus::mem::Ram;
 use remus::reg::Register;
-use remus::{Block, Board, Machine, SharedDevice};
+use remus::{Address, Block, Board, Machine, Processor, Shared};
 
 use self::dma::Dma;
 use self::exec::Mode;
@@ -30,6 +30,23 @@ pub use self::screen::Screen;
 pub type Vram = Ram<0x2000>;
 pub type Oam = Ram<0x00a0>;
 
+/// 8-bit register set.
+#[derive(Clone, Copy, Debug)]
+pub enum Control {
+    Lcdc,
+    Stat,
+    Scy,
+    Scx,
+    Ly,
+    Lyc,
+    Dma,
+    Bgp,
+    Obp0,
+    Obp1,
+    Wy,
+    Wx,
+}
+
 /// PPU model.
 #[derive(Debug, Default)]
 pub struct Ppu {
@@ -38,7 +55,7 @@ pub struct Ppu {
     winln: u8,
     mode: Mode,
     // Connections
-    bus: Rc<RefCell<Bus>>,
+    bus: Shared<Bus>,
     pic: Rc<RefCell<Pic>>,
     // Control
     // ┌────────┬──────────┬─────┬───────┐
@@ -46,7 +63,7 @@ pub struct Ppu {
     // ├────────┼──────────┼─────┼───────┤
     // │   12 B │ Control  │ Reg │       │
     // └────────┴──────────┴─────┴───────┘
-    ctl: Control,
+    file: File,
     // Memory
     // ┌────────┬──────────┬─────┬───────┐
     // │  Size  │   Name   │ Dev │ Alias │
@@ -54,8 +71,8 @@ pub struct Ppu {
     // │  8 KiB │ Video    │ RAM │ VRAM  │
     // │  160 B │ Object   │ RAM │ OAM   │
     // └────────┴──────────┴─────┴───────┘
-    vram: Rc<RefCell<Vram>>,
-    oam: Rc<RefCell<Oam>>,
+    vram: Shared<Vram>,
+    oam: Shared<Oam>,
     // Outputs
     lcd: Screen,
 }
@@ -69,90 +86,90 @@ impl Ppu {
 
     /// Gets a shared reference to the PPU's video RAM.
     #[must_use]
-    pub fn vram(&self) -> SharedDevice {
+    pub fn vram(&self) -> Shared<Vram> {
         self.vram.clone()
     }
 
     /// Gets a shared reference to the PPU's object attribute RAM.
     #[must_use]
-    pub fn oam(&self) -> SharedDevice {
+    pub fn oam(&self) -> Shared<Oam> {
         self.oam.clone()
     }
 
     /// Gets a shared reference to the PPU's LCD control register.
     #[must_use]
-    pub fn lcdc(&self) -> SharedDevice {
-        self.ctl.lcdc.clone()
+    pub fn lcdc(&self) -> Shared<Register<u8>> {
+        self.file.lcdc.clone()
     }
 
     /// Gets a shared reference to the PPU's LCD status register.
     #[must_use]
-    pub fn stat(&self) -> SharedDevice {
-        self.ctl.stat.clone()
+    pub fn stat(&self) -> Shared<Register<u8>> {
+        self.file.stat.clone()
     }
 
     /// Gets a shared reference to the PPU's scroll Y register.
     #[must_use]
-    pub fn scy(&self) -> SharedDevice {
-        self.ctl.scy.clone()
+    pub fn scy(&self) -> Shared<Register<u8>> {
+        self.file.scy.clone()
     }
 
     /// Gets a shared reference to the PPU's scroll X register.
     #[must_use]
-    pub fn scx(&self) -> SharedDevice {
-        self.ctl.scx.clone()
+    pub fn scx(&self) -> Shared<Register<u8>> {
+        self.file.scx.clone()
     }
 
     /// Gets a shared reference to the PPU's LCD Y register.
     #[must_use]
-    pub fn ly(&self) -> SharedDevice {
-        self.ctl.ly.clone()
+    pub fn ly(&self) -> Shared<Register<u8>> {
+        self.file.ly.clone()
     }
 
     /// Gets a shared reference to the PPU's LY compare register.
     #[must_use]
-    pub fn lyc(&self) -> SharedDevice {
-        self.ctl.lyc.clone()
+    pub fn lyc(&self) -> Shared<Register<u8>> {
+        self.file.lyc.clone()
     }
 
     /// Gets a shared reference to the PPU's DMA start register.
     #[must_use]
-    pub fn dma(&self) -> SharedDevice {
-        self.ctl.dma.clone()
+    pub fn dma(&self) -> Shared<Dma> {
+        self.file.dma.clone()
     }
 
     /// Gets a shared reference to the PPU's BG palette register.
     #[must_use]
-    pub fn bgp(&self) -> SharedDevice {
-        self.ctl.bgp.clone()
+    pub fn bgp(&self) -> Shared<Register<u8>> {
+        self.file.bgp.clone()
     }
 
     /// Gets a shared reference to the PPU's OBJ palette 0 register.
     #[must_use]
-    pub fn obp0(&self) -> SharedDevice {
-        self.ctl.obp0.clone()
+    pub fn obp0(&self) -> Shared<Register<u8>> {
+        self.file.obp0.clone()
     }
 
     /// Gets a shared reference to the PPU's OBJ palette 1 register.
     #[must_use]
-    pub fn obp1(&self) -> SharedDevice {
-        self.ctl.obp1.clone()
+    pub fn obp1(&self) -> Shared<Register<u8>> {
+        self.file.obp1.clone()
     }
 
     /// Gets a shared reference to the PPU's window Y register.
     #[must_use]
-    pub fn wy(&self) -> SharedDevice {
-        self.ctl.wy.clone()
+    pub fn wy(&self) -> Shared<Register<u8>> {
+        self.file.wy.clone()
     }
 
     /// Gets a shared reference to the PPU's window X register.
     #[must_use]
-    pub fn wx(&self) -> SharedDevice {
-        self.ctl.wx.clone()
+    pub fn wx(&self) -> Shared<Register<u8>> {
+        self.file.wx.clone()
     }
 
     /// Set the ppu's bus.
-    pub fn set_bus(&mut self, bus: Rc<RefCell<Bus>>) {
+    pub fn set_bus(&mut self, bus: Shared<Bus>) {
         self.bus = bus;
     }
 
@@ -174,7 +191,7 @@ impl Ppu {
         // 1. PPU is enabled
         let enabled = self.enabled();
         // 2. Scanline is top of screen
-        let topline = **self.ctl.ly.borrow() == 0;
+        let topline = **self.file.ly.borrow() == 0;
         // 3. Dot is first of scanline
         let firstdot = self.dot == 0;
 
@@ -184,9 +201,9 @@ impl Ppu {
     /// Color a pixel according to the ppu's palette configuration.
     fn color(&self, pixel: &Pixel) -> Color {
         let pal = **match pixel.meta.pal {
-            Palette::BgWin => self.ctl.bgp.borrow(),
-            Palette::Obp0 => self.ctl.obp0.borrow(),
-            Palette::Obp1 => self.ctl.obp1.borrow(),
+            Palette::BgWin => self.file.bgp.borrow(),
+            Palette::Obp0 => self.file.obp0.borrow(),
+            Palette::Obp1 => self.file.obp1.borrow(),
         };
         pixel.col.recolor(pal)
     }
@@ -198,11 +215,11 @@ impl Block for Ppu {
         self.mode = Mode::default();
 
         // Reset control
-        self.ctl.reset();
+        self.file.reset();
 
         // Reset DMA
-        self.ctl.dma.borrow_mut().set_bus(self.bus.clone());
-        self.ctl.dma.borrow_mut().set_oam(self.oam.clone());
+        self.file.dma.borrow_mut().set_bus(self.bus.clone());
+        self.file.dma.borrow_mut().set_oam(self.oam.clone());
 
         // Reset memory
         self.vram.borrow_mut().reset();
@@ -217,11 +234,11 @@ impl Board for Ppu {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
         // Connect boards
-        self.ctl.connect(bus);
+        self.file.connect(bus);
 
         // Extract memory
-        let vram = self.vram();
-        let oam  = self.oam();
+        let vram = self.vram().to_dynamic();
+        let oam  = self.oam().to_dynamic();
 
         // Map devices on bus  // ┌──────┬────────┬────────┬─────┐
                                // │ Addr │  Size  │  Name  │ Dev │
@@ -234,24 +251,63 @@ impl Board for Ppu {
 
 impl Machine for Ppu {
     fn enabled(&self) -> bool {
-        Lcdc::Enable.get(**self.ctl.lcdc.borrow())
+        Lcdc::Enable.get(**self.file.lcdc.borrow())
     }
 
     fn cycle(&mut self) {
         self.mode = std::mem::take(&mut self.mode).exec(self);
 
         // Cycle the DMA every machine cycle
-        let mut dma = self.ctl.dma.borrow_mut();
+        let mut dma = self.file.dma.borrow_mut();
         if dma.enabled() && self.dot % 4 == 0 {
             dma.cycle();
         }
     }
 }
 
-/// Control registers.
+#[rustfmt::skip]
+impl Processor<u8> for Ppu {
+    type Register = Control;
+
+    fn load(&self, reg: Self::Register) -> u8 {
+        match reg {
+            Control::Lcdc => **self.file.lcdc.borrow(),
+            Control::Stat => **self.file.stat.borrow(),
+            Control::Scy  => **self.file.scy.borrow(),
+            Control::Scx  => **self.file.scx.borrow(),
+            Control::Ly   => **self.file.ly.borrow(),
+            Control::Lyc  => **self.file.lyc.borrow(),
+            Control::Dma  =>   self.file.dma.read(0),
+            Control::Bgp  => **self.file.bgp.borrow(),
+            Control::Obp0 => **self.file.obp0.borrow(),
+            Control::Obp1 => **self.file.obp1.borrow(),
+            Control::Wy   => **self.file.wy.borrow(),
+            Control::Wx   => **self.file.wx.borrow(),
+        }
+    }
+
+    fn store(&mut self, reg: Self::Register, value: u8) {
+        match reg {
+            Control::Lcdc => **self.file.lcdc.borrow_mut() = value,
+            Control::Stat => **self.file.stat.borrow_mut() = value,
+            Control::Scy  => **self.file.scy.borrow_mut()  = value,
+            Control::Scx  => **self.file.scx.borrow_mut()  = value,
+            Control::Ly   => **self.file.ly.borrow_mut()   = value,
+            Control::Lyc  => **self.file.lyc.borrow_mut()  = value,
+            Control::Dma  =>   self.file.dma.write(0, value),
+            Control::Bgp  => **self.file.bgp.borrow_mut()  = value,
+            Control::Obp0 => **self.file.obp0.borrow_mut() = value,
+            Control::Obp1 => **self.file.obp1.borrow_mut() = value,
+            Control::Wy   => **self.file.wy.borrow_mut()   = value,
+            Control::Wx   => **self.file.wx.borrow_mut()   = value,
+        }
+    }
+}
+
+/// PPU control register file.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
-struct Control {
+struct File {
     // ┌──────┬────────────────┬─────┬───────┐
     // │ Size │      Name      │ Dev │ Alias │
     // ├──────┼────────────────┼─────┼───────┤
@@ -268,40 +324,40 @@ struct Control {
     // │  1 B │ Window Y       │ Reg │ WY    │
     // │  1 B │ Window X       │ Reg │ WX    │
     // └──────┴────────────────┴─────┴───────┘
-    lcdc: Rc<RefCell<Register<u8>>>,
-    stat: Rc<RefCell<Register<u8>>>,
-    scy:  Rc<RefCell<Register<u8>>>,
-    scx:  Rc<RefCell<Register<u8>>>,
-    ly:   Rc<RefCell<Register<u8>>>,
-    lyc:  Rc<RefCell<Register<u8>>>,
-    dma:  Rc<RefCell<Dma>>,
-    bgp:  Rc<RefCell<Register<u8>>>,
-    obp0: Rc<RefCell<Register<u8>>>,
-    obp1: Rc<RefCell<Register<u8>>>,
-    wy:   Rc<RefCell<Register<u8>>>,
-    wx:   Rc<RefCell<Register<u8>>>,
+    lcdc: Shared<Register<u8>>,
+    stat: Shared<Register<u8>>,
+    scy:  Shared<Register<u8>>,
+    scx:  Shared<Register<u8>>,
+    ly:   Shared<Register<u8>>,
+    lyc:  Shared<Register<u8>>,
+    dma:  Shared<Dma>,
+    bgp:  Shared<Register<u8>>,
+    obp0: Shared<Register<u8>>,
+    obp1: Shared<Register<u8>>,
+    wy:   Shared<Register<u8>>,
+    wx:   Shared<Register<u8>>,
 }
 
-impl Block for Control {
+impl Block for File {
     fn reset(&mut self) {}
 }
 
-impl Board for Control {
+impl Board for File {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
         // Extract devices
-        let lcdc = self.lcdc.clone();
-        let stat = self.stat.clone();
-        let scy = self.scy.clone();
-        let scx = self.scx.clone();
-        let ly = self.ly.clone();
-        let lyc = self.lyc.clone();
-        let dma = self.dma.clone();
-        let bgp = self.bgp.clone();
-        let obp0 = self.obp0.clone();
-        let obp1 = self.obp1.clone();
-        let wy = self.wy.clone();
-        let wx = self.wx.clone();
+        let lcdc = self.lcdc.clone().to_dynamic();
+        let stat = self.stat.clone().to_dynamic();
+        let scy  = self.scy.clone().to_dynamic();
+        let scx  = self.scx.clone().to_dynamic();
+        let ly   = self.ly.clone().to_dynamic();
+        let lyc  = self.lyc.clone().to_dynamic();
+        let dma  = self.dma.clone().to_dynamic();
+        let bgp  = self.bgp.clone().to_dynamic();
+        let obp0 = self.obp0.clone().to_dynamic();
+        let obp1 = self.obp1.clone().to_dynamic();
+        let wy   = self.wy.clone().to_dynamic();
+        let wx   = self.wx.clone().to_dynamic();
 
         // Map devices on bus   // ┌──────┬──────┬────────────────┬─────┐
                                 // │ Addr │ Size │      Name      │ Dev │
@@ -352,7 +408,7 @@ impl Debug {
     /// Constructs `Debug` info for the PPU.
     fn new(ppu: &Ppu) -> Self {
         // Extract scanline info
-        let lcdc = **ppu.ctl.lcdc.borrow();
+        let lcdc = **ppu.file.lcdc.borrow();
         let bgwin = Lcdc::BgMap.get(lcdc);
 
         // Retrieve a copy of the VRAM

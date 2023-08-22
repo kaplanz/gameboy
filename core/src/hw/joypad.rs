@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use log::{debug, trace};
 use remus::bus::Bus;
-use remus::{reg, Block, Board, Device, SharedDevice};
+use remus::{reg, Address, Block, Board, Device, Shared};
 
 use super::pic::{Interrupt, Pic};
 
@@ -35,13 +35,13 @@ pub struct Joypad {
     // ├──────┼────────┼─────┼───────┤
     // │  1 B │ Joypad │ Reg │ CON   │
     // └──────┴────────┴─────┴───────┘
-    con: Rc<RefCell<Control>>,
+    con: Shared<Control>,
 }
 
 impl Joypad {
     /// Gets a reference to the joypad's control register.
     #[must_use]
-    pub fn con(&self) -> SharedDevice {
+    pub fn con(&self) -> Shared<Control> {
         self.con.clone()
     }
 
@@ -81,7 +81,7 @@ impl Joypad {
 
 impl Block for Joypad {
     fn reset(&mut self) {
-        self.con.borrow_mut().reset();
+        self.con.reset();
     }
 }
 
@@ -89,7 +89,7 @@ impl Board for Joypad {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
         // Extract devices
-        let con = self.con();
+        let con = self.con().to_dynamic();
 
         // Map devices on bus // ┌──────┬──────┬────────┬─────┐
                               // │ Addr │ Size │  Name  │ Dev │
@@ -102,6 +102,19 @@ impl Board for Joypad {
 /// Player input register.
 #[derive(Debug)]
 pub struct Control(reg::Register<u8>);
+
+impl Address for Control {
+    fn read(&self, index: usize) -> u8 {
+        self.0.read(index)
+    }
+
+    fn write(&mut self, index: usize, mut value: u8) {
+        // NOTE: Only bits masked bits are writable
+        const MASK: u8 = 0b0011_0000;
+        value = (value & MASK) | (self.read(index) & !MASK);
+        self.0.write(index, value);
+    }
+}
 
 impl Block for Control {
     fn reset(&mut self) {
@@ -122,16 +135,5 @@ impl Device for Control {
 
     fn len(&self) -> usize {
         self.0.len()
-    }
-
-    fn read(&self, index: usize) -> u8 {
-        self.0.read(index)
-    }
-
-    fn write(&mut self, index: usize, mut value: u8) {
-        // NOTE: Only bits masked bits are writable
-        const MASK: u8 = 0b0011_0000;
-        value = (value & MASK) | (self.read(index) & !MASK);
-        self.0.write(index, value);
     }
 }

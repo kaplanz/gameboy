@@ -1,35 +1,21 @@
 //! CPU models.
 //!
 //! The following CPU models may be used within an emulator. To provide a
-//! unified interface, all models implement the [`Processor`] trait.
+//! unified interface, all models implement the [`Cpu`] trait.
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use remus::bus::Bus;
 use remus::{Block, Machine};
-
-use crate::hw::pic::Pic;
 
 pub mod sm83;
 
 pub use self::sm83::Cpu as Sm83;
 
 /// Unified processor interface.
-pub trait Processor: Block + Machine {
+pub trait Model: Block + Machine {
     /// The processor's instruction set.
     type Instruction;
-    /// The processor's register set.
-    type Register;
 
     /// Gets the current instruction.
     fn insn(&self) -> Self::Instruction;
-
-    /// Gets the value of the requested register.
-    fn get(&self, reg: Self::Register) -> u16;
-
-    /// Sets the value of the requested register.
-    fn set(&mut self, reg: Self::Register, value: u16);
 
     /// Move the PC to the provided address.
     fn goto(&mut self, pc: u16);
@@ -42,10 +28,4 @@ pub trait Processor: Block + Machine {
 
     /// Enable (or wake) the processor.
     fn wake(&mut self);
-
-    /// Sets the processor's memory bus.
-    fn set_bus(&mut self, bus: Rc<RefCell<Bus>>);
-
-    /// Sets the processor's interrupt controller.
-    fn set_pic(&mut self, pic: Rc<RefCell<Pic>>);
 }

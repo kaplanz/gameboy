@@ -13,7 +13,7 @@ impl Block for Serial {
 
 impl Board for Serial {
     fn connect(&self, bus: &mut Bus) {
-        let null = Null::<0x2>::new().to_shared();
+        let null = Null::<0x2>::new().to_dynamic();
         bus.map(0xff01, null);
     }
 }
