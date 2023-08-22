@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use remus::Device;
+use remus::Address;
 
 use super::draw::Draw;
 use super::hblank::HBlank;
@@ -17,10 +17,10 @@ pub struct Scan {
 impl Scan {
     pub fn exec(mut self, ppu: &mut Ppu) -> Mode {
         // Extract the sprite and scanline info
-        let lcdc = **ppu.ctl.lcdc.borrow();
+        let lcdc = **ppu.file.lcdc.borrow();
         let size = Lcdc::ObjSize.get(lcdc);
         let ht = [8, 16][usize::from(size)];
-        let ly = **ppu.ctl.ly.borrow();
+        let ly = **ppu.file.ly.borrow();
 
         // Scanning a single entry takes 2 dots
         if ppu.dot % 2 == 0 {

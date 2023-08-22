@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Block, Board, Machine, SharedDevice};
+use remus::{Block, Board, Machine, Shared};
 
 use super::pic::{Interrupt, Pic};
 
@@ -18,36 +18,36 @@ pub struct Timer {
     // Connections
     pic: Rc<RefCell<Pic>>,
     // Control
-    ctl: Control,
+    file: File,
 }
 
 impl Timer {
     /// Gets a reference to the timer's divider register.
     #[must_use]
     #[allow(unused)]
-    pub fn div(&self) -> SharedDevice {
-        self.ctl.div.clone()
+    pub fn div(&self) -> Shared<Register<u8>> {
+        self.file.div.clone()
     }
 
     /// Gets a reference to the timer's counter register.
     #[must_use]
     #[allow(unused)]
-    pub fn tima(&self) -> SharedDevice {
-        self.ctl.tima.clone()
+    pub fn tima(&self) -> Shared<Register<u8>> {
+        self.file.tima.clone()
     }
 
     /// Gets a reference to the timer's modulo register.
     #[must_use]
     #[allow(unused)]
-    pub fn tma(&self) -> SharedDevice {
-        self.ctl.tma.clone()
+    pub fn tma(&self) -> Shared<Register<u8>> {
+        self.file.tma.clone()
     }
 
     /// Gets a reference to the timer's control register.
     #[must_use]
     #[allow(unused)]
-    pub fn tac(&self) -> SharedDevice {
-        self.ctl.tac.clone()
+    pub fn tac(&self) -> Shared<Register<u8>> {
+        self.file.tac.clone()
     }
 
     /// Set the timer's pic.
@@ -58,13 +58,13 @@ impl Timer {
 
 impl Block for Timer {
     fn reset(&mut self) {
-        self.ctl.reset();
+        self.file.reset();
     }
 }
 
 impl Board for Timer {
     fn connect(&self, bus: &mut Bus) {
-        self.ctl.connect(bus);
+        self.file.connect(bus);
     }
 }
 
@@ -75,10 +75,10 @@ impl Machine for Timer {
 
     fn cycle(&mut self) {
         // Borrow control registers
-        let div = &mut **self.ctl.div.borrow_mut();
-        let tima = &mut **self.ctl.tima.borrow_mut();
-        let tma = &**self.ctl.tma.borrow();
-        let tac = &**self.ctl.tac.borrow();
+        let div = &mut **self.file.div.borrow_mut();
+        let tima = &mut **self.file.tima.borrow_mut();
+        let tma = &**self.file.tma.borrow();
+        let tac = &**self.file.tac.borrow();
 
         // Increment DIV every 256 cycles
         if self.clock % 0x100 == 0 {
@@ -117,7 +117,7 @@ impl Machine for Timer {
 /// Control registers.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
-pub struct Control {
+pub struct File {
     // ┌──────┬──────────┬─────┬───────┐
     // │ Size │   Name   │ Dev │ Alias │
     // ├──────┼──────────┼─────┼───────┤
@@ -126,13 +126,13 @@ pub struct Control {
     // │  1 B │ Modulo   │ Reg │ TMA   │
     // │  1 B │ Control  │ Reg │ TAC   │
     // └──────┴──────────┴─────┴───────┘
-    div:  Rc<RefCell<Register<u8>>>,
-    tima: Rc<RefCell<Register<u8>>>,
-    tma:  Rc<RefCell<Register<u8>>>,
-    tac:  Rc<RefCell<Register<u8>>>,
+    div:  Shared<Register<u8>>,
+    tima: Shared<Register<u8>>,
+    tma:  Shared<Register<u8>>,
+    tac:  Shared<Register<u8>>,
 }
 
-impl Block for Control {
+impl Block for File {
     fn reset(&mut self) {
         self.div.borrow_mut().reset();
         self.tima.borrow_mut().reset();
@@ -141,14 +141,14 @@ impl Block for Control {
     }
 }
 
-impl Board for Control {
+impl Board for File {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
         // Extract devices
-        let div  = self.div.clone();
-        let tima = self.tima.clone();
-        let tma  = self.tma.clone();
-        let tac  = self.tac.clone();
+        let div  = self.div.clone().to_dynamic();
+        let tima = self.tima.clone().to_dynamic();
+        let tma  = self.tma.clone().to_dynamic();
+        let tac  = self.tac.clone().to_dynamic();
 
         // Map devices on bus  // ┌──────┬──────┬──────────┬─────┐
                                // │ Addr │ Size │   Name   │ Dev │

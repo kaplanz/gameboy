@@ -6,7 +6,7 @@
 
 use std::fmt::Debug;
 
-use remus::{Block, SharedDevice};
+use remus::{Block, Dynamic};
 
 mod mbc1;
 mod nombc;
@@ -17,8 +17,8 @@ pub use self::nombc::NoMbc;
 /// Unified MBC interface.
 pub(super) trait Mbc: Block + Debug {
     /// Gets a shared reference to the MBC's ROM.
-    fn rom(&self) -> SharedDevice;
+    fn rom(&self) -> Dynamic;
 
     /// Gets a shared reference to the MBC's RAM.
-    fn ram(&self) -> SharedDevice;
+    fn ram(&self) -> Dynamic;
 }

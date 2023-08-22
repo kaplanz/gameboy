@@ -73,14 +73,14 @@ mod helpers {
     /// Get an 8-bit register operand.
     pub fn get_op8(cpu: &mut Cpu, idx: u8) -> u8 {
         match idx {
-            0x0 => *cpu.regs.b,
-            0x1 => *cpu.regs.c,
-            0x2 => *cpu.regs.d,
-            0x3 => *cpu.regs.e,
-            0x4 => *cpu.regs.h,
-            0x5 => *cpu.regs.l,
+            0x0 => *cpu.file.b,
+            0x1 => *cpu.file.c,
+            0x2 => *cpu.file.d,
+            0x3 => *cpu.file.e,
+            0x4 => *cpu.file.h,
+            0x5 => *cpu.file.l,
             0x6 => cpu.readbyte(),
-            0x7 => *cpu.regs.a,
+            0x7 => *cpu.file.a,
             _ => panic!("Illegal register."),
         }
     }
@@ -88,14 +88,14 @@ mod helpers {
     /// Set an 8-bit register operand.
     pub fn set_op8(cpu: &mut Cpu, idx: u8, value: u8) {
         match idx {
-            0x0 => *cpu.regs.b = value,
-            0x1 => *cpu.regs.c = value,
-            0x2 => *cpu.regs.d = value,
-            0x3 => *cpu.regs.e = value,
-            0x4 => *cpu.regs.h = value,
-            0x5 => *cpu.regs.l = value,
+            0x0 => *cpu.file.b = value,
+            0x1 => *cpu.file.c = value,
+            0x2 => *cpu.file.d = value,
+            0x3 => *cpu.file.e = value,
+            0x4 => *cpu.file.h = value,
+            0x5 => *cpu.file.l = value,
             0x6 => cpu.writebyte(value),
-            0x7 => *cpu.regs.a = value,
+            0x7 => *cpu.file.a = value,
             _ => panic!("Illegal register."),
         };
     }

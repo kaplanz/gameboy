@@ -1,12 +1,9 @@
 //! Audio processing unit.
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use remus::bus::Bus;
 use remus::mem::Ram;
 use remus::reg::Register;
-use remus::{Block, Board, Machine, SharedDevice};
+use remus::{Block, Board, Machine, Shared};
 
 pub type Wave = Ram<0x0010>;
 
@@ -21,20 +18,20 @@ pub struct Apu {
     // ├────────┼──────────┼─────┼───────┤
     // │   23 B │ Control  │ Reg │       │
     // └────────┴──────────┴─────┴───────┘
-    ctl: Control,
+    file: File,
     /// Devices
     // ┌────────┬──────────┬─────┬───────┐
     // │  Size  │   Name   │ Dev │ Alias │
     // ├────────┼──────────┼─────┼───────┤
     // │   16 B │ Waveform │ RAM │ WAVE  │
     // └────────┴──────────┴─────┴───────┘
-    wave: Rc<RefCell<Wave>>,
+    wave: Shared<Wave>,
 }
 
 impl Apu {
     /// Gets a shared reference to the APU's waveform RAM.
     #[must_use]
-    pub fn wave(&self) -> SharedDevice {
+    pub fn wave(&self) -> Shared<Wave> {
         self.wave.clone()
     }
 }
@@ -42,10 +39,10 @@ impl Apu {
 impl Block for Apu {
     fn reset(&mut self) {
         // Reset control
-        self.ctl.reset();
+        self.file.reset();
 
         // Reset memory
-        self.wave.borrow_mut().reset();
+        self.wave.reset();
     }
 }
 
@@ -53,10 +50,10 @@ impl Board for Apu {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
         // Connect boards
-        self.ctl.connect(bus);
+        self.file.connect(bus);
 
         // Extract memory
-        let wave = self.wave();
+        let wave = self.wave().to_dynamic();
 
         // Map devices on bus  // ┌──────┬────────┬──────────┬─────┐
                                // │ Addr │  Size  │   Name   │ Dev │
@@ -76,10 +73,10 @@ impl Machine for Apu {
     }
 }
 
-/// Control registers.
+/// APU control register file.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
-struct Control {
+struct File {
     // ┌──────┬────────────────────┬─────┬───────┐
     // │ Size │        Name        │ Dev │ Alias │
     // ├──────┼────────────────────┼─────┼───────┤
@@ -106,62 +103,62 @@ struct Control {
     // │  1 B │ CH4 Control        │ Reg │       │
     // └──────┴────────────────────┴─────┴───────┘
     // Global Control Registers
-    nr52: Rc<RefCell<Register<u8>>>,
-    nr51: Rc<RefCell<Register<u8>>>,
-    nr50: Rc<RefCell<Register<u8>>>,
+    nr52: Shared<Register<u8>>,
+    nr51: Shared<Register<u8>>,
+    nr50: Shared<Register<u8>>,
     // Sound Channel 1 — Pulse with wavelength sweep
-    nr10: Rc<RefCell<Register<u8>>>,
-    nr11: Rc<RefCell<Register<u8>>>,
-    nr12: Rc<RefCell<Register<u8>>>,
-    nr13: Rc<RefCell<Register<u8>>>,
-    nr14: Rc<RefCell<Register<u8>>>,
+    nr10: Shared<Register<u8>>,
+    nr11: Shared<Register<u8>>,
+    nr12: Shared<Register<u8>>,
+    nr13: Shared<Register<u8>>,
+    nr14: Shared<Register<u8>>,
     // Sound Channel 2 — Pulse
-    nr21: Rc<RefCell<Register<u8>>>,
-    nr22: Rc<RefCell<Register<u8>>>,
-    nr23: Rc<RefCell<Register<u8>>>,
-    nr24: Rc<RefCell<Register<u8>>>,
+    nr21: Shared<Register<u8>>,
+    nr22: Shared<Register<u8>>,
+    nr23: Shared<Register<u8>>,
+    nr24: Shared<Register<u8>>,
     // Sound Channel 3 — Wave output
-    nr30: Rc<RefCell<Register<u8>>>,
-    nr31: Rc<RefCell<Register<u8>>>,
-    nr32: Rc<RefCell<Register<u8>>>,
-    nr33: Rc<RefCell<Register<u8>>>,
-    nr34: Rc<RefCell<Register<u8>>>,
+    nr30: Shared<Register<u8>>,
+    nr31: Shared<Register<u8>>,
+    nr32: Shared<Register<u8>>,
+    nr33: Shared<Register<u8>>,
+    nr34: Shared<Register<u8>>,
     // Sound Channel 4 — Noise
-    nr41: Rc<RefCell<Register<u8>>>,
-    nr42: Rc<RefCell<Register<u8>>>,
-    nr43: Rc<RefCell<Register<u8>>>,
-    nr44: Rc<RefCell<Register<u8>>>,
+    nr41: Shared<Register<u8>>,
+    nr42: Shared<Register<u8>>,
+    nr43: Shared<Register<u8>>,
+    nr44: Shared<Register<u8>>,
 }
 
-impl Block for Control {
+impl Block for File {
     fn reset(&mut self) {}
 }
 
-impl Board for Control {
+impl Board for File {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
         // Extract devices
-        let nr52 = self.nr52.clone();
-        let nr51 = self.nr51.clone();
-        let nr50 = self.nr50.clone();
-        let nr10 = self.nr10.clone();
-        let nr11 = self.nr11.clone();
-        let nr12 = self.nr12.clone();
-        let nr13 = self.nr13.clone();
-        let nr14 = self.nr14.clone();
-        let nr21 = self.nr21.clone();
-        let nr22 = self.nr22.clone();
-        let nr23 = self.nr23.clone();
-        let nr24 = self.nr24.clone();
-        let nr30 = self.nr30.clone();
-        let nr31 = self.nr31.clone();
-        let nr32 = self.nr32.clone();
-        let nr33 = self.nr33.clone();
-        let nr34 = self.nr34.clone();
-        let nr41 = self.nr41.clone();
-        let nr42 = self.nr42.clone();
-        let nr43 = self.nr43.clone();
-        let nr44 = self.nr44.clone();
+        let nr52 = self.nr52.clone().to_dynamic();
+        let nr51 = self.nr51.clone().to_dynamic();
+        let nr50 = self.nr50.clone().to_dynamic();
+        let nr10 = self.nr10.clone().to_dynamic();
+        let nr11 = self.nr11.clone().to_dynamic();
+        let nr12 = self.nr12.clone().to_dynamic();
+        let nr13 = self.nr13.clone().to_dynamic();
+        let nr14 = self.nr14.clone().to_dynamic();
+        let nr21 = self.nr21.clone().to_dynamic();
+        let nr22 = self.nr22.clone().to_dynamic();
+        let nr23 = self.nr23.clone().to_dynamic();
+        let nr24 = self.nr24.clone().to_dynamic();
+        let nr30 = self.nr30.clone().to_dynamic();
+        let nr31 = self.nr31.clone().to_dynamic();
+        let nr32 = self.nr32.clone().to_dynamic();
+        let nr33 = self.nr33.clone().to_dynamic();
+        let nr34 = self.nr34.clone().to_dynamic();
+        let nr41 = self.nr41.clone().to_dynamic();
+        let nr42 = self.nr42.clone().to_dynamic();
+        let nr43 = self.nr43.clone().to_dynamic();
+        let nr44 = self.nr44.clone().to_dynamic();
 
         // Map devices on bus   // ┌──────┬──────┬────────────────────┬─────┐
                                 // │ Addr │ Size │        Name        │ Dev │

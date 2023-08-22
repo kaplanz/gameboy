@@ -1,14 +1,12 @@
 //! Boot ROM.
 
 use std::array::TryFromSliceError;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 use remus::bus::adapt::Bank;
 use remus::bus::Bus;
 use remus::dev::Device;
 use remus::reg::Register;
-use remus::{mem, Block, Board, SharedDevice};
+use remus::{mem, Address, Block, Board, Shared};
 use thiserror::Error;
 
 use crate::dev::ReadOnly;
@@ -17,34 +15,44 @@ use crate::dev::ReadOnly;
 #[derive(Debug, Default)]
 pub struct Rom {
     // State
-    rom: Rc<RefCell<mem::Rom<0x100>>>,
+    rom: Shared<mem::Rom<0x100>>,
     // Devices
     // ┌────────┬──────┬─────┬───────┐
     // │  Size  │ Name │ Dev │ Alias │
     // ├────────┼──────┼─────┼───────┤
     // │  8 KiB │ Boot │ ROM │       │
     // └────────┴──────┴─────┴───────┘
-    bank: Rc<RefCell<Bank>>,
+    bank: Shared<Bank>,
     // Control
     // ┌──────┬──────────┬─────┬───────┐
     // │ Size │   Name   │ Dev │ Alias │
     // ├──────┼──────────┼─────┼───────┤
     // │  1 B │ Disable  │ Reg │       │
     // └──────┴──────────┴─────┴───────┘
-    disable: Rc<RefCell<Disable>>,
+    disable: Shared<Disable>,
 }
 
 impl Rom {
     /// Gets a reference to the boot ROM.
     #[must_use]
-    pub fn rom(&self) -> SharedDevice {
-        ReadOnly::from(self.bank.clone() as SharedDevice).to_shared()
+    pub fn rom(&self) -> ReadOnly<Shared<Bank>> {
+        ReadOnly::from(self.bank.clone())
     }
 
     /// Gets a reference to the boot ROM's disable register.
     #[must_use]
-    pub fn disable(&self) -> SharedDevice {
+    pub fn disable(&self) -> Shared<Disable> {
         self.disable.clone()
+    }
+}
+
+impl Address for Rom {
+    fn read(&self, addr: usize) -> u8 {
+        self.bank.read(addr)
+    }
+
+    fn write(&mut self, addr: usize, value: u8) {
+        self.bank.write(addr, value);
     }
 }
 
@@ -55,7 +63,7 @@ impl Block for Rom {
         self.disable.borrow_mut().bank = self.bank.clone();
         // Reset bank
         self.bank.borrow_mut().reset();
-        self.bank.borrow_mut().add(self.rom.clone());
+        self.bank.borrow_mut().add(self.rom.clone().to_dynamic());
         self.bank.borrow_mut().set(0);
     }
 }
@@ -64,8 +72,8 @@ impl Board for Rom {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
         // Extract devices
-        let boot = self.rom();
-        let disable = self.disable();
+        let boot = self.rom().to_dynamic();
+        let disable = self.disable().to_dynamic();
 
         // Map devices on bus     // ┌──────┬────────┬──────────┬─────┐
                                   // │ Addr │  Size  │   Name   │ Dev │
@@ -76,9 +84,19 @@ impl Board for Rom {
     }
 }
 
+impl Device for Rom {
+    fn contains(&self, index: usize) -> bool {
+        self.bank.contains(index)
+    }
+
+    fn len(&self) -> usize {
+        self.bank.len()
+    }
+}
+
 impl From<&[u8; 0x100]> for Rom {
     fn from(rom: &[u8; 0x100]) -> Self {
-        let rom = Rc::new(RefCell::new(mem::Rom::from(rom)));
+        let rom = mem::Rom::from(rom).into();
         Self {
             rom,
             ..Default::default()
@@ -103,7 +121,18 @@ impl TryFrom<&[u8]> for Rom {
 #[derive(Debug, Default)]
 pub struct Disable {
     boff: Register<u8>,
-    bank: Rc<RefCell<Bank>>,
+    bank: Shared<Bank>,
+}
+
+impl Address for Disable {
+    fn read(&self, index: usize) -> u8 {
+        self.boff.read(index)
+    }
+
+    fn write(&mut self, index: usize, value: u8) {
+        self.boff.write(index, value);
+        self.bank.borrow_mut().set(value as usize);
+    }
 }
 
 impl Block for Disable {
@@ -122,15 +151,6 @@ impl Device for Disable {
 
     fn len(&self) -> usize {
         self.boff.len()
-    }
-
-    fn read(&self, index: usize) -> u8 {
-        self.boff.read(index)
-    }
-
-    fn write(&mut self, index: usize, value: u8) {
-        self.boff.write(index, value);
-        self.bank.borrow_mut().set(value as usize);
     }
 }
 

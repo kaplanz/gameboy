@@ -26,9 +26,9 @@ impl Mode {
         // Handle previous state
         {
             // Update STAT
-            let stat = &mut **ppu.ctl.stat.borrow_mut();
-            let ly = **ppu.ctl.ly.borrow();
-            let lyc = **ppu.ctl.lyc.borrow();
+            let stat = &mut **ppu.file.stat.borrow_mut();
+            let ly = **ppu.file.ly.borrow();
+            let lyc = **ppu.file.lyc.borrow();
             *stat ^= (*stat & 0x03) ^ u8::from(&self);
             *stat ^= (*stat & 0x04) ^ u8::from(ly == lyc) << 2;
 

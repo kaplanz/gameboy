@@ -1,9 +1,6 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use log::{debug, trace};
 use remus::bus::Bus;
-use remus::{Block, Device, Machine};
+use remus::{Address, Block, Device, Machine, Shared};
 
 use super::{Oam, SCREEN};
 
@@ -14,17 +11,29 @@ pub struct Dma {
     page: u8,
     idx: Option<u8>,
     // Connections
-    bus: Rc<RefCell<Bus>>,
-    oam: Rc<RefCell<Oam>>,
+    bus: Shared<Bus>,
+    oam: Shared<Oam>,
 }
 
 impl Dma {
-    pub fn set_bus(&mut self, bus: Rc<RefCell<Bus>>) {
+    pub fn set_bus(&mut self, bus: Shared<Bus>) {
         self.bus = bus;
     }
 
-    pub fn set_oam(&mut self, oam: Rc<RefCell<Oam>>) {
+    pub fn set_oam(&mut self, oam: Shared<Oam>) {
         self.oam = oam;
+    }
+}
+
+impl Address for Dma {
+    fn read(&self, _: usize) -> u8 {
+        self.page
+    }
+
+    fn write(&mut self, _: usize, value: u8) {
+        debug!("Starting DMA @ {value:#04x}00");
+        self.page = value;
+        self.idx = Some(0);
     }
 }
 
@@ -42,16 +51,6 @@ impl Device for Dma {
     fn len(&self) -> usize {
         std::mem::size_of::<Self>()
     }
-
-    fn read(&self, _: usize) -> u8 {
-        self.page
-    }
-
-    fn write(&mut self, _: usize, value: u8) {
-        debug!("Starting DMA @ {value:#04x}00");
-        self.page = value;
-        self.idx = Some(0);
-    }
 }
 
 impl Machine for Dma {
@@ -64,10 +63,10 @@ impl Machine for Dma {
         let idx = self.idx.as_mut().unwrap();
         let addr = (u16::from(self.page) << 8) | (*idx as u16);
         // Read this byte
-        let data = self.bus.borrow().read(addr as usize);
+        let data = self.bus.read(addr as usize);
         trace!("Transferring OAM({idx:#04x}) <- *{addr:#06x} = {data:#04x}");
         // Write this byte
-        self.oam.borrow_mut().write(*idx as usize, data);
+        self.oam.write(*idx as usize, data);
         // Increment the address
         let idx = *idx + 1;
         self.idx = ((idx as usize) < SCREEN.width).then_some(idx);

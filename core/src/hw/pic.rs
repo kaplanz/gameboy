@@ -1,34 +1,32 @@
 //! Programmable interrupt controller.
 
-use std::cell::RefCell;
 use std::fmt::Display;
-use std::rc::Rc;
 
 use enuf::Enuf;
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Block, Board, SharedDevice};
+use remus::{Block, Board, Shared};
 use thiserror::Error;
 
 /// PIC model.
 #[derive(Debug, Default)]
 pub struct Pic {
     /// Interrupt flag (IF) register.
-    active: Rc<RefCell<Register<u8>>>,
+    active: Shared<Register<u8>>,
     /// Interrupt enable (IE) register.
-    enable: Rc<RefCell<Register<u8>>>,
+    enable: Shared<Register<u8>>,
 }
 
 impl Pic {
     /// Gets a reference to the PIC's active register.
     #[must_use]
-    pub fn active(&self) -> SharedDevice {
+    pub fn active(&self) -> Shared<Register<u8>> {
         self.active.clone()
     }
 
     /// Gets a reference to the PIC's enable register.
     #[must_use]
-    pub fn enable(&self) -> SharedDevice {
+    pub fn enable(&self) -> Shared<Register<u8>> {
         self.enable.clone()
     }
 
@@ -49,8 +47,8 @@ impl Pic {
 
 impl Block for Pic {
     fn reset(&mut self) {
-        self.enable.borrow_mut().reset();
-        self.active.borrow_mut().reset();
+        self.enable.reset();
+        self.active.reset();
     }
 }
 
@@ -58,8 +56,8 @@ impl Board for Pic {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
         // Extract devices
-        let active = self.active();
-        let enable = self.enable();
+        let active = self.active().to_dynamic();
+        let enable = self.enable().to_dynamic();
 
         // Map devices on bus    // ┌──────┬──────┬────────┬─────┐
                                  // │ Addr │ Size │  Name  │ Dev │

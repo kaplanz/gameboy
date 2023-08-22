@@ -9,35 +9,51 @@ use std::rc::Rc;
 use enuf::Enuf;
 use log::{debug, trace};
 use remus::bus::Bus;
-use remus::{reg, Block, Board, Device, Machine};
+use remus::reg::Register;
+use remus::{Address, Block, Board, Machine, Processor, Shared};
 
-use super::Processor;
 use crate::hw::pic::Pic;
 
 mod insn;
 
 pub use self::insn::Instruction;
+use super::Model;
 
-/// 16-bit register set.
-#[derive(Clone, Copy, Debug)]
-pub enum Register {
-    AF,
-    BC,
-    DE,
-    HL,
-    SP,
-    PC,
+pub mod reg {
+    /// 8-bit register set.
+    #[derive(Clone, Copy, Debug)]
+    pub enum Byte {
+        A,
+        F,
+        B,
+        C,
+        D,
+        E,
+        H,
+        L,
+    }
+
+    /// 16-bit register set.
+    #[derive(Clone, Copy, Debug)]
+    pub enum Word {
+        AF,
+        BC,
+        DE,
+        HL,
+        SP,
+        PC,
+    }
 }
 
 /// SM83 central processing unit.
 #[derive(Debug, Default)]
 pub struct Cpu {
     /// Memory address bus.
-    bus: Rc<RefCell<Bus>>,
+    bus: Shared<Bus>,
     /// Programmable interrupt controller.
     pic: Rc<RefCell<Pic>>,
     /// Internal register set.
-    regs: Registers,
+    file: File,
     /// Run status.
     status: Status,
     /// Execution state.
@@ -57,64 +73,71 @@ impl Cpu {
     /// Read the byte at the given address.
     #[must_use]
     pub fn read(&self, addr: u16) -> u8 {
-        self.bus.borrow().read(addr as usize)
+        self.bus.read(addr as usize)
     }
 
     /// Write to the byte at the given address.
-    pub fn write(&self, addr: u16, byte: u8) {
-        self.bus.borrow_mut().write(addr as usize, byte);
+    pub fn write(&mut self, addr: u16, byte: u8) {
+        self.bus.write(addr as usize, byte);
     }
 
     /// Fetch the next byte after PC.
     fn fetchbyte(&mut self) -> u8 {
-        let pc = &mut *self.regs.pc;
-        let byte = self.bus.borrow().read(*pc as usize);
+        let byte = self.read(*self.file.pc);
+        let pc = &mut *self.file.pc;
         *pc = pc.wrapping_add(1);
         byte
     }
 
+    /// Fetch the next word after PC.
+    fn fetchword(&mut self) -> u16 {
+        let mut word = [0; 2];
+        word[0] = self.fetchbyte();
+        word[1] = self.fetchbyte();
+        u16::from_le_bytes(word)
+    }
+
     /// Read the byte at HL.
     fn readbyte(&mut self) -> u8 {
-        let hl = self.regs.hl.get(&self.regs);
+        let hl = self.file.hl.load(&self.file);
         self.read(hl)
     }
 
     /// Write to the byte at HL
     fn writebyte(&mut self, byte: u8) {
-        let hl = self.regs.hl.get(&self.regs);
+        let hl = self.file.hl.load(&self.file);
         self.write(hl, byte);
     }
 
-    /// Fetch the next word after PC.
-    fn fetchword(&mut self) -> u16 {
-        let pc = &mut *self.regs.pc;
-        let mut word = [0; 2];
-        word[0] = self.bus.borrow().read(*pc as usize);
-        *pc = pc.wrapping_add(1);
-        word[1] = self.bus.borrow().read(*pc as usize);
-        *pc = pc.wrapping_add(1);
-        u16::from_le_bytes(word)
+    /// Pop the byte at SP.
+    fn popbyte(&mut self) -> u8 {
+        let byte = self.read(*self.file.sp);
+        let sp = &mut *self.file.sp;
+        *sp = sp.wrapping_add(1);
+        byte
     }
 
     /// Pop the word at SP.
     fn popword(&mut self) -> u16 {
-        let sp = &mut *self.regs.sp;
         let mut word = [0; 2];
-        word[0] = self.bus.borrow().read(*sp as usize);
-        *sp = sp.wrapping_add(1);
-        word[1] = self.bus.borrow().read(*sp as usize);
-        *sp = sp.wrapping_add(1);
+        word[0] = self.popbyte();
+        word[1] = self.popbyte();
         u16::from_le_bytes(word)
+    }
+
+    /// Push to the byte at SP.
+    fn pushbyte(&mut self, byte: u8) {
+        let sp = &mut *self.file.sp;
+        *sp = sp.wrapping_sub(1);
+        let sp = *sp;
+        self.write(sp, byte);
     }
 
     /// Push to the word at SP.
     fn pushword(&mut self, word: u16) {
-        let sp = &mut *self.regs.sp;
         let word = word.to_le_bytes();
-        *sp = sp.wrapping_sub(1);
-        self.bus.borrow_mut().write(*sp as usize, word[1]);
-        *sp = sp.wrapping_sub(1);
-        self.bus.borrow_mut().write(*sp as usize, word[0]);
+        self.pushbyte(word[1]);
+        self.pushbyte(word[0]);
     }
 
     /// Prepares an introspective view of the state.
@@ -125,18 +148,18 @@ impl Cpu {
             None
         } else {
             let mut s = String::new();
-            let _ = write!(&mut s, "A:{:02X} ", *self.regs.a);
-            let _ = write!(&mut s, "F:{:02X} ", *self.regs.f);
-            let _ = write!(&mut s, "B:{:02X} ", *self.regs.b);
-            let _ = write!(&mut s, "C:{:02X} ", *self.regs.c);
-            let _ = write!(&mut s, "D:{:02X} ", *self.regs.d);
-            let _ = write!(&mut s, "E:{:02X} ", *self.regs.e);
-            let _ = write!(&mut s, "H:{:02X} ", *self.regs.h);
-            let _ = write!(&mut s, "L:{:02X} ", *self.regs.l);
-            let _ = write!(&mut s, "SP:{:04X} ", *self.regs.sp);
-            let _ = write!(&mut s, "PC:{:04X} ", *self.regs.pc);
+            let _ = write!(&mut s, "A:{:02X} ", *self.file.a);
+            let _ = write!(&mut s, "F:{:02X} ", *self.file.f);
+            let _ = write!(&mut s, "B:{:02X} ", *self.file.b);
+            let _ = write!(&mut s, "C:{:02X} ", *self.file.c);
+            let _ = write!(&mut s, "D:{:02X} ", *self.file.d);
+            let _ = write!(&mut s, "E:{:02X} ", *self.file.e);
+            let _ = write!(&mut s, "H:{:02X} ", *self.file.h);
+            let _ = write!(&mut s, "L:{:02X} ", *self.file.l);
+            let _ = write!(&mut s, "SP:{:04X} ", *self.file.sp);
+            let _ = write!(&mut s, "PC:{:04X} ", *self.file.pc);
             let pcmem: Vec<_> = (0..4)
-                .map(|i| *self.regs.pc + i)
+                .map(|i| *self.file.pc + i)
                 .map(|addr| self.read(addr))
                 .collect();
             let _ = write!(
@@ -147,14 +170,22 @@ impl Cpu {
             Some(s)
         }
     }
+
+    pub fn set_bus(&mut self, bus: Shared<Bus>) {
+        self.bus = bus;
+    }
+
+    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
+        self.pic = pic;
+    }
 }
 
 impl Block for Cpu {
     fn reset(&mut self) {
         // Reset each sub-block
-        self.bus.borrow_mut().reset();
+        self.bus.reset();
         self.pic.borrow_mut().reset();
-        self.regs.reset();
+        self.file.reset();
         // Reset to initial state
         self.status = Status::default();
         self.state = State::default();
@@ -166,53 +197,29 @@ impl Board for Cpu {
     fn connect(&self, _: &mut Bus) {}
 }
 
-impl Processor for Cpu {
-    type Instruction = Instruction;
+impl Machine for Cpu {
+    fn enabled(&self) -> bool {
+        matches!(self.status, Status::Enabled)
+    }
 
-    type Register = Register;
+    fn cycle(&mut self) {
+        self.state = std::mem::take(&mut self.state).exec(self);
+    }
+}
+
+impl Model for Cpu {
+    type Instruction = Instruction;
 
     fn insn(&self) -> Self::Instruction {
         if let State::Execute(insn) = &self.state {
             insn.clone()
         } else {
-            Instruction::new(self.read(*self.regs.pc))
+            Instruction::new(self.read(*self.file.pc))
         }
     }
 
     fn goto(&mut self, pc: u16) {
-        *self.regs.pc = pc;
-    }
-
-    fn get(&self, reg: Self::Register) -> u16 {
-        let af = self.regs.af;
-        let bc = self.regs.bc;
-        let de = self.regs.de;
-        let hl = self.regs.hl;
-        let regs = &self.regs;
-        match reg {
-            Register::AF => af.get(regs),
-            Register::BC => bc.get(regs),
-            Register::DE => de.get(regs),
-            Register::HL => hl.get(regs),
-            Register::SP => *self.regs.sp,
-            Register::PC => *self.regs.pc,
-        }
-    }
-
-    fn set(&mut self, reg: Self::Register, value: u16) {
-        let af = self.regs.af;
-        let bc = self.regs.bc;
-        let de = self.regs.de;
-        let hl = self.regs.hl;
-        let regs = &mut self.regs;
-        match reg {
-            Register::AF => af.set(regs, value),
-            Register::BC => bc.set(regs, value),
-            Register::DE => de.set(regs, value),
-            Register::HL => hl.set(regs, value),
-            Register::SP => *self.regs.sp = value,
-            Register::PC => *self.regs.pc = value,
-        }
+        *self.file.pc = pc;
     }
 
     fn exec(&mut self, opcode: u8) {
@@ -233,29 +240,77 @@ impl Processor for Cpu {
     fn wake(&mut self) {
         self.status = Status::Enabled;
     }
+}
 
-    fn set_bus(&mut self, bus: Rc<RefCell<Bus>>) {
-        self.bus = bus;
+impl Processor<u8> for Cpu {
+    type Register = reg::Byte;
+
+    fn load(&self, reg: Self::Register) -> u8 {
+        match reg {
+            reg::Byte::A => *self.file.a,
+            reg::Byte::F => *self.file.f,
+            reg::Byte::B => *self.file.b,
+            reg::Byte::C => *self.file.c,
+            reg::Byte::D => *self.file.d,
+            reg::Byte::E => *self.file.e,
+            reg::Byte::H => *self.file.h,
+            reg::Byte::L => *self.file.l,
+        }
     }
 
-    fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
-        self.pic = pic;
+    fn store(&mut self, reg: Self::Register, value: u8) {
+        match reg {
+            reg::Byte::A => *self.file.a = value,
+            reg::Byte::F => *self.file.f = value,
+            reg::Byte::B => *self.file.b = value,
+            reg::Byte::C => *self.file.c = value,
+            reg::Byte::D => *self.file.d = value,
+            reg::Byte::E => *self.file.e = value,
+            reg::Byte::H => *self.file.h = value,
+            reg::Byte::L => *self.file.l = value,
+        }
     }
 }
 
-impl Machine for Cpu {
-    fn enabled(&self) -> bool {
-        matches!(self.status, Status::Enabled)
+impl Processor<u16> for Cpu {
+    type Register = reg::Word;
+
+    fn load(&self, reg: Self::Register) -> u16 {
+        let af = self.file.af;
+        let bc = self.file.bc;
+        let de = self.file.de;
+        let hl = self.file.hl;
+        let regs = &self.file;
+        match reg {
+            reg::Word::AF => af.load(regs),
+            reg::Word::BC => bc.load(regs),
+            reg::Word::DE => de.load(regs),
+            reg::Word::HL => hl.load(regs),
+            reg::Word::SP => *self.file.sp,
+            reg::Word::PC => *self.file.pc,
+        }
     }
 
-    fn cycle(&mut self) {
-        self.state = std::mem::take(&mut self.state).exec(self);
+    fn store(&mut self, reg: Self::Register, value: u16) {
+        let af = self.file.af;
+        let bc = self.file.bc;
+        let de = self.file.de;
+        let hl = self.file.hl;
+        let regs = &mut self.file;
+        match reg {
+            reg::Word::AF => af.store(regs, value),
+            reg::Word::BC => bc.store(regs, value),
+            reg::Word::DE => de.store(regs, value),
+            reg::Word::HL => hl.store(regs, value),
+            reg::Word::SP => *self.file.sp = value,
+            reg::Word::PC => *self.file.pc = value,
+        }
     }
 }
 
-/// CPU internal register set.
+/// CPU register file.
 #[derive(Debug)]
-struct Registers {
+struct File {
     // ┌───────┬───────┐
     // │ A: u8 │ F: u8 │
     // ├───────┼───────┤
@@ -269,23 +324,23 @@ struct Registers {
     // ├───────────────┤
     // │    PC: u16    │
     // └───────────────┘
-    a: reg::Register<u8>,
-    f: reg::Register<u8>,
-    af: WideRegister,
-    b: reg::Register<u8>,
-    c: reg::Register<u8>,
-    bc: WideRegister,
-    d: reg::Register<u8>,
-    e: reg::Register<u8>,
-    de: WideRegister,
-    h: reg::Register<u8>,
-    l: reg::Register<u8>,
-    hl: WideRegister,
-    sp: reg::Register<u16>,
-    pc: reg::Register<u16>,
+    a: Register<u8>,
+    f: Register<u8>,
+    af: Wide,
+    b: Register<u8>,
+    c: Register<u8>,
+    bc: Wide,
+    d: Register<u8>,
+    e: Register<u8>,
+    de: Wide,
+    h: Register<u8>,
+    l: Register<u8>,
+    hl: Wide,
+    sp: Register<u16>,
+    pc: Register<u16>,
 }
 
-impl Block for Registers {
+impl Block for File {
     fn reset(&mut self) {
         // NOTE: the values of internal registers other than PC are undefined
         //       after a reset.
@@ -293,68 +348,68 @@ impl Block for Registers {
     }
 }
 
-impl Default for Registers {
+impl Default for File {
     fn default() -> Self {
         Self {
-            a: reg::Register::default(),
-            f: reg::Register::default(),
-            af: WideRegister {
-                get: |regs: &Registers| {
+            a: Register::default(),
+            f: Register::default(),
+            af: Wide {
+                load: |regs: &File| {
                     let a = *regs.a as u16;
                     let f = *regs.f as u16;
                     (a << 8) | f
                 },
-                set: |regs: &mut Registers, af: u16| {
+                store: |regs: &mut File, af: u16| {
                     *regs.a = ((af & 0xff00) >> 8) as u8;
                     *regs.f = (af & 0x00ff) as u8;
                 },
             },
-            b: reg::Register::default(),
-            c: reg::Register::default(),
-            bc: WideRegister {
-                get: |regs: &Registers| {
+            b: Register::default(),
+            c: Register::default(),
+            bc: Wide {
+                load: |regs: &File| {
                     let b = *regs.b as u16;
                     let c = *regs.c as u16;
                     (b << 8) | c
                 },
-                set: |regs: &mut Registers, bc: u16| {
+                store: |regs: &mut File, bc: u16| {
                     *regs.b = ((bc & 0xff00) >> 8) as u8;
                     *regs.c = (bc & 0x00ff) as u8;
                 },
             },
-            d: reg::Register::default(),
-            e: reg::Register::default(),
-            de: WideRegister {
-                get: |regs: &Registers| {
+            d: Register::default(),
+            e: Register::default(),
+            de: Wide {
+                load: |regs: &File| {
                     let d = *regs.d as u16;
                     let e = *regs.e as u16;
                     (d << 8) | e
                 },
-                set: |regs: &mut Registers, de: u16| {
+                store: |regs: &mut File, de: u16| {
                     *regs.d = ((de & 0xff00) >> 8) as u8;
                     *regs.e = (de & 0x00ff) as u8;
                 },
             },
-            h: reg::Register::default(),
-            l: reg::Register::default(),
-            hl: WideRegister {
-                get: |regs: &Registers| {
+            h: Register::default(),
+            l: Register::default(),
+            hl: Wide {
+                load: |regs: &File| {
                     let h = *regs.h as u16;
                     let l = *regs.l as u16;
                     (h << 8) | l
                 },
-                set: |regs: &mut Registers, hl: u16| {
+                store: |regs: &mut File, hl: u16| {
                     *regs.h = ((hl & 0xff00) >> 8) as u8;
                     *regs.l = (hl & 0x00ff) as u8;
                 },
             },
-            sp: reg::Register::default(),
-            pc: reg::Register::default(),
+            sp: Register::default(),
+            pc: Register::default(),
         }
     }
 }
 
-impl Display for Registers {
+impl Display for File {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "┌───┬────┬───┬────┐")?;
         writeln!(f, "│ A │ {:02x} │ F │ {:02x} │", *self.a, *self.f)?;
@@ -374,22 +429,22 @@ impl Display for Registers {
 
 /// 16-bit wide linked register.
 #[derive(Copy, Clone)]
-struct WideRegister {
-    get: fn(&Registers) -> u16,
-    set: fn(&mut Registers, u16),
+struct Wide {
+    load: fn(&File) -> u16,
+    store: fn(&mut File, u16),
 }
 
-impl WideRegister {
-    pub fn get(&self, regs: &Registers) -> u16 {
-        (self.get)(regs)
+impl Wide {
+    pub fn load(&self, regs: &File) -> u16 {
+        (self.load)(regs)
     }
 
-    pub fn set(&self, regs: &mut Registers, value: u16) {
-        (self.set)(regs, value);
+    pub fn store(&self, regs: &mut File, value: u16) {
+        (self.store)(regs, value);
     }
 }
 
-impl Debug for WideRegister {
+impl Debug for Wide {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "PseudoRegister")
     }
@@ -435,7 +490,7 @@ impl State {
         // If we're `State::Done`, proceed to `State::Fetch` this cycle
         if let State::Done = self {
             // Log previous register state
-            trace!("Registers:\n{}", cpu.regs);
+            trace!("Registers:\n{}", cpu.file);
 
             // Check for pending interrupts
             let int = match cpu.ime {
@@ -462,7 +517,7 @@ impl State {
         // If we're `State::Fetch,` proceed to `State::Execute(_)` this cycle
         if let State::Fetch = self {
             // Read the next instruction
-            let pc = *cpu.regs.pc;
+            let pc = *cpu.file.pc;
             let opcode = cpu.fetchbyte();
 
             // Decode the instruction
@@ -471,7 +526,7 @@ impl State {
             // Check for HALT bug
             if cpu.halt_bug {
                 // Service the bug by rolling back the PC
-                *cpu.regs.pc = cpu.regs.pc.wrapping_sub(1);
+                *cpu.file.pc = cpu.file.pc.wrapping_sub(1);
                 cpu.halt_bug = false;
             }
 
@@ -480,7 +535,7 @@ impl State {
             debug!(
                 "{pc:#06x}: {}",
                 if opcode == 0xcb {
-                    let opcode = cpu.bus.borrow().read(*cpu.regs.pc as usize);
+                    let opcode = cpu.bus.read(*cpu.file.pc as usize);
                     format!("{}", Instruction::prefix(opcode))
                 } else {
                     format!("{insn}")

@@ -1,5 +1,5 @@
 use log::warn;
-use remus::{Block, Device, SharedDevice};
+use remus::{Address, Block, Device};
 
 /// Read-only device.
 ///
@@ -8,25 +8,11 @@ use remus::{Block, Device, SharedDevice};
 /// `ReadOnly` provides a read-only view of the internal device, and ignoring
 /// all writes which are logged as a warning.
 #[derive(Debug)]
-pub struct ReadOnly(SharedDevice);
+pub struct ReadOnly<D: Device>(D);
 
-impl Block for ReadOnly {
-    fn reset(&mut self) {
-        self.0.borrow_mut().reset();
-    }
-}
-
-impl Device for ReadOnly {
-    fn contains(&self, index: usize) -> bool {
-        self.0.borrow().contains(index)
-    }
-
-    fn len(&self) -> usize {
-        self.0.borrow().len()
-    }
-
+impl<D: Device> Address for ReadOnly<D> {
     fn read(&self, index: usize) -> u8 {
-        self.0.borrow().read(index)
+        self.0.read(index)
     }
 
     fn write(&mut self, index: usize, value: u8) {
@@ -34,8 +20,24 @@ impl Device for ReadOnly {
     }
 }
 
-impl From<SharedDevice> for ReadOnly {
-    fn from(dev: SharedDevice) -> Self {
+impl<D: Device> Block for ReadOnly<D> {
+    fn reset(&mut self) {
+        self.0.reset();
+    }
+}
+
+impl<D: Device> Device for ReadOnly<D> {
+    fn contains(&self, index: usize) -> bool {
+        self.0.contains(index)
+    }
+
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<D: Device> From<D> for ReadOnly<D> {
+    fn from(dev: D) -> Self {
         Self(dev)
     }
 }
@@ -43,11 +45,12 @@ impl From<SharedDevice> for ReadOnly {
 #[cfg(test)]
 mod tests {
     use remus::dev::Null;
+    use remus::Dynamic;
 
     use super::*;
 
-    fn setup() -> ReadOnly {
-        let rom = Null::<0x100>::with(0x55).to_shared();
+    fn setup() -> ReadOnly<Dynamic> {
+        let rom = Null::<0x100>::with(0x55).to_dynamic();
         ReadOnly::from(rom)
     }
 

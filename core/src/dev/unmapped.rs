@@ -1,6 +1,6 @@
 use log::warn;
 use remus::dev::Null;
-use remus::{Block, Device};
+use remus::{Address, Block, Device};
 
 /// Unmapped device.
 ///
@@ -19,6 +19,17 @@ pub struct Unmapped<const N: usize = 0x10000>(Null<N>);
 impl<const N: usize> Unmapped<N> {
     pub fn new() -> Self {
         Self::default()
+    }
+}
+
+impl<const N: usize> Address for Unmapped<N> {
+    fn read(&self, index: usize) -> u8 {
+        warn!("called `Device::read({index:#06x})` on an `Unmapped`");
+        self.0.read(index)
+    }
+
+    fn write(&mut self, index: usize, value: u8) {
+        warn!("called `Device::write({index:#06x}, {value:#04x})` on an `Unmapped`");
     }
 }
 
@@ -41,15 +52,6 @@ impl<const N: usize> Device for Unmapped<N> {
 
     fn len(&self) -> usize {
         self.0.len()
-    }
-
-    fn read(&self, index: usize) -> u8 {
-        warn!("called `Device::read({index:#06x})` on an `Unmapped`");
-        self.0.read(index)
-    }
-
-    fn write(&mut self, index: usize, value: u8) {
-        warn!("called `Device::write({index:#06x}, {value:#04x})` on an `Unmapped`");
     }
 }
 

@@ -3,11 +3,10 @@
 use std::fmt::{Display, Write};
 
 use gameboy::core::cpu::sm83::{self, State};
-use gameboy::core::cpu::Processor;
 use gameboy::dmg::GameBoy;
 use indexmap::IndexMap;
 use log::debug;
-use remus::{Block, Machine};
+use remus::{Block, Machine, Processor};
 use rustyline::error::ReadlineError;
 use rustyline::history::History;
 use rustyline::DefaultEditor as Readline;
@@ -125,7 +124,7 @@ impl Debugger {
 
     pub fn sync(&mut self, emu: &GameBoy) {
         // Update program counter
-        self.pc = emu.cpu().get(sm83::Register::PC);
+        self.pc = emu.cpu().load(sm83::reg::Word::PC);
         self.state = emu.cpu().state().clone();
     }
 

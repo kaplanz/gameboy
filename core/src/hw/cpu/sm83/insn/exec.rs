@@ -7,7 +7,7 @@
 use std::ops::{BitAnd, BitOr, BitXor};
 
 use enuf::Enuf;
-use remus::Device;
+use remus::Address;
 
 use super::{helpers, Cpu, Flag, Ime, Instruction, Status};
 
@@ -44,15 +44,15 @@ pub mod adc {
 
     pub fn done(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute ADC
-        let acc = *cpu.regs.a;
+        let acc = *cpu.file.a;
         let op2 = insn.stack.pop().unwrap();
-        let cin = Flag::C.get(&cpu.regs.f) as u8;
+        let cin = Flag::C.get(&cpu.file.f) as u8;
         let (res, carry0) = acc.overflowing_add(op2);
         let (res, carry1) = res.overflowing_add(cin);
-        *cpu.regs.a = res;
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, 0x0f < (acc & 0x0f) + (op2 & 0x0f) + cin);
@@ -96,13 +96,13 @@ pub mod add {
 
     pub fn done(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute ADD
-        let acc = *cpu.regs.a;
+        let acc = *cpu.file.a;
         let op2 = insn.stack.pop().unwrap();
         let (res, carry) = acc.overflowing_add(op2);
-        *cpu.regs.a = res;
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, 0x0f < (acc & 0x0f) + (op2 & 0x0f));
@@ -121,12 +121,12 @@ pub mod addw {
         // Check opcode
         match insn.opcode {
             0x09 | 0x19 | 0x29 | 0x39 => {
-                let op1 = cpu.regs.hl.get(&cpu.regs);
+                let op1 = cpu.file.hl.load(&cpu.file);
                 let op2 = match insn.opcode {
-                    0x09 => cpu.regs.bc.get(&cpu.regs),
-                    0x19 => cpu.regs.de.get(&cpu.regs),
-                    0x29 => cpu.regs.hl.get(&cpu.regs),
-                    0x39 => *cpu.regs.sp,
+                    0x09 => cpu.file.bc.load(&cpu.file),
+                    0x19 => cpu.file.de.load(&cpu.file),
+                    0x29 => cpu.file.hl.load(&cpu.file),
+                    0x39 => *cpu.file.sp,
                     _ => panic!("Illegal instruction."),
                 };
                 insn.stack.extend(op1.to_le_bytes());
@@ -163,11 +163,11 @@ pub mod addw {
                 .unwrap(),
         );
         let (res, carry) = op1.overflowing_add(op2);
-        let hl = cpu.regs.hl;
-        hl.set(&mut cpu.regs, res);
+        let hl = cpu.file.hl;
+        hl.store(&mut cpu.file, res);
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::N.set(flags, false);
         Flag::H.set(flags, 0x0fff < (op1 & 0x0fff) + (op2 & 0x0fff));
         Flag::C.set(flags, carry);
@@ -190,13 +190,13 @@ pub mod addw {
 
     pub fn done_0xe8(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute ADDW
-        let op1 = *cpu.regs.sp;
+        let op1 = *cpu.file.sp;
         let op2 = insn.stack.pop().unwrap() as i8 as u16;
         let res = op1.wrapping_add(op2);
-        *cpu.regs.sp = res;
+        *cpu.file.sp = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, false);
         Flag::N.set(flags, false);
         Flag::H.set(flags, 0x000f < (op1 & 0x000f) + (op2 & 0x000f));
@@ -240,13 +240,13 @@ pub mod and {
 
     pub fn done(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute AND
-        let acc = *cpu.regs.a;
+        let acc = *cpu.file.a;
         let op2 = insn.stack.pop().unwrap();
         let res = acc.bitand(op2);
-        *cpu.regs.a = res;
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, true);
@@ -288,7 +288,7 @@ pub mod bit {
         let res = (0b1 << op1) & op2;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, true);
@@ -322,7 +322,7 @@ pub mod call {
         // NOTE: This represents the fact that it takes 2 cycles to fetch a u16.
 
         // Evaluate condition
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         let cond = match insn.opcode {
             0xc4 => !Flag::Z.get(flags),
             0xcc => Flag::Z.get(flags),
@@ -353,7 +353,7 @@ pub mod call {
 
     pub fn push(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Push SP
-        cpu.pushword(*cpu.regs.pc);
+        cpu.pushword(*cpu.file.pc);
 
         // Proceed
         insn.exec = delay;
@@ -378,7 +378,7 @@ pub mod call {
                 .try_into()
                 .unwrap(),
         );
-        *cpu.regs.pc = op1;
+        *cpu.file.pc = op1;
 
         // Finish
         None
@@ -394,7 +394,7 @@ pub mod ccf {
         assert!(insn.opcode == 0x3f, "Illegal instruction.");
 
         // Execute CCF
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
         let carry = Flag::C.get(flags);
@@ -435,12 +435,12 @@ pub mod cp {
 
     pub fn done(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute CP
-        let acc = *cpu.regs.a;
+        let acc = *cpu.file.a;
         let op2 = insn.stack.pop().unwrap();
         let (res, carry) = acc.overflowing_sub(op2);
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, true);
         Flag::H.set(flags, (op2 & 0x0f) > (acc & 0x0f));
@@ -460,12 +460,12 @@ pub mod cpl {
         assert!(insn.opcode == 0x2f, "Illegal instruction.");
 
         // Execute CPL
-        let acc = *cpu.regs.a;
+        let acc = *cpu.file.a;
         let res = !acc;
-        *cpu.regs.a = res;
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::N.set(flags, true);
         Flag::H.set(flags, true);
 
@@ -483,11 +483,11 @@ pub mod daa {
         assert!(insn.opcode == 0x27, "Illegal instruction.");
 
         // Execute DAA
-        let didsub = Flag::N.get(&cpu.regs.f);
-        let hcarry = Flag::H.get(&cpu.regs.f);
-        let mut carry = Flag::C.get(&cpu.regs.f);
+        let didsub = Flag::N.get(&cpu.file.f);
+        let hcarry = Flag::H.get(&cpu.file.f);
+        let mut carry = Flag::C.get(&cpu.file.f);
         let mut adj = 0i8;
-        let acc = *cpu.regs.a;
+        let acc = *cpu.file.a;
         if hcarry || (!didsub && (acc & 0x0f) > 0x09) {
             adj |= 0x06;
         }
@@ -497,10 +497,10 @@ pub mod daa {
         }
         adj = if didsub { -adj } else { adj };
         let res = (acc as i8).wrapping_add(adj) as u8;
-        *cpu.regs.a = res;
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::H.set(flags, false);
         Flag::C.set(flags, carry);
@@ -525,13 +525,13 @@ pub mod dec {
             }
             0x05 | 0x0d | 0x15 | 0x1d | 0x25 | 0x2d | 0x3d => {
                 let op1 = match insn.opcode {
-                    0x05 => *cpu.regs.b,
-                    0x0d => *cpu.regs.c,
-                    0x15 => *cpu.regs.d,
-                    0x1d => *cpu.regs.e,
-                    0x25 => *cpu.regs.h,
-                    0x2d => *cpu.regs.l,
-                    0x3d => *cpu.regs.a,
+                    0x05 => *cpu.file.b,
+                    0x0d => *cpu.file.c,
+                    0x15 => *cpu.file.d,
+                    0x1d => *cpu.file.e,
+                    0x25 => *cpu.file.h,
+                    0x2d => *cpu.file.l,
+                    0x3d => *cpu.file.a,
                     _ => panic!("Illegal instruction."),
                 };
                 insn.stack.push(op1);
@@ -548,7 +548,7 @@ pub mod dec {
         let res = op1.wrapping_sub(1);
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, true);
         Flag::H.set(flags, op1 & 0x0f == 0);
@@ -565,13 +565,13 @@ pub mod dec {
             0x05 | 0x0d | 0x15 | 0x1d | 0x25 | 0x2d | 0x3d => {
                 // Write X
                 *match insn.opcode {
-                    0x05 => &mut *cpu.regs.b,
-                    0x0d => &mut *cpu.regs.c,
-                    0x15 => &mut *cpu.regs.d,
-                    0x1d => &mut *cpu.regs.e,
-                    0x25 => &mut *cpu.regs.h,
-                    0x2d => &mut *cpu.regs.l,
-                    0x3d => &mut *cpu.regs.a,
+                    0x05 => &mut *cpu.file.b,
+                    0x0d => &mut *cpu.file.c,
+                    0x15 => &mut *cpu.file.d,
+                    0x1d => &mut *cpu.file.e,
+                    0x25 => &mut *cpu.file.h,
+                    0x2d => &mut *cpu.file.l,
+                    0x3d => &mut *cpu.file.a,
                     _ => panic!("Illegal instruction."),
                 } = res;
                 // Finish
@@ -597,10 +597,10 @@ pub mod decw {
     pub fn start(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Check opcode
         let op1 = match insn.opcode {
-            0x0b => cpu.regs.bc.get(&cpu.regs),
-            0x1b => cpu.regs.de.get(&cpu.regs),
-            0x2b => cpu.regs.hl.get(&cpu.regs),
-            0x3b => *cpu.regs.sp,
+            0x0b => cpu.file.bc.load(&cpu.file),
+            0x1b => cpu.file.de.load(&cpu.file),
+            0x2b => cpu.file.hl.load(&cpu.file),
+            0x3b => *cpu.file.sp,
             _ => panic!("Illegal instruction."),
         };
         insn.stack.extend(op1.to_le_bytes());
@@ -621,18 +621,18 @@ pub mod decw {
         let res = op1.wrapping_sub(1);
         match insn.opcode {
             0x0b => {
-                let bc = cpu.regs.bc;
-                bc.set(&mut cpu.regs, res);
+                let bc = cpu.file.bc;
+                bc.store(&mut cpu.file, res);
             }
             0x1b => {
-                let de = cpu.regs.de;
-                de.set(&mut cpu.regs, res);
+                let de = cpu.file.de;
+                de.store(&mut cpu.file, res);
             }
             0x2b => {
-                let hl = cpu.regs.hl;
-                hl.set(&mut cpu.regs, res);
+                let hl = cpu.file.hl;
+                hl.store(&mut cpu.file, res);
             }
-            0x3b => *cpu.regs.sp = res,
+            0x3b => *cpu.file.sp = res,
             _ => panic!("Illegal instruction."),
         }
 
@@ -709,13 +709,13 @@ pub mod inc {
             }
             0x04 | 0x0c | 0x14 | 0x1c | 0x24 | 0x2c | 0x3c => {
                 let op1 = match insn.opcode {
-                    0x04 => *cpu.regs.b,
-                    0x0c => *cpu.regs.c,
-                    0x14 => *cpu.regs.d,
-                    0x1c => *cpu.regs.e,
-                    0x24 => *cpu.regs.h,
-                    0x2c => *cpu.regs.l,
-                    0x3c => *cpu.regs.a,
+                    0x04 => *cpu.file.b,
+                    0x0c => *cpu.file.c,
+                    0x14 => *cpu.file.d,
+                    0x1c => *cpu.file.e,
+                    0x24 => *cpu.file.h,
+                    0x2c => *cpu.file.l,
+                    0x3c => *cpu.file.a,
                     _ => panic!("Illegal instruction."),
                 };
                 insn.stack.push(op1);
@@ -732,7 +732,7 @@ pub mod inc {
         let res = op1.wrapping_add(1);
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, res & 0x0f == 0);
@@ -749,13 +749,13 @@ pub mod inc {
             0x04 | 0x0c | 0x14 | 0x1c | 0x24 | 0x2c | 0x3c => {
                 // Write X
                 *match insn.opcode {
-                    0x04 => &mut *cpu.regs.b,
-                    0x0c => &mut *cpu.regs.c,
-                    0x14 => &mut *cpu.regs.d,
-                    0x1c => &mut *cpu.regs.e,
-                    0x24 => &mut *cpu.regs.h,
-                    0x2c => &mut *cpu.regs.l,
-                    0x3c => &mut *cpu.regs.a,
+                    0x04 => &mut *cpu.file.b,
+                    0x0c => &mut *cpu.file.c,
+                    0x14 => &mut *cpu.file.d,
+                    0x1c => &mut *cpu.file.e,
+                    0x24 => &mut *cpu.file.h,
+                    0x2c => &mut *cpu.file.l,
+                    0x3c => &mut *cpu.file.a,
                     _ => panic!("Illegal instruction."),
                 } = res;
                 // Finish
@@ -781,10 +781,10 @@ pub mod incw {
     pub fn start(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Check opcode
         let op1 = match insn.opcode {
-            0x03 => cpu.regs.bc.get(&cpu.regs),
-            0x13 => cpu.regs.de.get(&cpu.regs),
-            0x23 => cpu.regs.hl.get(&cpu.regs),
-            0x33 => *cpu.regs.sp,
+            0x03 => cpu.file.bc.load(&cpu.file),
+            0x13 => cpu.file.de.load(&cpu.file),
+            0x23 => cpu.file.hl.load(&cpu.file),
+            0x33 => *cpu.file.sp,
             _ => panic!("Illegal instruction."),
         };
         insn.stack.extend(op1.to_le_bytes());
@@ -805,18 +805,18 @@ pub mod incw {
         let res = op1.wrapping_add(1);
         match insn.opcode {
             0x03 => {
-                let bc = cpu.regs.bc;
-                bc.set(&mut cpu.regs, res);
+                let bc = cpu.file.bc;
+                bc.store(&mut cpu.file, res);
             }
             0x13 => {
-                let de = cpu.regs.de;
-                de.set(&mut cpu.regs, res);
+                let de = cpu.file.de;
+                de.store(&mut cpu.file, res);
             }
             0x23 => {
-                let hl = cpu.regs.hl;
-                hl.set(&mut cpu.regs, res);
+                let hl = cpu.file.hl;
+                hl.store(&mut cpu.file, res);
             }
-            0x33 => *cpu.regs.sp = res,
+            0x33 => *cpu.file.sp = res,
             _ => panic!("Illegal instruction."),
         }
 
@@ -848,7 +848,7 @@ pub mod int {
 
     pub fn push(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Push SP
-        cpu.pushword(*cpu.regs.pc);
+        cpu.pushword(*cpu.file.pc);
 
         // Proceed
         insn.exec = delay;
@@ -867,7 +867,7 @@ pub mod int {
     pub fn jump(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Perform jump
         let addr = insn.stack.pop().unwrap() as u16;
-        *cpu.regs.pc = addr;
+        *cpu.file.pc = addr;
 
         // Finish
         None
@@ -891,7 +891,7 @@ pub mod jp {
             }
             0xe9 => {
                 // Read HL
-                let op1 = cpu.regs.hl.get(&cpu.regs);
+                let op1 = cpu.file.hl.load(&cpu.file);
                 insn.stack.extend(op1.to_le_bytes());
                 // Continue
                 jump(insn, cpu)
@@ -905,7 +905,7 @@ pub mod jp {
         // NOTE: This represents the fact that it takes 2 cycles to fetch a u16.
 
         // Evaluate condition
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         let cond = match insn.opcode {
             0xc2 => !Flag::Z.get(flags),
             0xc3 => true,
@@ -943,7 +943,7 @@ pub mod jp {
                 .try_into()
                 .unwrap(),
         );
-        *cpu.regs.pc = op1;
+        *cpu.file.pc = op1;
 
         // Finish
         None
@@ -970,7 +970,7 @@ pub mod jr {
 
     pub fn evaluate(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Evaluate condition
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         let cond = match insn.opcode {
             0x18 => true,
             0x20 => !Flag::Z.get(flags),
@@ -1001,10 +1001,10 @@ pub mod jr {
 
     pub fn jump(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Perform jump
-        let pc = *cpu.regs.pc as i16;
+        let pc = *cpu.file.pc as i16;
         let op1 = insn.stack.pop().unwrap() as i8 as i16;
         let res = pc.wrapping_add(op1) as u16;
-        *cpu.regs.pc = res;
+        *cpu.file.pc = res;
 
         // Finish
         None
@@ -1021,15 +1021,15 @@ pub mod ld {
             0x02 | 0x12 | 0x22 | 0x32 => {
                 // Execute LD (XY), A
                 let addr = match insn.opcode {
-                    0x02 => cpu.regs.bc,
-                    0x12 => cpu.regs.de,
-                    0x22 | 0x32 => cpu.regs.hl,
+                    0x02 => cpu.file.bc,
+                    0x12 => cpu.file.de,
+                    0x22 | 0x32 => cpu.file.hl,
                     _ => panic!("Illegal instruction."),
                 }
-                .get(&cpu.regs);
+                .load(&cpu.file);
                 insn.stack.extend(addr.to_le_bytes());
-                let op2 = *cpu.regs.a;
-                cpu.bus.borrow_mut().write(addr as usize, op2);
+                let op2 = *cpu.file.a;
+                cpu.write(addr, op2);
                 // Proceed
                 insn.exec = delay;
                 Some(insn)
@@ -1037,14 +1037,14 @@ pub mod ld {
             0x0a | 0x1a | 0x2a | 0x3a => {
                 // Load (XY)
                 let addr = match insn.opcode {
-                    0x0a => cpu.regs.bc,
-                    0x1a => cpu.regs.de,
-                    0x2a | 0x3a => cpu.regs.hl,
+                    0x0a => cpu.file.bc,
+                    0x1a => cpu.file.de,
+                    0x2a | 0x3a => cpu.file.hl,
                     _ => panic!("Illegal instruction."),
                 }
-                .get(&cpu.regs);
+                .load(&cpu.file);
                 insn.stack.extend(addr.to_le_bytes());
-                let op2 = cpu.bus.borrow().read(addr as usize);
+                let op2 = cpu.read(addr);
                 insn.stack.push(op2);
                 // Proceed
                 insn.exec = execute;
@@ -1077,10 +1077,10 @@ pub mod ld {
             0x76 => panic!("Illegal instruction."),
             0x70..=0x77 => {
                 // Execute LD (HL), X
-                let addr = cpu.regs.hl.get(&cpu.regs);
+                let addr = cpu.file.hl.load(&cpu.file);
                 insn.stack.extend(addr.to_le_bytes());
                 let op2 = helpers::get_op8(cpu, insn.opcode & 0x07);
-                cpu.bus.borrow_mut().write(addr as usize, op2);
+                cpu.write(addr, op2);
                 // Proceed
                 insn.exec = delay;
                 Some(insn)
@@ -1139,13 +1139,13 @@ pub mod ld {
     pub fn execute(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute LD X, {Y, d8, (HL)}
         let op1 = match insn.opcode {
-            0x06 | 0x40..=0x47 => &mut *cpu.regs.b,
-            0x0e | 0x48..=0x4f => &mut *cpu.regs.c,
-            0x16 | 0x50..=0x57 => &mut *cpu.regs.d,
-            0x1e | 0x58..=0x5f => &mut *cpu.regs.e,
-            0x26 | 0x60..=0x67 => &mut *cpu.regs.h,
-            0x2e | 0x68..=0x6f => &mut *cpu.regs.l,
-            0x0a | 0x1a | 0x2a | 0x3a | 0x3e | 0x78..=0x7f | 0xf2 => &mut *cpu.regs.a,
+            0x06 | 0x40..=0x47 => &mut *cpu.file.b,
+            0x0e | 0x48..=0x4f => &mut *cpu.file.c,
+            0x16 | 0x50..=0x57 => &mut *cpu.file.d,
+            0x1e | 0x58..=0x5f => &mut *cpu.file.e,
+            0x26 | 0x60..=0x67 => &mut *cpu.file.h,
+            0x2e | 0x68..=0x6f => &mut *cpu.file.l,
+            0x0a | 0x1a | 0x2a | 0x3a | 0x3e | 0x78..=0x7f | 0xf2 => &mut *cpu.file.a,
             _ => panic!("Illegal instruction."),
         };
         let op2 = insn.stack.pop().unwrap();
@@ -1172,10 +1172,10 @@ pub mod ld {
                 .try_into()
                 .unwrap(),
         );
-        let hl = cpu.regs.hl;
+        let hl = cpu.file.hl;
         match insn.opcode {
-            0x22 | 0x2a => hl.set(&mut cpu.regs, addr.wrapping_add(1)),
-            0x32 | 0x3a => hl.set(&mut cpu.regs, addr.wrapping_sub(1)),
+            0x22 | 0x2a => hl.store(&mut cpu.file, addr.wrapping_add(1)),
+            0x32 | 0x3a => hl.store(&mut cpu.file, addr.wrapping_sub(1)),
             _ => panic!("Illegal instruction."),
         }
 
@@ -1203,13 +1203,13 @@ pub mod ld {
         match insn.opcode {
             0xea => {
                 // Execute LD (a16), A
-                let op2 = *cpu.regs.a;
-                cpu.bus.borrow_mut().write(addr as usize, op2);
+                let op2 = *cpu.file.a;
+                cpu.write(addr, op2);
             }
             0xfa => {
                 // Execute LD A, (a16)
-                let op2 = cpu.bus.borrow_mut().read(addr as usize);
-                *cpu.regs.a = op2;
+                let op2 = cpu.read(addr);
+                *cpu.file.a = op2;
             }
             _ => panic!("Illegal instruction."),
         }
@@ -1253,7 +1253,7 @@ pub mod ldw {
             }
             0xf9 => {
                 // Read HL
-                let op2 = (cpu.regs.hl.get)(&cpu.regs);
+                let op2 = (cpu.file.hl.load)(&cpu.file);
                 insn.stack.extend(op2.to_le_bytes());
                 // Proceed
                 insn.exec = done;
@@ -1282,10 +1282,10 @@ pub mod ldw {
                 .unwrap(),
         );
         match insn.opcode {
-            0x01 => (cpu.regs.bc.set)(&mut cpu.regs, op2),
-            0x11 => (cpu.regs.de.set)(&mut cpu.regs, op2),
-            0x21 => (cpu.regs.hl.set)(&mut cpu.regs, op2),
-            0x31 | 0xf9 => *cpu.regs.sp = op2,
+            0x01 => (cpu.file.bc.store)(&mut cpu.file, op2),
+            0x11 => (cpu.file.de.store)(&mut cpu.file, op2),
+            0x21 => (cpu.file.hl.store)(&mut cpu.file, op2),
+            0x31 | 0xf9 => *cpu.file.sp = op2,
             _ => panic!("Illegal instruction."),
         }
 
@@ -1304,17 +1304,21 @@ pub mod ldw {
 
     pub fn delay_0x08_2(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Write the SP into the a16
-        let addr = u16::from_le_bytes(
+        let mut addr = u16::from_le_bytes(
             insn.stack
                 .drain(0..=1)
                 .collect::<Vec<_>>()
                 .try_into()
                 .unwrap(),
         );
-        let sp = &cpu.regs.sp;
-        cpu.bus.borrow_mut().write(addr as usize, sp.read(0));
-        let addr = addr.wrapping_add(1);
-        cpu.bus.borrow_mut().write(addr as usize, sp.read(1));
+        // Read the value of SP
+        let sp = &cpu.file.sp;
+        let sp0 = sp.read(0);
+        let sp1 = sp.read(1);
+        // Write it at a16
+        cpu.write(addr, sp0);
+        addr = addr.wrapping_add(1);
+        cpu.write(addr, sp1);
 
         // Proceed
         insn.exec = delay_0x08_3;
@@ -1340,14 +1344,14 @@ pub mod ldw {
 
     pub fn delay_0xf8(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute LD HL, SP + r8
-        let sp = *cpu.regs.sp;
+        let sp = *cpu.file.sp;
         let r8 = insn.stack.pop().unwrap() as i8 as u16;
         let res = sp.wrapping_add(r8);
-        let hl = cpu.regs.hl;
-        hl.set(&mut cpu.regs, res);
+        let hl = cpu.file.hl;
+        hl.store(&mut cpu.file, res);
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, false);
         Flag::N.set(flags, false);
         Flag::H.set(flags, 0x000f < (sp & 0x000f) + (r8 & 0x000f));
@@ -1384,7 +1388,7 @@ pub mod ldh {
             }
             0xe2 | 0xf2 => {
                 // Read C
-                let a8 = *cpu.regs.c;
+                let a8 = *cpu.file.c;
                 insn.stack.push(a8);
                 // Proceed
                 delay(insn, cpu)
@@ -1401,12 +1405,12 @@ pub mod ldh {
         match insn.opcode {
             0xe0 | 0xe2 => {
                 // Execute LD(H?) (a8|C), A
-                let op2 = *cpu.regs.a;
-                cpu.bus.borrow_mut().write(addr as usize, op2);
+                let op2 = *cpu.file.a;
+                cpu.write(addr, op2);
             }
             0xf0 | 0xf2 => {
                 // Execute LD(H?) A, (a8|C)
-                *cpu.regs.a = cpu.bus.borrow().read(addr as usize);
+                *cpu.file.a = cpu.read(addr);
             }
             _ => panic!("Illegal instruction."),
         }
@@ -1470,13 +1474,13 @@ pub mod or {
 
     pub fn done(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute OR
-        let acc = *cpu.regs.a;
+        let acc = *cpu.file.a;
         let op2 = insn.stack.pop().unwrap();
         let res = acc.bitor(op2);
-        *cpu.regs.a = res;
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -1529,13 +1533,13 @@ pub mod pop {
                 .unwrap(),
         );
         match insn.opcode {
-            0xc1 => cpu.regs.bc,
-            0xd1 => cpu.regs.de,
-            0xe1 => cpu.regs.hl,
-            0xf1 => cpu.regs.af,
+            0xc1 => cpu.file.bc,
+            0xd1 => cpu.file.de,
+            0xe1 => cpu.file.hl,
+            0xf1 => cpu.file.af,
             _ => panic!("Illegal instruction."),
         }
-        .set(&mut cpu.regs, word);
+        .store(&mut cpu.file, word);
 
         // Finish
         None
@@ -1564,13 +1568,13 @@ pub mod push {
     pub fn start(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Check opcode
         let word = match insn.opcode {
-            0xc5 => cpu.regs.bc,
-            0xd5 => cpu.regs.de,
-            0xe5 => cpu.regs.hl,
-            0xf5 => cpu.regs.af,
+            0xc5 => cpu.file.bc,
+            0xd5 => cpu.file.de,
+            0xe5 => cpu.file.hl,
+            0xf5 => cpu.file.af,
             _ => panic!("Illegal instruction."),
         }
-        .get(&cpu.regs);
+        .load(&cpu.file);
         insn.stack.extend(word.to_le_bytes());
 
         // Proceed
@@ -1675,7 +1679,7 @@ pub mod ret {
 
     pub fn start(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Evaluate condition
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         let cond = match insn.opcode {
             0xc0 => !Flag::Z.get(flags),
             0xc8 => Flag::Z.get(flags),
@@ -1737,7 +1741,7 @@ pub mod ret {
                 .try_into()
                 .unwrap(),
         );
-        *cpu.regs.pc = pc;
+        *cpu.file.pc = pc;
 
         // Finish
         None
@@ -1779,7 +1783,7 @@ pub mod reti {
                 .try_into()
                 .unwrap(),
         );
-        *cpu.regs.pc = pc;
+        *cpu.file.pc = pc;
 
         // Proceed
         insn.exec = done;
@@ -1820,13 +1824,13 @@ pub mod rl {
     pub fn done(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute RL
         let op1 = insn.stack.pop().unwrap();
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         let cin = Flag::C.get(flags);
         let carry = op1 & 0x80 != 0;
         let res = op1 << 1 | (cin as u8);
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -1869,14 +1873,14 @@ pub mod rla {
         assert!(insn.opcode == 0x17, "Illegal instruction.");
 
         // Execute RLA
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         let cin = Flag::C.get(flags);
-        let carry = *cpu.regs.a & 0x80 != 0;
-        let res = *cpu.regs.a << 1 | (cin as u8);
-        *cpu.regs.a = res;
+        let carry = *cpu.file.a & 0x80 != 0;
+        let res = *cpu.file.a << 1 | (cin as u8);
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, false);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -1916,7 +1920,7 @@ pub mod rlc {
         let res = op1 << 1 | (carry as u8);
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -1959,12 +1963,12 @@ pub mod rlca {
         assert!(insn.opcode == 0x07, "Illegal instruction.");
 
         // Execute RLCA
-        let carry = *cpu.regs.a & 0x80 != 0;
-        let res = *cpu.regs.a << 1 | (carry as u8);
-        *cpu.regs.a = res;
+        let carry = *cpu.file.a & 0x80 != 0;
+        let res = *cpu.file.a << 1 | (carry as u8);
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, false);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -2000,13 +2004,13 @@ pub mod rr {
     pub fn done(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute RR
         let op1 = insn.stack.pop().unwrap();
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         let cin = Flag::C.get(flags);
         let carry = op1 & 0x01 != 0;
         let res = ((cin as u8) << 7) | op1 >> 1;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -2049,14 +2053,14 @@ pub mod rra {
         assert!(insn.opcode == 0x1f, "Illegal instruction.");
 
         // Execute RRA
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         let cin = Flag::C.get(flags);
-        let carry = *cpu.regs.a & 0x01 != 0;
-        let res = ((cin as u8) << 7) | *cpu.regs.a >> 1;
-        *cpu.regs.a = res;
+        let carry = *cpu.file.a & 0x01 != 0;
+        let res = ((cin as u8) << 7) | *cpu.file.a >> 1;
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, false);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -2096,7 +2100,7 @@ pub mod rrc {
         let res = ((carry as u8) << 7) | op1 >> 1;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -2139,12 +2143,12 @@ pub mod rrca {
         assert!(insn.opcode == 0x0f, "Illegal instruction.");
 
         // Execute RRCA
-        let carry = *cpu.regs.a & 0x01 != 0;
-        let res = ((carry as u8) << 7) | *cpu.regs.a >> 1;
-        *cpu.regs.a = res;
+        let carry = *cpu.file.a & 0x01 != 0;
+        let res = ((carry as u8) << 7) | *cpu.file.a >> 1;
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, false);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -2176,7 +2180,7 @@ pub mod rst {
 
     pub fn push(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Push SP
-        cpu.pushword(*cpu.regs.pc);
+        cpu.pushword(*cpu.file.pc);
 
         // Proceed
         insn.exec = delay;
@@ -2205,7 +2209,7 @@ pub mod rst {
             0xff => 0x38,
             _ => panic!("Illegal instruction."),
         };
-        *cpu.regs.pc = op1;
+        *cpu.file.pc = op1;
 
         // Finish
         None
@@ -2242,15 +2246,15 @@ pub mod sbc {
 
     pub fn done(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute SUB
-        let acc = *cpu.regs.a;
+        let acc = *cpu.file.a;
         let op2 = insn.stack.pop().unwrap();
-        let cin = Flag::C.get(&cpu.regs.f) as u8;
+        let cin = Flag::C.get(&cpu.file.f) as u8;
         let (res, carry0) = acc.overflowing_sub(op2);
         let (res, carry1) = res.overflowing_sub(cin);
-        *cpu.regs.a = res;
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, true);
         Flag::H.set(flags, (op2 & 0x0f) + cin > (acc & 0x0f));
@@ -2270,7 +2274,7 @@ pub mod scf {
         assert!(insn.opcode == 0x37, "Illegal instruction.");
 
         // Execute SCF
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
         Flag::C.set(flags, true);
@@ -2366,7 +2370,7 @@ pub mod sla {
         let res = op1 << 1;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -2430,7 +2434,7 @@ pub mod sra {
         let res = sign | (op1 >> 1);
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -2493,7 +2497,7 @@ pub mod srl {
         let res = 0x7f & (op1 >> 1);
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -2576,13 +2580,13 @@ pub mod sub {
 
     pub fn done(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute SUB
-        let acc = *cpu.regs.a;
+        let acc = *cpu.file.a;
         let op2 = insn.stack.pop().unwrap();
         let (res, carry) = acc.overflowing_sub(op2);
-        *cpu.regs.a = res;
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, true);
         Flag::H.set(flags, (op2 & 0x0f) > (acc & 0x0f));
@@ -2621,7 +2625,7 @@ pub mod swap {
         let res = ((op1 & 0xf0) >> 4) | ((op1 & 0x0f) << 4);
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);
@@ -2694,13 +2698,13 @@ pub mod xor {
 
     pub fn done(mut insn: Instruction, cpu: &mut Cpu) -> Option<Instruction> {
         // Execute XOR
-        let acc = *cpu.regs.a;
+        let acc = *cpu.file.a;
         let op2 = insn.stack.pop().unwrap();
         let res = acc.bitxor(op2);
-        *cpu.regs.a = res;
+        *cpu.file.a = res;
 
         // Set flags
-        let flags = &mut cpu.regs.f;
+        let flags = &mut cpu.file.f;
         Flag::Z.set(flags, res == 0);
         Flag::N.set(flags, false);
         Flag::H.set(flags, false);

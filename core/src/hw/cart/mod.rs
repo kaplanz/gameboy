@@ -17,10 +17,10 @@ use log::{debug, info, trace, warn};
 use remus::bus::Bus;
 use remus::dev::Null;
 use remus::mem::{Ram, Rom};
-use remus::{Block, Board, Device, Memory, SharedDevice};
+use remus::{Block, Board, Device, Dynamic};
 use thiserror::Error;
 
-use self::header::CartridgeType;
+use self::header::Kind;
 use self::mbc::{Mbc, Mbc1, NoMbc};
 
 mod header;
@@ -95,8 +95,8 @@ impl Cartridge {
         let header = Header::blank();
 
         // Use null devices for the ROM, RAM
-        let rom = Null::<0x8000>::with(0xff).to_shared();
-        let eram = Null::<0x0>::new().to_shared();
+        let rom = Null::<0x8000>::with(0xff).to_dynamic();
+        let eram = Null::<0x0>::new().to_dynamic();
 
         // Construct a membory bank controller
         let mbc = Box::new(NoMbc::with(rom, eram));
@@ -112,20 +112,20 @@ impl Cartridge {
 
     /// Gets a shared reference to the cartridge's ROM.
     #[must_use]
-    pub fn rom(&self) -> SharedDevice {
+    pub fn rom(&self) -> Dynamic {
         self.mbc.rom()
     }
 
     /// Gets a shared reference to the cartridge's RAM.
     #[must_use]
-    pub fn ram(&self) -> SharedDevice {
+    pub fn ram(&self) -> Dynamic {
         self.mbc.ram()
     }
 
     /// Constructs a memory bank controller from a parsed ROM and header.
     fn mbc(header: &Header, rom: &[u8]) -> Result<Box<dyn Mbc>, Error> {
         // Construct null device (for reuse where needed)
-        let null = Null::<0>::new().to_shared();
+        let null = Null::<0>::new().to_dynamic();
 
         // Prepare external ROM
         let rom = {
@@ -155,7 +155,7 @@ impl Cartridge {
                 .collect::<Vec<_>>()
                 .into_boxed_slice()
         };
-        trace!("ROM:\n{}", &&*rom as &dyn Memory);
+        trace!("ROM:\n{rom}", rom = phex::Printer::<u8>::new(0, &rom));
 
         // Construct external ROM
         let rom = {
@@ -163,60 +163,60 @@ impl Cartridge {
                 0x0000_8000 => Rom::<0x0000_8000>::from(
                     &*Box::<[_; 0x0000_8000]>::try_from(rom).map_err(Error::Missing)?,
                 )
-                .to_shared(),
+                .to_dynamic(),
                 0x0001_0000 => Rom::<0x0001_0000>::from(
                     &*Box::<[_; 0x0001_0000]>::try_from(rom).map_err(Error::Missing)?,
                 )
-                .to_shared(),
+                .to_dynamic(),
                 0x0002_0000 => Rom::<0x0002_0000>::from(
                     &*Box::<[_; 0x0002_0000]>::try_from(rom).map_err(Error::Missing)?,
                 )
-                .to_shared(),
+                .to_dynamic(),
                 0x0004_0000 => Rom::<0x0004_0000>::from(
                     &*Box::<[_; 0x0004_0000]>::try_from(rom).map_err(Error::Missing)?,
                 )
-                .to_shared(),
+                .to_dynamic(),
                 0x0008_0000 => Rom::<0x0008_0000>::from(
                     &*Box::<[_; 0x0008_0000]>::try_from(rom).map_err(Error::Missing)?,
                 )
-                .to_shared(),
+                .to_dynamic(),
                 0x0010_0000 => Rom::<0x0010_0000>::from(
                     &*Box::<[_; 0x0010_0000]>::try_from(rom).map_err(Error::Missing)?,
                 )
-                .to_shared(),
+                .to_dynamic(),
                 0x0020_0000 => Rom::<0x0020_0000>::from(
                     &*Box::<[_; 0x0020_0000]>::try_from(rom).map_err(Error::Missing)?,
                 )
-                .to_shared(),
+                .to_dynamic(),
                 0x0040_0000 => Rom::<0x0040_0000>::from(
                     &*Box::<[_; 0x0040_0000]>::try_from(rom).map_err(Error::Missing)?,
                 )
-                .to_shared(),
+                .to_dynamic(),
                 0x0080_0000 => Rom::<0x0080_0000>::from(
                     &*Box::<[_; 0x0080_0000]>::try_from(rom).map_err(Error::Missing)?,
                 )
-                .to_shared(),
+                .to_dynamic(),
                 _ => unreachable!(),
             }
         };
 
         // Construct external RAM
         let eram = match header.ramsz {
-            0x0 => null.clone(),
-            0x2000 => Ram::<0x2000>::new().to_shared(),
-            0x8000 => Ram::<0x8000>::new().to_shared(),
-            0x20000 => Ram::<0x20000>::new().to_shared(),
-            0x10000 => Ram::<0x10000>::new().to_shared(),
+            0x0 => null.clone().to_dynamic(),
+            0x2000 => Ram::<0x2000>::new().to_dynamic(),
+            0x8000 => Ram::<0x8000>::new().to_dynamic(),
+            0x20000 => Ram::<0x20000>::new().to_dynamic(),
+            0x10000 => Ram::<0x10000>::new().to_dynamic(),
             _ => unreachable!(),
         };
 
         // Construct a memory bank controller
         let mbc: Box<dyn Mbc> = match &header.cart {
-            &CartridgeType::NoMbc { ram, .. } => {
+            &Kind::NoMbc { ram, .. } => {
                 let eram = [null, eram][ram as usize].clone();
                 Box::new(NoMbc::with(rom, eram))
             }
-            &CartridgeType::Mbc1 { ram, battery } => {
+            &Kind::Mbc1 { ram, battery } => {
                 let eram = [null, eram][ram as usize].clone();
                 Box::new(Mbc1::with(rom, eram, battery))
             }
