@@ -6,5 +6,5 @@
 mod readonly;
 mod unmapped;
 
-pub use self::readonly::ReadOnly;
-pub use self::unmapped::Unmapped;
+pub(crate) use self::readonly::ReadOnly;
+pub(crate) use self::unmapped::Unmapped;

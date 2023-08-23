@@ -5,7 +5,7 @@ use remus::bus::Bus;
 use remus::mem::Ram;
 use remus::{Block, Board, Device, Shared};
 
-use super::BootRom;
+use super::Boot;
 
 pub type Wram = Ram<0x2000>;
 pub type Hram = Ram<0x007f>;
@@ -23,14 +23,14 @@ pub struct Memory {
     // │  8 KiB │ Work │ RAM │ WRAM  │
     // │  127 B │ High │ RAM │ HRAM  │
     // └────────┴──────┴─────┴───────┘
-    boot: Shared<BootRom>,
+    boot: Shared<Boot>,
     wram: Shared<Wram>,
     hram: Shared<Hram>,
 }
 
 impl Memory {
-    /// Constructs a new `Memory` using provided [`BootRom`].
-    pub fn with(boot: BootRom) -> Self {
+    /// Constructs a new `Memory` using provided [`Boot`].
+    pub fn with(boot: Boot) -> Self {
         Self {
             boot: boot.into(),
             ..Default::default()
@@ -39,7 +39,7 @@ impl Memory {
 
     /// Gets the boot ROM.
     #[allow(unused)]
-    pub(super) fn boot(&self) -> Shared<BootRom> {
+    pub(super) fn boot(&self) -> Shared<Boot> {
         self.boot.clone()
     }
 

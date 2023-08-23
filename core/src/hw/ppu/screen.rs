@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use super::pixel::Color;
 use crate::dmg::SCREEN;
 
-/// Screen data.
+/// Screen representation.
 #[derive(Debug)]
 pub struct Screen([Color; SCREEN.depth()]);
 

@@ -1,4 +1,4 @@
-//! SM83 core.
+//! SM83 CPU core.
 //!
 //! Model for the CPU core present on the Sharp LR35902.
 
@@ -10,15 +10,16 @@ use enuf::Enuf;
 use log::{debug, trace};
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Address, Block, Board, Machine, Processor, Shared};
+use remus::{Address, Block, Board, Location, Machine, Shared};
 
 use crate::hw::pic::Pic;
 
 mod insn;
 
 pub use self::insn::Instruction;
-use super::Model;
+pub use super::Processor;
 
+/// Regsiter sets.
 pub mod reg {
     /// 8-bit register set.
     #[derive(Clone, Copy, Debug)]
@@ -56,18 +57,28 @@ pub struct Cpu {
     file: File,
     /// Run status.
     status: Status,
-    /// Execution state.
-    state: State,
+    /// Execution stage.
+    stage: Stage,
     /// Interrupt master enable.
     ime: Ime,
     halt_bug: bool,
 }
 
 impl Cpu {
-    /// Gets the `Cpu`'s state.
+    /// Sets the CPU's address bus.
+    pub fn set_bus(&mut self, bus: Shared<Bus>) {
+        self.bus = bus;
+    }
+
+    /// Sets the CPU's programmable interrupt controller.
+    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
+        self.pic = pic;
+    }
+
+    /// Gets the current execution stage.
     #[must_use]
-    pub fn state(&self) -> &State {
-        &self.state
+    pub fn stage(&self) -> &Stage {
+        &self.stage
     }
 
     /// Read the byte at the given address.
@@ -144,7 +155,7 @@ impl Cpu {
     #[must_use]
     pub(crate) fn doctor(&self) -> Option<String> {
         // Check if we're ready for the next doctor entry
-        if let State::Execute(_) = self.state {
+        if let Stage::Execute(_) = self.stage {
             None
         } else {
             let mut s = String::new();
@@ -170,14 +181,6 @@ impl Cpu {
             Some(s)
         }
     }
-
-    pub fn set_bus(&mut self, bus: Shared<Bus>) {
-        self.bus = bus;
-    }
-
-    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
-        self.pic = pic;
-    }
 }
 
 impl Block for Cpu {
@@ -188,7 +191,7 @@ impl Block for Cpu {
         self.file.reset();
         // Reset to initial state
         self.status = Status::default();
-        self.state = State::default();
+        self.stage = Stage::default();
         self.ime = Ime::default();
     }
 }
@@ -197,52 +200,7 @@ impl Board for Cpu {
     fn connect(&self, _: &mut Bus) {}
 }
 
-impl Machine for Cpu {
-    fn enabled(&self) -> bool {
-        matches!(self.status, Status::Enabled)
-    }
-
-    fn cycle(&mut self) {
-        self.state = std::mem::take(&mut self.state).exec(self);
-    }
-}
-
-impl Model for Cpu {
-    type Instruction = Instruction;
-
-    fn insn(&self) -> Self::Instruction {
-        if let State::Execute(insn) = &self.state {
-            insn.clone()
-        } else {
-            Instruction::new(self.read(*self.file.pc))
-        }
-    }
-
-    fn goto(&mut self, pc: u16) {
-        *self.file.pc = pc;
-    }
-
-    fn exec(&mut self, opcode: u8) {
-        // Create a new instruction...
-        let mut insn = Some(Instruction::new(opcode));
-        // ... then execute it until completion
-        while let Some(work) = insn {
-            insn = work.exec(self);
-        }
-    }
-
-    fn run(&mut self, prog: &[u8]) {
-        for &opcode in prog {
-            self.exec(opcode);
-        }
-    }
-
-    fn wake(&mut self) {
-        self.status = Status::Enabled;
-    }
-}
-
-impl Processor<u8> for Cpu {
+impl Location<u8> for Cpu {
     type Register = reg::Byte;
 
     fn load(&self, reg: Self::Register) -> u8 {
@@ -272,7 +230,7 @@ impl Processor<u8> for Cpu {
     }
 }
 
-impl Processor<u16> for Cpu {
+impl Location<u16> for Cpu {
     type Register = reg::Word;
 
     fn load(&self, reg: Self::Register) -> u16 {
@@ -305,6 +263,51 @@ impl Processor<u16> for Cpu {
             reg::Word::SP => *self.file.sp = value,
             reg::Word::PC => *self.file.pc = value,
         }
+    }
+}
+
+impl Machine for Cpu {
+    fn enabled(&self) -> bool {
+        matches!(self.status, Status::Enabled)
+    }
+
+    fn cycle(&mut self) {
+        self.stage = std::mem::take(&mut self.stage).exec(self);
+    }
+}
+
+impl Processor for Cpu {
+    type Instruction = Instruction;
+
+    fn insn(&self) -> Self::Instruction {
+        if let Stage::Execute(insn) = &self.stage {
+            insn.clone()
+        } else {
+            Instruction::new(self.read(*self.file.pc))
+        }
+    }
+
+    fn goto(&mut self, pc: u16) {
+        *self.file.pc = pc;
+    }
+
+    fn exec(&mut self, opcode: u8) {
+        // Create a new instruction...
+        let mut insn = Some(Instruction::new(opcode));
+        // ... then execute it until completion
+        while let Some(work) = insn {
+            insn = work.exec(self);
+        }
+    }
+
+    fn run(&mut self, prog: &[u8]) {
+        for &opcode in prog {
+            self.exec(opcode);
+        }
+    }
+
+    fn wake(&mut self) {
+        self.status = Status::Enabled;
     }
 }
 
@@ -469,27 +472,34 @@ impl From<Flag> for u8 {
 
 /// CPU run status.
 #[derive(Debug, Default)]
-enum Status {
+pub enum Status {
+    /// Enabled, normal execution.
     #[default]
     Enabled,
+    /// Halted, awaiting an interrupt.
     Halted,
-    _Stopped,
+    /// Stopped, very low-power state.
+    #[allow(unused)]
+    Stopped,
 }
 
-/// CPU execution state.
+/// CPU execution stage.
 #[derive(Clone, Debug, Default)]
-pub enum State {
+pub enum Stage {
+    /// Fetch next instruction.
     #[default]
     Fetch,
+    /// Execute fetched instruction.
     Execute(Instruction),
+    /// Done executing instruction.
     Done,
 }
 
-impl State {
+impl Stage {
     fn exec(mut self, cpu: &mut Cpu) -> Self {
-        // If we're `State::Done`, proceed to `State::Fetch` this cycle
-        if let State::Done = self {
-            // Log previous register state
+        // If we're `Stage::Done`, proceed to `Stage::Fetch` this cycle
+        if let Stage::Done = self {
+            // Log previous register stage
             trace!("Registers:\n{}", cpu.file);
 
             // Check for pending interrupts
@@ -502,20 +512,20 @@ impl State {
             if let Some(int) = int {
                 // Acknowledge the interrupt
                 cpu.pic.borrow_mut().ack(int);
-                // Skip `State::Fetch`
+                // Skip `Stage::Fetch`
                 let insn = Instruction::int(int);
                 debug!("0xXXXX: {insn}");
-                self = State::Execute(insn);
+                self = Stage::Execute(insn);
             }
             // ... or fetch next instruction
             else {
-                // Proceed to `State::Fetch`
-                self = State::Fetch;
+                // Proceed to `Stage::Fetch`
+                self = Stage::Fetch;
             }
         }
 
-        // If we're `State::Fetch,` proceed to `State::Execute(_)` this cycle
-        if let State::Fetch = self {
+        // If we're `Stage::Fetch,` proceed to `Stage::Execute(_)` this cycle
+        if let Stage::Fetch = self {
             // Read the next instruction
             let pc = *cpu.file.pc;
             let opcode = cpu.fetchbyte();
@@ -547,18 +557,18 @@ impl State {
                 cpu.ime = Ime::Enabled;
             }
 
-            // Proceed to `State::Execute(_)`
-            self = State::Execute(insn);
+            // Proceed to `Stage::Execute(_)`
+            self = Stage::Execute(insn);
         }
 
-        // Run the current `State::Execute(_)`
-        if let State::Execute(insn) = self {
+        // Run the current `Stage::Execute(_)`
+        if let Stage::Execute(insn) = self {
             // Execute a cycle of the instruction
             let insn = insn.exec(cpu);
-            // Proceed to next State
+            // Proceed to next stage
             self = match insn {
-                Some(insn) => State::Execute(insn),
-                None => State::Done,
+                Some(insn) => Stage::Execute(insn),
+                None => Stage::Done,
             };
         }
 

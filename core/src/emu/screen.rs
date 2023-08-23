@@ -1,15 +1,17 @@
-//! Screen interface.
+//! Screen primitives.
 
-use std::fmt::Debug;
-
-/// Specified screen dimensions.
+/// Screen dimensions.
 #[derive(Debug)]
-pub struct Spec {
+pub struct Screen {
+    /// Width of the screen in pixels.
     pub width: usize,
+    /// Height of the screen in pixels.
     pub height: usize,
 }
 
-impl Spec {
+impl Screen {
+    /// Depth of the screen in pixels.
+    #[must_use]
     pub const fn depth(&self) -> usize {
         self.width.saturating_mul(self.height)
     }

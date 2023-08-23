@@ -6,11 +6,10 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::similar_names)]
 
-mod dev;
-mod emu;
-mod hw;
-mod model;
+pub(crate) mod dev;
+pub(crate) mod emu;
+pub(crate) mod hw;
+pub(crate) mod model;
 
-pub use self::emu::Emulator;
-pub use self::hw::cpu;
-pub use self::model::dmg;
+pub use crate::emu::Emulator;
+pub use crate::model::dmg;

@@ -34,13 +34,13 @@ use thiserror::Error;
 pub struct Color(u32);
 
 impl Color {
-    /// Constructs a new [`Color`] with the provided integer value.
+    /// Constructs a new `Color` with the provided integer value.
     #[must_use]
     pub fn new(color: u32) -> Self {
         Self(color)
     }
 
-    /// Constructs a new [`Color`] with the provided RGB values.
+    /// Constructs a new `Color` with the provided RGB values.
     #[must_use]
     pub fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self(u32::from(r) << 16 | u32::from(g) << 8 | u32::from(b))

@@ -2,8 +2,9 @@
 
 use remus::Machine;
 
-pub mod joypad;
-pub mod screen;
+mod screen;
+
+pub use screen::Screen;
 
 /// Emulator interface.
 ///

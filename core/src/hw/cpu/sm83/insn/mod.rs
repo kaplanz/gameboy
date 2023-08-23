@@ -11,42 +11,47 @@ mod exec;
 ///
 /// Stores the currently executing instruction together with its state. Can be
 /// started and resumed.
-///
-/// TODO: Eventually replace with a generator once stable.
 #[derive(Clone)]
 pub struct Instruction {
     opcode: u8,
     fmt: &'static str,
+    // TODO: Eventually replace with a generator once stable.
     exec: fn(Self, &mut Cpu) -> Option<Self>,
     stack: Vec<u8>,
 }
 
 impl Instruction {
-    pub(crate) fn new(opcode: u8) -> Self {
+    /// Constructs a new `Instruction` with the given opcode.
+    #[must_use]
+    pub fn new(opcode: u8) -> Self {
         DECODE[opcode as usize].clone()
     }
 
-    pub(crate) fn prefix(opcode: u8) -> Self {
+    /// Constructs a new prefix `Instruction` with the given opcode.
+    #[must_use]
+    pub fn prefix(opcode: u8) -> Self {
         PREFIX[opcode as usize].clone()
     }
 
+    /// Constructs a new interrupt `Instruction`.
     pub(crate) fn int(int: Interrupt) -> Self {
         Self {
-            opcode: 0x00,
+            opcode: int as u8,
             fmt: int.repr(),
             exec: exec::int::start,
             stack: vec![int.handler()],
         }
     }
 
-    pub(crate) fn exec(self, cpu: &mut Cpu) -> Option<Self> {
-        (self.exec)(self, cpu)
-    }
-
-    /// Gets the `Instruction`'s opcode.
+    /// Gets the instruction's opcode.
     #[must_use]
     pub fn opcode(&self) -> u8 {
         self.opcode
+    }
+
+    /// Executes a single stage of the instruction.
+    pub fn exec(self, cpu: &mut Cpu) -> Option<Self> {
+        (self.exec)(self, cpu)
     }
 }
 

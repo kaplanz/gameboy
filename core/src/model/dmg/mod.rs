@@ -7,32 +7,33 @@ use std::rc::Rc;
 
 use itertools::Itertools;
 use remus::bus::Bus;
-use remus::{Address, Block, Board, Device, Machine, Processor, Shared};
+use remus::{Address, Block, Board, Device, Location, Machine, Shared};
 
+use self::cpu::Cpu;
 use self::mem::Memory;
-use crate::cpu::Model;
 use crate::dev::Unmapped;
-use crate::emu::{screen, Emulator};
+use crate::dmg::cpu::Processor;
+use crate::emu::Emulator;
 use crate::hw::apu::Apu;
 use crate::hw::cart::Cartridge;
-use crate::hw::cpu::Sm83 as Cpu;
 use crate::hw::joypad::Joypad;
 use crate::hw::pic::Pic;
-use crate::hw::ppu::{self, Ppu};
+use crate::hw::ppu::Ppu;
 use crate::hw::serial::Serial;
 use crate::hw::timer::Timer;
 
 mod boot;
 mod mem;
 
-pub use boot::Rom as BootRom;
-
-pub use crate::hw::cart;
+pub use self::boot::Rom as Boot;
+pub use crate::emu::Screen as Dimensions;
+pub use crate::hw::cpu::sm83 as cpu;
 pub use crate::hw::joypad::Button;
 pub use crate::hw::ppu::Screen;
+pub use crate::hw::{cart, ppu};
 
 /// DMG-01 screen specification.
-pub const SCREEN: screen::Spec = screen::Spec {
+pub const SCREEN: Dimensions = Dimensions {
     width: 160,
     height: 144,
 };
@@ -79,7 +80,7 @@ impl GameBoy {
     ///
     /// Note that [`Cartridge`]s must be manually loaded with [`Self::load`].
     #[must_use]
-    pub fn with(boot: BootRom) -> Self {
+    pub fn with(boot: Boot) -> Self {
         let mem = Memory::with(boot);
         Self {
             mem,
@@ -115,13 +116,13 @@ impl GameBoy {
         }
     }
 
-    /// Gets the `GameBoy`'s cpu.
+    /// Gets the `GameBoy`'s CPU.
     #[must_use]
     pub fn cpu(&self) -> &Cpu {
         &self.cpu
     }
 
-    /// Mutably gets the `GameBoy`'s cpu.
+    /// Mutably gets the `GameBoy`'s CPU.
     pub fn cpu_mut(&mut self) -> &mut Cpu {
         &mut self.cpu
     }
@@ -149,7 +150,7 @@ impl GameBoy {
 
     /// Simulate booting for `GameBoy`s with no [`Cartridge`].
     fn boot(mut self) -> Self {
-        type Register = <Cpu as Processor<u16>>::Register;
+        type Register = <Cpu as Location<u16>>::Register;
 
         // Execute setup code
         self.cpu.exec(0xfb); // ei ; enable interrupts
@@ -405,8 +406,8 @@ mod tests {
     ];
 
     fn setup() -> GameBoy {
-        // Instantiate a `BootRom`
-        let boot = BootRom::try_from(&BOOTROM).unwrap();
+        // Instantiate a `Boot`
+        let boot = Boot::try_from(&BOOTROM).unwrap();
         // Instantiate a `Cartridge`
         let cart = Cartridge::new(&HEADER).unwrap();
         // Create a `GameBoy` instance
@@ -507,18 +508,18 @@ mod tests {
         (0xff40..=0xff4b).for_each(|addr| emu.bus.write(addr, 0x0c));
         (0x0000..=0x000b)
             .zip([
-                <Ppu as Processor<u8>>::Register::Lcdc,
-                <Ppu as Processor<u8>>::Register::Stat,
-                <Ppu as Processor<u8>>::Register::Scy,
-                <Ppu as Processor<u8>>::Register::Scx,
-                <Ppu as Processor<u8>>::Register::Ly,
-                <Ppu as Processor<u8>>::Register::Lyc,
-                <Ppu as Processor<u8>>::Register::Dma,
-                <Ppu as Processor<u8>>::Register::Bgp,
-                <Ppu as Processor<u8>>::Register::Obp0,
-                <Ppu as Processor<u8>>::Register::Obp1,
-                <Ppu as Processor<u8>>::Register::Wy,
-                <Ppu as Processor<u8>>::Register::Wx,
+                <Ppu as Location<u8>>::Register::Lcdc,
+                <Ppu as Location<u8>>::Register::Stat,
+                <Ppu as Location<u8>>::Register::Scy,
+                <Ppu as Location<u8>>::Register::Scx,
+                <Ppu as Location<u8>>::Register::Ly,
+                <Ppu as Location<u8>>::Register::Lyc,
+                <Ppu as Location<u8>>::Register::Dma,
+                <Ppu as Location<u8>>::Register::Bgp,
+                <Ppu as Location<u8>>::Register::Obp0,
+                <Ppu as Location<u8>>::Register::Obp1,
+                <Ppu as Location<u8>>::Register::Wy,
+                <Ppu as Location<u8>>::Register::Wx,
             ])
             .map(|(_, reg)| emu.ppu.load(reg))
             .for_each(|byte| assert_eq!(byte, 0x0c));
