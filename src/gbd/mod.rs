@@ -2,11 +2,11 @@
 
 use std::fmt::{Display, Write};
 
-use gameboy::core::cpu::sm83::{self, State};
+use gameboy::dmg::cpu::{reg, Stage};
 use gameboy::dmg::GameBoy;
 use indexmap::IndexMap;
 use log::debug;
-use remus::{Block, Machine, Processor};
+use remus::{Block, Location, Machine};
 use rustyline::error::ReadlineError;
 use rustyline::history::History;
 use rustyline::DefaultEditor as Readline;
@@ -76,7 +76,7 @@ pub struct Debugger {
     reload: Option<Handle>,
     // Console state
     pc: u16,
-    state: State,
+    state: Stage,
     // Internal state
     play: bool,
     freq: Cycle,
@@ -124,8 +124,8 @@ impl Debugger {
 
     pub fn sync(&mut self, emu: &GameBoy) {
         // Update program counter
-        self.pc = emu.cpu().load(sm83::reg::Word::PC);
-        self.state = emu.cpu().state().clone();
+        self.pc = emu.cpu().load(reg::Word::PC);
+        self.state = emu.cpu().stage().clone();
     }
 
     pub fn inform(&self, emu: &GameBoy) {
@@ -220,7 +220,7 @@ impl Debugger {
         match self.freq {
             Cycle::Dot => true,
             Cycle::Mach => mcycle,
-            Cycle::Insn => mcycle && matches!(self.state, State::Done),
+            Cycle::Insn => mcycle && matches!(self.state, Stage::Done),
         }
     }
 }

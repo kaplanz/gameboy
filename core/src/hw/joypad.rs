@@ -9,7 +9,7 @@ use remus::{reg, Address, Block, Board, Device, Shared};
 
 use super::pic::{Interrupt, Pic};
 
-/// Joypad button encoding.
+/// Joypad buttons.
 #[derive(Copy, Clone, Debug)]
 #[rustfmt::skip]
 pub enum Button {

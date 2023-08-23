@@ -15,7 +15,7 @@ use num::Unsigned;
 pub struct Printer<'a, W: Unsigned>(usize, &'a [u8], PhantomData<W>);
 
 impl<'a, W: Unsigned> Printer<'a, W> {
-    /// Constructs a new [`Printer`] for the provided data.
+    /// Constructs a new `Printer` for the provided data.
     #[must_use]
     pub fn new(offset: usize, data: &'a [u8]) -> Self {
         Self(offset, data, PhantomData)

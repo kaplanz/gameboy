@@ -7,7 +7,7 @@ use itertools::Itertools;
 use remus::bus::Bus;
 use remus::mem::Ram;
 use remus::reg::Register;
-use remus::{Address, Block, Board, Machine, Processor, Shared};
+use remus::{Address, Block, Board, Location, Machine, Shared};
 
 use self::dma::Dma;
 use self::exec::Mode;
@@ -27,23 +27,85 @@ mod tile;
 pub use self::pixel::Color;
 pub use self::screen::Screen;
 
+/// Video RAM.
+///
+/// 8 KiB of RAM used to store tile [data][tdata] and [maps][tmaps].
+///
+/// [tdata]: https://gbdev.io/pandocs/Tile_Data.html
+/// [tmaps]: https://gbdev.io/pandocs/Tile_Maps.html
 pub type Vram = Ram<0x2000>;
+/// Object Attribute Memory ([OAM][oam]).
+///
+/// 160 B of RAM used to store up to 40 sprites.
+///
+/// [oam]: https://gbdev.io/pandocs/OAM.html
 pub type Oam = Ram<0x00a0>;
 
-/// 8-bit register set.
+/// 8-bit LCD control register set.
 #[derive(Clone, Copy, Debug)]
 pub enum Control {
+    /// `0xFF40`: LCD  Control ([LCDC][lcdc]).
+    ///
+    /// Main LCD control register, with bits controlling elements on the screen.
+    ///
+    /// | Bit | Name                           |
+    /// |-----|--------------------------------|
+    /// |  7  | LCD and PPU enable             |
+    /// |  6  | Window tile map area           |
+    /// |  5  | Window enable                  |
+    /// |  4  | BG and Window tile data area   |
+    /// |  3  | BG tile map area               |
+    /// |  2  | OBJ size                       |
+    /// |  1  | OBJ enable                     |
+    /// |  0  | BG and Window enable/priority  |
+    ///
+    /// [lcdc]: https://gbdev.io/pandocs/LCDC.html
     Lcdc,
+    /// `0xFF41`: LCD status ([STAT][stat]).
+    ///
+    /// Current LCD status register, also used to control PPU interrupts.
+    ///
+    /// | Bit | Name                           | Use |
+    /// |-----|--------------------------------|-----|
+    /// |  6  | STAT interrupt source (LYC=LY) | R/W |
+    /// |  5  | OAM interrupt source           | R/W |
+    /// |  4  | VBlank interrupt source        | R/W |
+    /// |  3  | HBlank interrupt source        | R/W |
+    /// |  2  | LYC = LY compare flag          | R   |
+    /// | 1-0 | Mode flag (2-bit)              | R   |
+    ///
+    /// [stat]: https://gbdev.io/pandocs/STAT.html#ff41--stat-lcd-status
     Stat,
+    /// `0xFF42`: Viewport Y position.
     Scy,
+    /// `0xFF43`: Viewport X position.
     Scx,
+    /// `0xFF44`: LCD Y coordinate (read-only).
     Ly,
+    /// `0xFF45`: LY compare.
+    ///
+    /// Value to compare LY to for the LYC = LY interrupt source.
     Lyc,
+    /// `0xFF46`: OAM DMA source address.
+    ///
+    /// Writing to this register starts a [DMA][dma] transfer from ROM or RAM to
+    /// the [OAM](Oam).
+    ///
+    /// [dma]: https://gbdev.io/pandocs/OAM_DMA_Transfer.html
     Dma,
+    /// `0xFF47`: BG palette data.
+    ///
+    /// See more about palettes [here][palette].
+    ///
+    /// [palette]: https://gbdev.io/pandocs/Palettes.html
     Bgp,
+    /// `0xFF48`: OBJ palette 0 data
     Obp0,
+    /// `0xFF48`: OBJ palette 1 data
     Obp1,
+    /// `0xFF4A`: Window Y position.
     Wy,
+    /// `0xFF4B`: Window X position.
     Wx,
 }
 
@@ -78,10 +140,40 @@ pub struct Ppu {
 }
 
 impl Ppu {
+    /// Set the PPU's bus.
+    pub fn set_bus(&mut self, bus: Shared<Bus>) {
+        self.bus = bus;
+    }
+
+    /// Sets the PPU's programmable interrupt controller.
+    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
+        self.pic = pic;
+    }
+
     /// Gets internal debug info.
     #[must_use]
     pub fn debug(&self) -> Debug {
         Debug::new(self)
+    }
+
+    /// Get a reference to the PPU's screen.
+    #[must_use]
+    pub fn screen(&self) -> &Screen {
+        &self.lcd
+    }
+
+    /// Check if the screen is ready to be redrawn.
+    #[must_use]
+    pub fn ready(&self) -> bool {
+        // Redraw the screen once per frame, when:
+        // 1. PPU is enabled
+        let enabled = self.enabled();
+        // 2. Scanline is top of screen
+        let topline = **self.file.ly.borrow() == 0;
+        // 3. Dot is first of scanline
+        let firstdot = self.dot == 0;
+
+        enabled && topline && firstdot
     }
 
     /// Gets a shared reference to the PPU's video RAM.
@@ -168,36 +260,6 @@ impl Ppu {
         self.file.wx.clone()
     }
 
-    /// Set the ppu's bus.
-    pub fn set_bus(&mut self, bus: Shared<Bus>) {
-        self.bus = bus;
-    }
-
-    /// Set the ppu's pic.
-    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
-        self.pic = pic;
-    }
-
-    /// Get a reference to the ppu's screen.
-    #[must_use]
-    pub fn screen(&self) -> &Screen {
-        &self.lcd
-    }
-
-    /// Check if the screen is ready to be redrawn.
-    #[must_use]
-    pub fn ready(&self) -> bool {
-        // Redraw the screen once per frame, when:
-        // 1. PPU is enabled
-        let enabled = self.enabled();
-        // 2. Scanline is top of screen
-        let topline = **self.file.ly.borrow() == 0;
-        // 3. Dot is first of scanline
-        let firstdot = self.dot == 0;
-
-        enabled && topline && firstdot
-    }
-
     /// Color a pixel according to the ppu's palette configuration.
     fn color(&self, pixel: &Pixel) -> Color {
         let pal = **match pixel.meta.pal {
@@ -249,24 +311,8 @@ impl Board for Ppu {
     }
 }
 
-impl Machine for Ppu {
-    fn enabled(&self) -> bool {
-        Lcdc::Enable.get(**self.file.lcdc.borrow())
-    }
-
-    fn cycle(&mut self) {
-        self.mode = std::mem::take(&mut self.mode).exec(self);
-
-        // Cycle the DMA every machine cycle
-        let mut dma = self.file.dma.borrow_mut();
-        if dma.enabled() && self.dot % 4 == 0 {
-            dma.cycle();
-        }
-    }
-}
-
 #[rustfmt::skip]
-impl Processor<u8> for Ppu {
+impl Location<u8> for Ppu {
     type Register = Control;
 
     fn load(&self, reg: Self::Register) -> u8 {
@@ -300,6 +346,22 @@ impl Processor<u8> for Ppu {
             Control::Obp1 => **self.file.obp1.borrow_mut() = value,
             Control::Wy   => **self.file.wy.borrow_mut()   = value,
             Control::Wx   => **self.file.wx.borrow_mut()   = value,
+        }
+    }
+}
+
+impl Machine for Ppu {
+    fn enabled(&self) -> bool {
+        Lcdc::Enable.get(**self.file.lcdc.borrow())
+    }
+
+    fn cycle(&mut self) {
+        self.mode = std::mem::take(&mut self.mode).exec(self);
+
+        // Cycle the DMA every machine cycle
+        let mut dma = self.file.dma.borrow_mut();
+        if dma.enabled() && self.dot % 4 == 0 {
+            dma.cycle();
         }
     }
 }
@@ -397,10 +459,14 @@ impl Lcdc {
     }
 }
 
+/// Debug information.
 #[derive(Debug)]
 pub struct Debug {
+    /// Tile data.
     pub tdat: [Color; 0x06000],
+    /// Tile map 1.
     pub map1: [Color; 0x10000],
+    /// Tile map 2.
     pub map2: [Color; 0x10000],
 }
 
@@ -449,7 +515,7 @@ impl Debug {
 
     /// Fetches the appropriate tile address from an tile number
     #[allow(clippy::identity_op)]
-    pub fn tidx(tnum: u8, bgwin: bool) -> usize {
+    fn tidx(tnum: u8, bgwin: bool) -> usize {
         // Calculate tile index offset
         let addr = if bgwin {
             (0x1000i16 + (16 * tnum as i8 as i16)) as usize

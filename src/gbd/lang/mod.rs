@@ -2,12 +2,13 @@ use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut, Range};
 use std::str::FromStr;
 
-use gameboy::core::cpu::sm83::reg;
+use gameboy::dmg::cpu::reg;
 
-pub use self::parse::Error;
 use super::Cycle;
 
 mod parse;
+
+pub use self::parse::Error;
 
 #[derive(Clone, Debug)]
 pub struct Program(VecDeque<Command>);

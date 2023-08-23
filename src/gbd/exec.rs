@@ -3,10 +3,9 @@
 use std::cmp::Ordering;
 use std::ops::Range;
 
-use gameboy::core::cpu::sm83::{reg, State};
-use gameboy::core::cpu::Model;
+use gameboy::dmg::cpu::{reg, Processor, Stage};
 use log::debug;
-use remus::{Block, Processor};
+use remus::{Block, Location};
 
 use super::lang::Keyword;
 use super::{Cycle, Debugger, Error, GameBoy, Result};
@@ -144,8 +143,8 @@ pub fn info(gbd: &Debugger, what: Option<Keyword>) -> Result<()> {
 }
 
 pub fn list(gbd: &Debugger, emu: &GameBoy) -> Result<()> {
-    let insn = match &emu.cpu().state() {
-        State::Execute(insn) => insn.clone(),
+    let insn = match &emu.cpu().stage() {
+        Stage::Execute(insn) => insn.clone(),
         _ => emu.cpu().insn(),
     };
     tell::info!(

@@ -1,16 +1,14 @@
 //! CPU models.
 //!
 //! The following CPU models may be used within an emulator. To provide a
-//! unified interface, all models implement the [`Cpu`] trait.
+//! unified interface, all models implement the [`Processor`] trait.
 
-use remus::{Block, Machine};
+use remus::Machine;
 
 pub mod sm83;
 
-pub use self::sm83::Cpu as Sm83;
-
 /// Unified processor interface.
-pub trait Model: Block + Machine {
+pub trait Processor: Machine {
     /// The processor's instruction set.
     type Instruction;
 

@@ -11,7 +11,11 @@ use thiserror::Error;
 
 use crate::dev::ReadOnly;
 
-/// Boot ROM management [`Device`](Device).
+/// Boot ROM.
+///
+/// Implements [`Device`] to allowing mapping onto a [`Bus`]. To support
+/// boot ROM disable, the [`disable`](Rom::disable) device must be mapped
+/// separately.
 #[derive(Debug, Default)]
 pub struct Rom {
     // State
@@ -33,9 +37,9 @@ pub struct Rom {
 }
 
 impl Rom {
-    /// Gets a reference to the boot ROM.
+    /// Gets a read-only reference to the boot ROM.
     #[must_use]
-    pub fn rom(&self) -> ReadOnly<Shared<Bank>> {
+    pub fn rom(&self) -> ReadOnly<impl Device> {
         ReadOnly::from(self.bank.clone())
     }
 
@@ -157,8 +161,10 @@ impl Device for Disable {
 /// A type specifying general categories of [`Rom`] error.
 #[derive(Debug, Error)]
 pub enum Error {
+    /// Body is missing, caused by truncation when attempting to construct.
     #[error("missing body")]
     Missing,
+    /// Pass-through for [`TryFromSliceError`]s.
     #[error(transparent)]
     TryFromSlice(#[from] TryFromSliceError),
 }

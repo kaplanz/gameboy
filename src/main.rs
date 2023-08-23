@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use clap::{Parser, ValueEnum};
 use eyre::{ensure, Result, WrapErr};
 use gameboy::dmg::cart::Cartridge;
-use gameboy::dmg::{BootRom, GameBoy, SCREEN};
+use gameboy::dmg::{Boot, GameBoy, SCREEN};
 use log::{info, warn};
 use minifb::{Scale, ScaleMode, Window, WindowOptions};
 #[cfg(feature = "gbd")]
@@ -100,7 +100,7 @@ fn main() -> Result<()> {
         ..Default::default()
     };
     // Create main window
-    let win = Window::new(&title, SCREEN.width, SCREEN.height, opts).unwrap();
+    let win = Window::new(&title, SCREEN.width, SCREEN.height, opts)?;
 
     // Create debug views
     #[cfg(feature = "view")]
@@ -148,7 +148,7 @@ fn main() -> Result<()> {
     app.run()
 }
 
-fn boot(path: Option<PathBuf>) -> Result<Option<BootRom>> {
+fn boot(path: Option<PathBuf>) -> Result<Option<Boot>> {
     // Prepare the boot ROM
     let boot = path
         .map(|boot| -> Result<_> {
@@ -170,7 +170,7 @@ fn boot(path: Option<PathBuf>) -> Result<Option<BootRom>> {
         })
         .transpose()?;
     // Initialize the boot rom
-    let boot = boot.as_ref().map(BootRom::from);
+    let boot = boot.as_ref().map(Boot::from);
 
     Ok(boot)
 }
