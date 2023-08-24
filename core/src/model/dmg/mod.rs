@@ -3,6 +3,7 @@
 //! [Game Boy]: https://en.wikipedia.org/wiki/Game_Boy
 
 use std::cell::RefCell;
+use std::fmt::Display;
 use std::rc::Rc;
 
 use itertools::Itertools;
@@ -42,7 +43,7 @@ pub const SCREEN: Dimensions = Dimensions {
 #[derive(Debug, Default)]
 pub struct GameBoy {
     // Debug
-    pub doc: Doctor,
+    doc: Option<Doctor>,
     // State
     clock: usize,
     // Processors
@@ -104,16 +105,24 @@ impl GameBoy {
         self.cart = Some(cart);
     }
 
-    /// Returns the VRAM's current state from the model.
-    ///
-    /// # Panics
-    ///
-    /// Cannot panic, as VRAM always has a fixed size.
+    /// Returns debug information about the model.
     #[must_use]
-    pub fn debug(&self) -> Debug {
+    pub fn debug(&mut self) -> Debug {
         Debug {
+            doc: self.doc.as_mut().map(std::mem::take),
             ppu: self.ppu.debug(),
         }
+    }
+
+    /// (Re)sets introspection with [Gameboy Doctor][gbdoc].
+    ///
+    /// # Note
+    ///
+    /// Any uncollected logs will be lost.
+    ///
+    /// [gbdoc]: https://robertheaton.com/gameboy-doctor
+    pub fn set_doc(&mut self, enable: bool) {
+        self.doc = enable.then(Doctor::default);
     }
 
     /// Gets the `GameBoy`'s CPU.
@@ -285,9 +294,9 @@ impl Machine for GameBoy {
             }
 
             // Collect doctor entries (if enabled)
-            if self.doc.enabled() {
+            if let Some(doc) = &mut self.doc {
                 if let Some(entry) = self.cpu.doctor() {
-                    self.doc.notice(entry);
+                    doc.0.push(entry);
                 }
             }
 
@@ -315,40 +324,22 @@ impl Machine for GameBoy {
 /// Debug information.
 #[derive(Debug)]
 pub struct Debug {
+    pub doc: Option<Doctor>,
     pub ppu: ppu::Debug,
 }
 
 /// Doctor entries.
+///
+/// An introspecive view of the emulator's state matching the format specified
+/// by [Gameboy Doctor][gbdoc].
+///
+/// [gbdoc]: https://robertheaton.com/gameboy-doctor
 #[derive(Debug, Default)]
-pub struct Doctor(Option<Vec<String>>);
+pub struct Doctor(Vec<String>);
 
-impl Doctor {
-    /// Enable doctor diagnostics.
-    pub fn enable(&mut self) {
-        self.0 = Some(Vec::new());
-    }
-
-    /// Disable doctor diagnostics.
-    pub fn disable(&mut self) {
-        self.0 = None;
-    }
-
-    /// Checks if the doctor is enabled.
-    #[must_use]
-    pub fn enabled(&self) -> bool {
-        self.0.is_some()
-    }
-
-    /// Returns an introspecive view of the emulator's state, to be used by
-    /// [Gameboy Doctor](https://robertheaton.com/gameboy-doctor).
-    pub fn checkup(&mut self) -> Option<String> {
-        self.0.as_mut().map(|it| it.drain(..).join("\n"))
-    }
-
-    fn notice(&mut self, entry: String) {
-        if let Some(it) = &mut self.0 {
-            it.push(entry);
-        }
+impl Display for Doctor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.iter().join("\n").fmt(f)
     }
 }
 
