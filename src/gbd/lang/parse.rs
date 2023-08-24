@@ -1,6 +1,6 @@
 use std::num::ParseIntError;
 
-use gameboy::core::dmg::{cpu, ppu};
+use gameboy::core::dmg::{cpu, ppu, timer};
 use log::trace;
 use num::traits::WrappingAdd;
 use num::{Bounded, Integer};
@@ -127,7 +127,7 @@ impl Language {
                 let loc = Self::loc(args.next().ok_or(Error::ExpectedRule)?)?;
                 let value = args.next().ok_or(Error::ExpectedRule)?;
                 let value = match loc {
-                    Location::Byte(_) | Location::Control(_) => Value::Byte(
+                    Location::Byte(_) | Location::Ppu(_) | Location::Timer(_) => Value::Byte(
                         Self::int(value.clone()) // attempt both `u8` and `i8`
                             .or_else(|_| Self::int::<i8>(value).map(|int| int as u8))?,
                     ),
@@ -293,9 +293,9 @@ impl Language {
                     rule => unreachable!("invalid rule: {rule:?}"),
                 })
             }
-            Rule::Control => {
+            Rule::Ppu => {
                 let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
-                Location::Control(match reg.as_rule() {
+                Location::Ppu(match reg.as_rule() {
                     Rule::Lcdc => ppu::Control::Lcdc,
                     Rule::Stat => ppu::Control::Stat,
                     Rule::Scy  => ppu::Control::Scy,
@@ -308,6 +308,16 @@ impl Language {
                     Rule::Obp1 => ppu::Control::Obp1,
                     Rule::Wy   => ppu::Control::Wy,
                     Rule::Wx   => ppu::Control::Wx,
+                    rule => unreachable!("invalid rule: {rule:?}"),
+                })
+            }
+            Rule::Timer => {
+                let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
+                Location::Timer(match reg.as_rule() {
+                    Rule::Div  => timer::Control::Div,
+                    Rule::Tima => timer::Control::Tima,
+                    Rule::Tma  => timer::Control::Tma,
+                    Rule::Tac  => timer::Control::Tac,
                     rule => unreachable!("invalid rule: {rule:?}"),
                 })
             }

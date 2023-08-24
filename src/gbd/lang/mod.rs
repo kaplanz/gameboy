@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut, Range};
 use std::str::FromStr;
 
-use gameboy::dmg::{cpu, ppu};
+use gameboy::dmg::{cpu, ppu, timer};
 
 use super::Cycle;
 
@@ -103,7 +103,8 @@ pub enum Keyword {
 pub enum Location {
     Byte(cpu::reg::Byte),
     Word(cpu::reg::Word),
-    Control(ppu::Control),
+    Ppu(ppu::Control),
+    Timer(timer::Control),
 }
 
 #[derive(Clone, Debug)]

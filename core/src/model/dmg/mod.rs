@@ -31,7 +31,7 @@ pub use crate::emu::Screen as Dimensions;
 pub use crate::hw::cpu::sm83 as cpu;
 pub use crate::hw::joypad::Button;
 pub use crate::hw::ppu::Screen;
-pub use crate::hw::{cart, ppu};
+pub use crate::hw::{cart, ppu, timer};
 
 /// DMG-01 screen specification.
 pub const SCREEN: Dimensions = Dimensions {
@@ -145,6 +145,17 @@ impl GameBoy {
     /// Mutably gets the `GameBoy`'s PPU.
     pub fn ppu_mut(&mut self) -> &mut Ppu {
         &mut self.ppu
+    }
+
+    /// Gets the `GameBoy`'s timer.
+    #[must_use]
+    pub fn timer(&self) -> &Timer {
+        &self.timer
+    }
+
+    /// Mutably gets the `GameBoy`'s timer.
+    pub fn timer_mut(&mut self) -> &mut Timer {
+        &mut self.timer
     }
 
     /// Set up the `GameBoy`.

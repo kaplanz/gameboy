@@ -9,9 +9,9 @@
 pub mod cart;
 pub mod cpu;
 pub mod ppu;
+pub mod timer;
 
 pub(crate) mod apu;
 pub(crate) mod joypad;
 pub(crate) mod pic;
 pub(crate) mod serial;
-pub(crate) mod timer;

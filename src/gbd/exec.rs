@@ -184,8 +184,12 @@ pub fn load(emu: &GameBoy, loc: Location) -> Result<()> {
             let word: u16 = emu.cpu().load(reg);
             tell::info!("{reg:?}: {word:#06x}");
         }
-        Location::Control(reg) => {
+        Location::Ppu(reg) => {
             let byte: u8 = emu.ppu().load(reg);
+            tell::info!("{reg:?}: {byte:#04x}");
+        }
+        Location::Timer(reg) => {
+            let byte: u8 = emu.timer().load(reg);
             tell::info!("{reg:?}: {byte:#04x}");
         }
     };
@@ -261,13 +265,21 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
             // Perform the store
             emu.cpu_mut().store(reg, word);
         }
-        Location::Control(reg) => {
+        Location::Ppu(reg) => {
             // Extract the byte
             let Value::Byte(byte) = value else {
                 return Err(Error::ValueMismatch);
             };
             // Perform the store
             emu.ppu_mut().store(reg, byte);
+        }
+        Location::Timer(reg) => {
+            // Extract the byte
+            let Value::Byte(byte) = value else {
+                return Err(Error::ValueMismatch);
+            };
+            // Perform the store
+            emu.timer_mut().store(reg, byte);
         }
     }
     // Read the stored value

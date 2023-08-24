@@ -5,9 +5,26 @@ use std::rc::Rc;
 
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Block, Board, Machine, Shared};
+use remus::{Block, Board, Location, Machine, Shared};
 
 use super::pic::{Interrupt, Pic};
+
+/// 8-bit timer control register set.
+///
+/// For more info, see [here][regs].
+///
+/// [regs]: https://gbdev.io/pandocs/Timer_and_Divider_Registers.html
+#[derive(Clone, Copy, Debug)]
+pub enum Control {
+    /// `0xFF04`: Divider register.
+    Div,
+    /// `0xFF05`: Timer counter.
+    Tima,
+    /// `0xFF06`: Timer modulo.
+    Tma,
+    /// `0xFF07`: Timer control.
+    Tac,
+}
 
 /// Timer model.
 #[rustfmt::skip]
@@ -18,41 +35,42 @@ pub struct Timer {
     // Connections
     pic: Rc<RefCell<Pic>>,
     // Control
+    // ┌────────┬──────────┬─────┬───────┐
+    // │  Size  │   Name   │ Dev │ Alias │
+    // ├────────┼──────────┼─────┼───────┤
+    // │    4 B │ Control  │ Reg │       │
+    // └────────┴──────────┴─────┴───────┘
     file: File,
 }
 
 impl Timer {
+    /// Sets the timer's programmable interrupt controller.
+    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
+        self.pic = pic;
+    }
+
     /// Gets a reference to the timer's divider register.
-    #[allow(unused)]
     #[must_use]
     pub fn div(&self) -> Shared<Register<u8>> {
         self.file.div.clone()
     }
 
     /// Gets a reference to the timer's counter register.
-    #[allow(unused)]
     #[must_use]
     pub fn tima(&self) -> Shared<Register<u8>> {
         self.file.tima.clone()
     }
 
     /// Gets a reference to the timer's modulo register.
-    #[allow(unused)]
     #[must_use]
     pub fn tma(&self) -> Shared<Register<u8>> {
         self.file.tma.clone()
     }
 
     /// Gets a reference to the timer's control register.
-    #[allow(unused)]
     #[must_use]
     pub fn tac(&self) -> Shared<Register<u8>> {
         self.file.tac.clone()
-    }
-
-    /// Set the timer's pic.
-    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
-        self.pic = pic;
     }
 }
 
@@ -65,6 +83,29 @@ impl Block for Timer {
 impl Board for Timer {
     fn connect(&self, bus: &mut Bus) {
         self.file.connect(bus);
+    }
+}
+
+#[rustfmt::skip]
+impl Location<u8> for Timer {
+    type Register = Control;
+
+    fn load(&self, reg: Self::Register) -> u8 {
+        match reg {
+            Control::Div  => **self.file.div.borrow(),
+            Control::Tima => **self.file.tima.borrow(),
+            Control::Tma  => **self.file.tma.borrow(),
+            Control::Tac  => **self.file.tac.borrow(),
+        }
+    }
+
+    fn store(&mut self, reg: Self::Register, value: u8) {
+        match reg {
+            Control::Div  => **self.file.div.borrow_mut()  = value,
+            Control::Tima => **self.file.tima.borrow_mut() = value,
+            Control::Tma  => **self.file.tma.borrow_mut()  = value,
+            Control::Tac  => **self.file.tac.borrow_mut()  = value,
+        }
     }
 }
 
@@ -117,7 +158,7 @@ impl Machine for Timer {
 /// Control registers.
 #[rustfmt::skip]
 #[derive(Debug, Default)]
-pub struct File {
+struct File {
     // ┌──────┬──────────┬─────┬───────┐
     // │ Size │   Name   │ Dev │ Alias │
     // ├──────┼──────────┼─────┼───────┤
