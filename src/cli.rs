@@ -58,8 +58,8 @@ pub struct Args {
     /// Defines the 2-bit color palette for the DMG-01 Game Boy model. The
     /// palette must be specified as a list of hex color values from lightest to
     /// darkest.
-    #[arg(default_value_t)]
     #[arg(long = "palette")]
+    #[arg(default_value_t)]
     pub pal: Palette,
 
     /// Run at full-speed.
@@ -67,7 +67,8 @@ pub struct Args {
     /// Causes the emulator to run at the maximum possible speed the host
     /// machine supports.
     #[arg(short, long)]
-    #[arg(value_enum, default_value_t = Speed::Full)]
+    #[arg(default_value_t = Speed::Full)]
+    #[arg(value_enum)]
     pub speed: Speed,
 
     #[cfg(feature = "doc")]

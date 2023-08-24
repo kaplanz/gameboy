@@ -23,29 +23,29 @@ pub struct Timer {
 
 impl Timer {
     /// Gets a reference to the timer's divider register.
-    #[must_use]
     #[allow(unused)]
+    #[must_use]
     pub fn div(&self) -> Shared<Register<u8>> {
         self.file.div.clone()
     }
 
     /// Gets a reference to the timer's counter register.
-    #[must_use]
     #[allow(unused)]
+    #[must_use]
     pub fn tima(&self) -> Shared<Register<u8>> {
         self.file.tima.clone()
     }
 
     /// Gets a reference to the timer's modulo register.
-    #[must_use]
     #[allow(unused)]
+    #[must_use]
     pub fn tma(&self) -> Shared<Register<u8>> {
         self.file.tma.clone()
     }
 
     /// Gets a reference to the timer's control register.
-    #[must_use]
     #[allow(unused)]
+    #[must_use]
     pub fn tac(&self) -> Shared<Register<u8>> {
         self.file.tac.clone()
     }
