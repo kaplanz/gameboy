@@ -80,9 +80,7 @@ impl App {
 
         // Enable doctor when used
         #[cfg(feature = "doc")]
-        if doc.is_some() {
-            emu.doc.enable();
-        }
+        emu.set_doc(doc.is_some());
 
         // Prepare debugger when used
         #[cfg(feature = "gbd")]
@@ -235,10 +233,11 @@ impl App {
 
             // Log doctor entries
             #[cfg(feature = "doc")]
-            if let Some(doc) = &mut doc {
-                if let Some(entries) = emu.doc.checkup() {
-                    if !entries.is_empty() {
-                        writeln!(doc.log, "{entries}").context("failed to write doctor log")?;
+            if let Some(dst) = &mut doc {
+                if let Some(src) = emu.debug().doc {
+                    let note = format!("{src}");
+                    if !note.is_empty() {
+                        writeln!(dst.log, "{note}").context("failed to write doctor log")?;
                     }
                 }
             }
