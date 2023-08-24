@@ -136,6 +136,17 @@ impl GameBoy {
         &mut self.cpu
     }
 
+    /// Gets the `GameBoy`'s PPU.
+    #[must_use]
+    pub fn ppu(&self) -> &Ppu {
+        &self.ppu
+    }
+
+    /// Mutably gets the `GameBoy`'s PPU.
+    pub fn ppu_mut(&mut self) -> &mut Ppu {
+        &mut self.ppu
+    }
+
     /// Set up the `GameBoy`.
     fn setup(mut self) -> Self {
         // Connect bus

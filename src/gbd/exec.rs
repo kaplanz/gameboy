@@ -3,11 +3,11 @@
 use std::cmp::Ordering;
 use std::ops::Range;
 
-use gameboy::dmg::cpu::{reg, Processor, Stage};
+use gameboy::dmg::cpu::{Processor, Stage};
 use log::debug;
-use remus::{Block, Location};
+use remus::{Block, Location as _};
 
-use super::lang::Keyword;
+use super::lang::{Keyword, Location, Value};
 use super::{Cycle, Debugger, Error, GameBoy, Result};
 use crate::gbd::Breakpoint;
 
@@ -172,10 +172,23 @@ pub fn log(gbd: &mut Debugger, filter: Option<String>) -> Result<()> {
     Ok(())
 }
 
-pub fn load(emu: &GameBoy, reg: reg::Word) -> Result<()> {
+#[allow(clippy::needless_pass_by_value)]
+pub fn load(emu: &GameBoy, loc: Location) -> Result<()> {
     // Perform the load
-    let word: u16 = emu.cpu().load(reg);
-    tell::info!("{reg:?}: {word:#04x}");
+    match loc {
+        Location::Byte(reg) => {
+            let byte: u8 = emu.cpu().load(reg);
+            tell::info!("{reg:?}: {byte:#04x}");
+        }
+        Location::Word(reg) => {
+            let word: u16 = emu.cpu().load(reg);
+            tell::info!("{reg:?}: {word:#06x}");
+        }
+        Location::Control(reg) => {
+            let byte: u8 = emu.ppu().load(reg);
+            tell::info!("{reg:?}: {byte:#04x}");
+        }
+    };
 
     Ok(())
 }
@@ -229,11 +242,36 @@ pub fn step(gbd: &mut Debugger, many: Option<usize>) -> Result<()> {
     Ok(())
 }
 
-pub fn store(emu: &mut GameBoy, reg: reg::Word, word: u16) -> Result<()> {
-    // Perform the store
-    emu.cpu_mut().store(reg, word);
+#[allow(clippy::needless_pass_by_value)]
+pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
+    match loc {
+        Location::Byte(reg) => {
+            // Extract the byte
+            let Value::Byte(byte) = value else {
+                return Err(Error::ValueMismatch);
+            };
+            // Perform the store
+            emu.cpu_mut().store(reg, byte);
+        }
+        Location::Word(reg) => {
+            // Extract the byte
+            let Value::Word(word) = value else {
+                return Err(Error::ValueMismatch);
+            };
+            // Perform the store
+            emu.cpu_mut().store(reg, word);
+        }
+        Location::Control(reg) => {
+            // Extract the byte
+            let Value::Byte(byte) = value else {
+                return Err(Error::ValueMismatch);
+            };
+            // Perform the store
+            emu.ppu_mut().store(reg, byte);
+        }
+    }
     // Read the stored value
-    load(emu, reg)?;
+    load(emu, loc)?;
 
     Ok(())
 }

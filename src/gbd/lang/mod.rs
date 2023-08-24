@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut, Range};
 use std::str::FromStr;
 
-use gameboy::dmg::cpu::reg;
+use gameboy::dmg::{cpu, ppu};
 
 use super::Cycle;
 
@@ -64,14 +64,14 @@ pub enum Command {
     Info(Option<Keyword>),
     Jump(u16),
     List,
-    Load(reg::Word),
+    Load(Location),
     Log(Option<String>),
     Quit,
     Read(u16),
     ReadRange(Range<u16>),
     Reset,
     Step(Option<usize>),
-    Store(reg::Word, u16),
+    Store(Location, Value),
     Write(u16, u8),
     WriteRange(Range<u16>, u8),
 }
@@ -97,4 +97,17 @@ pub enum Keyword {
     Step,
     Store,
     Write,
+}
+
+#[derive(Clone, Debug)]
+pub enum Location {
+    Byte(cpu::reg::Byte),
+    Word(cpu::reg::Word),
+    Control(ppu::Control),
+}
+
+#[derive(Clone, Debug)]
+pub enum Value {
+    Byte(u8),
+    Word(u16),
 }
