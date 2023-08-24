@@ -69,8 +69,8 @@ impl Language {
                 let pair = args.next().ok_or(Error::ExpectedRule)?;
                 let cycle = match pair.as_rule() {
                     Rule::Dot => Cycle::Dot,
-                    Rule::Insn => Cycle::Insn,
                     Rule::Mach => Cycle::Mach,
+                    Rule::Insn => Cycle::Insn,
                     rule => unreachable!("invalid rule: {rule:?}"),
                 };
                 Command::Freq(cycle)
