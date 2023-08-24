@@ -1,5 +1,6 @@
 use std::num::ParseIntError;
 
+use gameboy::core::dmg::{cpu, ppu};
 use log::trace;
 use num::traits::WrappingAdd;
 use num::{Bounded, Integer};
@@ -8,7 +9,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error;
 
-use super::{reg, Command, Cycle, Keyword, Program};
+use super::{Command, Cycle, Keyword, Location, Program, Value};
 
 pub fn prog(src: &str) -> Result<Program, Error> {
     Language::prog(src)
@@ -93,8 +94,8 @@ impl Language {
             }
             Rule::List => Command::List,
             Rule::Load => {
-                let reg = Self::reg(args.next().ok_or(Error::ExpectedRule)?)?;
-                Command::Load(reg)
+                let loc = Self::loc(args.next().ok_or(Error::ExpectedRule)?)?;
+                Command::Load(loc)
             }
             Rule::Log => {
                 let filter = args.next().map(|pair| pair.as_span().as_str().to_string());
@@ -123,9 +124,19 @@ impl Language {
                 Command::Step(many)
             }
             Rule::Store => {
-                let reg = Self::reg(args.next().ok_or(Error::ExpectedRule)?)?;
-                let word = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
-                Command::Store(reg, word)
+                let loc = Self::loc(args.next().ok_or(Error::ExpectedRule)?)?;
+                let value = args.next().ok_or(Error::ExpectedRule)?;
+                let value = match loc {
+                    Location::Byte(_) | Location::Control(_) => Value::Byte(
+                        Self::int(value.clone()) // attempt both `u8` and `i8`
+                            .or_else(|_| Self::int::<i8>(value).map(|int| int as u8))?,
+                    ),
+                    Location::Word(_) => Value::Word(
+                        Self::int(value.clone()) // attempt both `u16` and `i16`
+                            .or_else(|_| Self::int::<i16>(value).map(|int| int as u16))?,
+                    ),
+                };
+                Command::Store(loc, value)
             }
             Rule::Write => {
                 let what = args.next().ok_or(Error::ExpectedRule)?;
@@ -250,17 +261,56 @@ impl Language {
         })
     }
 
+    #[rustfmt::skip]
     #[allow(clippy::needless_pass_by_value)]
     #[allow(clippy::unnecessary_wraps)]
-    fn reg(pair: Pair<Rule>) -> Result<reg::Word, Error> {
+    fn loc(pair: Pair<Rule>) -> Result<Location, Error> {
         // Extract the register rule
         Ok(match pair.as_rule() {
-            Rule::AF => reg::Word::AF,
-            Rule::BC => reg::Word::BC,
-            Rule::DE => reg::Word::DE,
-            Rule::HL => reg::Word::HL,
-            Rule::SP => reg::Word::SP,
-            Rule::PC => reg::Word::PC,
+            Rule::Byte => {
+                let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
+                Location::Byte(match reg.as_rule() {
+                    Rule::A => cpu::reg::Byte::A,
+                    Rule::F => cpu::reg::Byte::F,
+                    Rule::B => cpu::reg::Byte::B,
+                    Rule::C => cpu::reg::Byte::C,
+                    Rule::D => cpu::reg::Byte::D,
+                    Rule::E => cpu::reg::Byte::E,
+                    Rule::H => cpu::reg::Byte::H,
+                    Rule::L => cpu::reg::Byte::L,
+                    rule => unreachable!("invalid rule: {rule:?}"),
+                })
+            }
+            Rule::Word => {
+                let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
+                Location::Word(match reg.as_rule() {
+                    Rule::AF   => cpu::reg::Word::AF,
+                    Rule::BC   => cpu::reg::Word::BC,
+                    Rule::DE   => cpu::reg::Word::DE,
+                    Rule::HL   => cpu::reg::Word::HL,
+                    Rule::SP   => cpu::reg::Word::SP,
+                    Rule::PC   => cpu::reg::Word::PC,
+                    rule => unreachable!("invalid rule: {rule:?}"),
+                })
+            }
+            Rule::Control => {
+                let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
+                Location::Control(match reg.as_rule() {
+                    Rule::Lcdc => ppu::Control::Lcdc,
+                    Rule::Stat => ppu::Control::Stat,
+                    Rule::Scy  => ppu::Control::Scy,
+                    Rule::Scx  => ppu::Control::Scx,
+                    Rule::Ly   => ppu::Control::Ly,
+                    Rule::Lyc  => ppu::Control::Lyc,
+                    Rule::Dma  => ppu::Control::Dma,
+                    Rule::Bgp  => ppu::Control::Bgp,
+                    Rule::Obp0 => ppu::Control::Obp0,
+                    Rule::Obp1 => ppu::Control::Obp1,
+                    Rule::Wy   => ppu::Control::Wy,
+                    Rule::Wx   => ppu::Control::Wx,
+                    rule => unreachable!("invalid rule: {rule:?}"),
+                })
+            }
             rule => unreachable!("invalid rule: {rule:?}"),
         })
     }

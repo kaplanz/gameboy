@@ -196,14 +196,14 @@ impl Debugger {
             Info(what)              => exec::info(self, what),
             Jump(addr)              => exec::jump(self, emu, addr),
             List                    => exec::list(self, emu),
-            Load(reg)               => exec::load(emu, reg),
+            Load(loc)               => exec::load(emu, loc),
             Log(filter)             => exec::log(self, filter),
             Quit                    => exec::quit(),
             Read(addr)              => exec::read(emu, addr),
             ReadRange(range)        => exec::read_range(emu, range),
             Reset                   => exec::reset(emu),
             Step(many)              => exec::step(self, many),
-            Store(reg, word)        => exec::store(emu, reg, word),
+            Store(loc, value)       => exec::store(emu, loc, value),
             Write(addr, byte)       => exec::write(emu, addr, byte),
             WriteRange(range, byte) => exec::write_range(emu, range, byte),
         }
@@ -276,6 +276,8 @@ pub enum Error {
     NoInput,
     #[error(transparent)]
     Language(#[from] lang::Error),
+    #[error("value mismatch")]
+    ValueMismatch,
     #[error("missing reload handle")]
     MissingReloadHandle,
     #[error("breakpoint not found")]
