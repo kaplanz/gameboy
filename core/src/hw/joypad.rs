@@ -10,8 +10,8 @@ use remus::{reg, Address, Block, Board, Device, Shared};
 use super::pic::{Interrupt, Pic};
 
 /// Joypad buttons.
-#[derive(Copy, Clone, Debug)]
 #[rustfmt::skip]
+#[derive(Copy, Clone, Debug)]
 pub enum Button {
     A      = 0b0010_0001,
     B      = 0b0010_0010,
@@ -24,8 +24,8 @@ pub enum Button {
 }
 
 /// Joypad model.
-#[derive(Debug, Default)]
 #[rustfmt::skip]
+#[derive(Debug, Default)]
 pub struct Joypad {
     // Connections
     pic: Rc<RefCell<Pic>>,
