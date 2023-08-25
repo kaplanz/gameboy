@@ -103,7 +103,7 @@ impl Board for Joypad {
 #[derive(Debug)]
 pub struct Control(reg::Register<u8>);
 
-impl Address for Control {
+impl Address<u8> for Control {
     fn read(&self, index: usize) -> u8 {
         self.0.read(index)
     }

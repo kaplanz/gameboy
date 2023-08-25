@@ -94,7 +94,7 @@ struct Rom {
     ram: Shared<Bank>,
 }
 
-impl Address for Rom {
+impl Address<u8> for Rom {
     fn read(&self, index: usize) -> u8 {
         self.bus.read(index)
     }

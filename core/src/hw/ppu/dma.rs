@@ -25,7 +25,7 @@ impl Dma {
     }
 }
 
-impl Address for Dma {
+impl Address<u8> for Dma {
     fn read(&self, _: usize) -> u8 {
         self.page
     }

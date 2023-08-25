@@ -10,7 +10,7 @@ use remus::{Address, Block, Device};
 #[derive(Debug)]
 pub struct ReadOnly<D: Device>(D);
 
-impl<D: Device> Address for ReadOnly<D> {
+impl<D: Device> Address<u8> for ReadOnly<D> {
     fn read(&self, index: usize) -> u8 {
         self.0.read(index)
     }
