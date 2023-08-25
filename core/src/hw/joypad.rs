@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use log::{debug, trace};
 use remus::bus::Bus;
-use remus::{reg, Address, Block, Board, Device, Shared};
+use remus::{reg, Address, Block, Board, Cell, Device, Shared};
 
 use super::pic::{Interrupt, Pic};
 
@@ -53,7 +53,7 @@ impl Joypad {
     /// Handle pressed button inputs.
     pub fn input(&mut self, keys: &[Button]) {
         // Retrieve controller state (inverted)
-        let prev = !*self.con.borrow().0;
+        let prev = !self.con.load();
         let is_empty = keys.is_empty();
 
         // Calculate updated state
@@ -75,7 +75,7 @@ impl Joypad {
         }
 
         // Update controller state (inverted)
-        *self.con.borrow_mut().0 = !next;
+        self.con.borrow_mut().0.store(!next);
     }
 }
 
@@ -104,21 +104,31 @@ impl Board for Joypad {
 pub struct Control(reg::Register<u8>);
 
 impl Address<u8> for Control {
-    fn read(&self, index: usize) -> u8 {
-        self.0.read(index)
+    fn read(&self, _: usize) -> u8 {
+        self.load()
     }
 
-    fn write(&mut self, index: usize, mut value: u8) {
-        // NOTE: Only bits masked bits are writable
-        const MASK: u8 = 0b0011_0000;
-        value = (value & MASK) | (self.read(index) & !MASK);
-        self.0.write(index, value);
+    fn write(&mut self, _: usize, value: u8) {
+        self.store(value);
     }
 }
 
 impl Block for Control {
     fn reset(&mut self) {
         std::mem::take(self);
+    }
+}
+
+impl Cell<u8> for Control {
+    fn load(&self) -> u8 {
+        self.0.load()
+    }
+
+    fn store(&mut self, mut value: u8) {
+        // NOTE: Only bits masked bits are writable
+        const MASK: u8 = 0b0011_0000;
+        value = (value & MASK) | (self.load() & !MASK);
+        self.0.store(value);
     }
 }
 

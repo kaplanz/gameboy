@@ -1,3 +1,5 @@
+use remus::Cell;
+
 use super::fetch::{Fetch, Location, Stage};
 use super::fifo::Fifo;
 use super::pixel::{Color, Pixel};
@@ -68,7 +70,7 @@ impl Pipeline {
         // A shift only occurs if there are pixels in the background FIFO
         let pixel = if let Some(mut bgwin) = self.bgwin.fifo.pop() {
             // Overwrite the background/window pixel data if disabled
-            let lcdc = **ppu.file.lcdc.borrow();
+            let lcdc = ppu.file.lcdc.load();
             if !Lcdc::BgWinEnable.get(lcdc) {
                 bgwin.col = Color::C0;
             }
@@ -103,10 +105,10 @@ impl Pipeline {
 
     fn is_at_win(&self, ppu: &Ppu) -> bool {
         // Extract scanline info
-        let lcdc = **ppu.file.lcdc.borrow();
-        let ly = **ppu.file.ly.borrow();
-        let wy = **ppu.file.wy.borrow();
-        let wx = **ppu.file.wx.borrow();
+        let lcdc = ppu.file.lcdc.load();
+        let ly = ppu.file.ly.load();
+        let wy = ppu.file.wy.load();
+        let wx = ppu.file.wx.load();
 
         // The window is reached if:
         // - The window is enabled

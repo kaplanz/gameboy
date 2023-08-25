@@ -5,7 +5,7 @@ use std::fmt::Display;
 use enuf::Enuf;
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Block, Board, Shared};
+use remus::{Block, Board, Cell, Shared};
 use thiserror::Error;
 
 /// PIC model.
@@ -31,17 +31,19 @@ impl Pic {
     }
 
     pub fn int(&self) -> Option<Interrupt> {
-        let active = **self.active.borrow();
-        let enable = **self.enable.borrow();
+        let active = self.active.load();
+        let enable = self.enable.load();
         (active & enable & 0x1f).try_into().ok()
     }
 
     pub fn req(&mut self, int: Interrupt) {
-        **self.active.borrow_mut() |= 0xe0 | int as u8;
+        let active = self.active.load() | 0xe0 | int as u8;
+        self.active.store(active);
     }
 
     pub fn ack(&mut self, int: Interrupt) {
-        **self.active.borrow_mut() &= !(int as u8);
+        let active = self.active.load() & !(int as u8);
+        self.active.store(active);
     }
 }
 

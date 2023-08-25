@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use remus::Cell;
+
 use super::blk::Pipeline;
 use super::scan::Scan;
 use super::sprite::Sprite;
@@ -14,7 +16,7 @@ pub struct Draw {
 impl Draw {
     pub fn setup(&mut self, ppu: &mut Ppu) {
         // Set up the pipeline
-        let scx = **ppu.file.scx.borrow();
+        let scx = ppu.file.scx.load();
         self.pipe.set_discard(scx);
     }
 
@@ -26,7 +28,7 @@ impl Draw {
         let mut xpos = self.pipe.xpos() as usize;
         if let Some(pixel) = self.pipe.shift(ppu) {
             // Calculate pixel index on screen
-            let ypos = **ppu.file.ly.borrow() as usize;
+            let ypos = ppu.file.ly.load() as usize;
             let idx = (ypos * SCREEN.width) + xpos;
 
             // Determine this pixel's color (according to its palette)

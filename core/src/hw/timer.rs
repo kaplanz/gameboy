@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Block, Board, Location, Machine, Shared};
+use remus::{Block, Board, Cell, Location, Machine, Shared};
 
 use super::pic::{Interrupt, Pic};
 
@@ -92,19 +92,19 @@ impl Location<u8> for Timer {
 
     fn load(&self, reg: Self::Register) -> u8 {
         match reg {
-            Control::Div  => **self.file.div.borrow(),
-            Control::Tima => **self.file.tima.borrow(),
-            Control::Tma  => **self.file.tma.borrow(),
-            Control::Tac  => **self.file.tac.borrow(),
+            Control::Div  => self.file.div.load(),
+            Control::Tima => self.file.tima.load(),
+            Control::Tma  => self.file.tma.load(),
+            Control::Tac  => self.file.tac.load(),
         }
     }
 
     fn store(&mut self, reg: Self::Register, value: u8) {
         match reg {
-            Control::Div  => **self.file.div.borrow_mut()  = value,
-            Control::Tima => **self.file.tima.borrow_mut() = value,
-            Control::Tma  => **self.file.tma.borrow_mut()  = value,
-            Control::Tac  => **self.file.tac.borrow_mut()  = value,
+            Control::Div  => self.file.div.store(value),
+            Control::Tima => self.file.tima.store(value),
+            Control::Tma  => self.file.tma.store(value),
+            Control::Tac  => self.file.tac.store(value),
         }
     }
 }
@@ -115,15 +115,15 @@ impl Machine for Timer {
     }
 
     fn cycle(&mut self) {
-        // Borrow control registers
-        let div = &mut **self.file.div.borrow_mut();
-        let tima = &mut **self.file.tima.borrow_mut();
-        let tma = &**self.file.tma.borrow();
-        let tac = &**self.file.tac.borrow();
+        // Extract control registers
+        let div = self.file.div.load();
+        let tima = self.file.tima.load();
+        let tma = self.file.tma.load();
+        let tac = self.file.tac.load();
 
         // Increment DIV every 256 cycles
         if self.clock % 0x100 == 0 {
-            *div = div.wrapping_add(1);
+            self.file.div.store(div.wrapping_add(1));
         }
 
         // Increment TIMA if enabled
@@ -139,14 +139,15 @@ impl Machine for Timer {
             // Check if this is a tic cycle
             if self.clock % div == 0 {
                 // Increment TIMA
-                *tima = if let Some(tima) = tima.checked_add(1) {
+                let tima = if let Some(tima) = tima.checked_add(1) {
                     tima
                 } else {
                     // Schedule Timer interrupt
                     self.pic.borrow_mut().req(Interrupt::Timer);
                     // Restart from TMA
-                    *tma
+                    tma
                 };
+                self.file.tima.store(tima);
             };
         }
 
@@ -175,10 +176,10 @@ struct File {
 
 impl Block for File {
     fn reset(&mut self) {
-        self.div.borrow_mut().reset();
-        self.tima.borrow_mut().reset();
-        self.tma.borrow_mut().reset();
-        self.tac.borrow_mut().reset();
+        self.div.reset();
+        self.tima.reset();
+        self.tma.reset();
+        self.tac.reset();
     }
 }
 

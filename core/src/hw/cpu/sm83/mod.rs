@@ -10,7 +10,7 @@ use enuf::Enuf;
 use log::{debug, trace};
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Address, Block, Board, Location, Machine, Shared};
+use remus::{Address, Block, Board, Cell, Location, Machine, Shared};
 
 use crate::hw::pic::Pic;
 
@@ -94,60 +94,84 @@ impl Cpu {
 
     /// Fetch the next byte after PC.
     fn fetchbyte(&mut self) -> u8 {
-        let byte = self.read(*self.file.pc);
-        let pc = &mut *self.file.pc;
-        *pc = pc.wrapping_add(1);
+        // Load PC
+        let mut pc = self.file.pc.load();
+        // Read at PC
+        let byte = self.read(pc);
+        // Increment PC
+        pc = pc.wrapping_add(1);
+        self.file.pc.store(pc);
+        // Return fetched byte
         byte
     }
 
     /// Fetch the next word after PC.
     fn fetchword(&mut self) -> u16 {
         let mut word = [0; 2];
+        // Fetch lower byte of word
         word[0] = self.fetchbyte();
+        // Fetch upper byte of word
         word[1] = self.fetchbyte();
+        // Combine bytes into word
         u16::from_le_bytes(word)
     }
 
     /// Read the byte at HL.
     fn readbyte(&mut self) -> u8 {
+        // Load value of HL
         let hl = self.file.hl.load(&self.file);
+        // Read at HL
         self.read(hl)
     }
 
     /// Write to the byte at HL
     fn writebyte(&mut self, byte: u8) {
+        // Load value of HL
         let hl = self.file.hl.load(&self.file);
+        // Write to HL
         self.write(hl, byte);
     }
 
     /// Pop the byte at SP.
     fn popbyte(&mut self) -> u8 {
-        let byte = self.read(*self.file.sp);
-        let sp = &mut *self.file.sp;
-        *sp = sp.wrapping_add(1);
+        // Load SP
+        let mut sp = self.file.sp.load();
+        // Read at SP
+        let byte = self.read(sp);
+        // Increment SP
+        sp = sp.wrapping_add(1);
+        self.file.sp.store(sp);
+        // Return popped byte
         byte
     }
 
     /// Pop the word at SP.
     fn popword(&mut self) -> u16 {
         let mut word = [0; 2];
+        // Pop lower byte of word
         word[0] = self.popbyte();
+        // Pop lower byte of word
         word[1] = self.popbyte();
+        // Combine bytes into word
         u16::from_le_bytes(word)
     }
 
     /// Push to the byte at SP.
     fn pushbyte(&mut self, byte: u8) {
-        let sp = &mut *self.file.sp;
-        *sp = sp.wrapping_sub(1);
-        let sp = *sp;
+        // Increment SP
+        let mut sp = self.file.sp.load();
+        sp = sp.wrapping_sub(1);
+        self.file.sp.store(sp);
+        // Push to SP
         self.write(sp, byte);
     }
 
     /// Push to the word at SP.
     fn pushword(&mut self, word: u16) {
         let word = word.to_le_bytes();
+        // Push upper byte of word
         self.pushbyte(word[1]);
+        // Push lower byte of word
         self.pushbyte(word[0]);
     }
 
@@ -159,18 +183,18 @@ impl Cpu {
             None
         } else {
             let mut s = String::new();
-            let _ = write!(&mut s, "A:{:02X} ", *self.file.a);
-            let _ = write!(&mut s, "F:{:02X} ", *self.file.f);
-            let _ = write!(&mut s, "B:{:02X} ", *self.file.b);
-            let _ = write!(&mut s, "C:{:02X} ", *self.file.c);
-            let _ = write!(&mut s, "D:{:02X} ", *self.file.d);
-            let _ = write!(&mut s, "E:{:02X} ", *self.file.e);
-            let _ = write!(&mut s, "H:{:02X} ", *self.file.h);
-            let _ = write!(&mut s, "L:{:02X} ", *self.file.l);
-            let _ = write!(&mut s, "SP:{:04X} ", *self.file.sp);
-            let _ = write!(&mut s, "PC:{:04X} ", *self.file.pc);
+            let _ = write!(&mut s, "A:{:02X} ", self.file.a.load());
+            let _ = write!(&mut s, "F:{:02X} ", self.file.f.load());
+            let _ = write!(&mut s, "B:{:02X} ", self.file.b.load());
+            let _ = write!(&mut s, "C:{:02X} ", self.file.c.load());
+            let _ = write!(&mut s, "D:{:02X} ", self.file.d.load());
+            let _ = write!(&mut s, "E:{:02X} ", self.file.e.load());
+            let _ = write!(&mut s, "H:{:02X} ", self.file.h.load());
+            let _ = write!(&mut s, "L:{:02X} ", self.file.l.load());
+            let _ = write!(&mut s, "SP:{:04X} ", self.file.sp.load());
+            let _ = write!(&mut s, "PC:{:04X} ", self.file.pc.load());
             let pcmem: Vec<_> = (0..4)
-                .map(|i| *self.file.pc + i)
+                .map(|i| self.file.pc.load() + i)
                 .map(|addr| self.read(addr))
                 .collect();
             let _ = write!(
@@ -205,27 +229,27 @@ impl Location<u8> for Cpu {
 
     fn load(&self, reg: Self::Register) -> u8 {
         match reg {
-            reg::Byte::A => *self.file.a,
-            reg::Byte::F => *self.file.f,
-            reg::Byte::B => *self.file.b,
-            reg::Byte::C => *self.file.c,
-            reg::Byte::D => *self.file.d,
-            reg::Byte::E => *self.file.e,
-            reg::Byte::H => *self.file.h,
-            reg::Byte::L => *self.file.l,
+            reg::Byte::A => self.file.a.load(),
+            reg::Byte::F => self.file.f.load(),
+            reg::Byte::B => self.file.b.load(),
+            reg::Byte::C => self.file.c.load(),
+            reg::Byte::D => self.file.d.load(),
+            reg::Byte::E => self.file.e.load(),
+            reg::Byte::H => self.file.h.load(),
+            reg::Byte::L => self.file.l.load(),
         }
     }
 
     fn store(&mut self, reg: Self::Register, value: u8) {
         match reg {
-            reg::Byte::A => *self.file.a = value,
-            reg::Byte::F => *self.file.f = value,
-            reg::Byte::B => *self.file.b = value,
-            reg::Byte::C => *self.file.c = value,
-            reg::Byte::D => *self.file.d = value,
-            reg::Byte::E => *self.file.e = value,
-            reg::Byte::H => *self.file.h = value,
-            reg::Byte::L => *self.file.l = value,
+            reg::Byte::A => self.file.a.store(value),
+            reg::Byte::F => self.file.f.store(value),
+            reg::Byte::B => self.file.b.store(value),
+            reg::Byte::C => self.file.c.store(value),
+            reg::Byte::D => self.file.d.store(value),
+            reg::Byte::E => self.file.e.store(value),
+            reg::Byte::H => self.file.h.store(value),
+            reg::Byte::L => self.file.l.store(value),
         }
     }
 }
@@ -234,34 +258,32 @@ impl Location<u16> for Cpu {
     type Register = reg::Word;
 
     fn load(&self, reg: Self::Register) -> u16 {
-        let af = self.file.af;
-        let bc = self.file.bc;
-        let de = self.file.de;
-        let hl = self.file.hl;
-        let regs = &self.file;
+        let file = &self.file;
         match reg {
-            reg::Word::AF => af.load(regs),
-            reg::Word::BC => bc.load(regs),
-            reg::Word::DE => de.load(regs),
-            reg::Word::HL => hl.load(regs),
-            reg::Word::SP => *self.file.sp,
-            reg::Word::PC => *self.file.pc,
+            reg::Word::AF => file.af.load(file),
+            reg::Word::BC => file.bc.load(file),
+            reg::Word::DE => file.de.load(file),
+            reg::Word::HL => file.hl.load(file),
+            reg::Word::SP => file.sp.load(),
+            reg::Word::PC => file.pc.load(),
         }
     }
 
     fn store(&mut self, reg: Self::Register, value: u16) {
-        let af = self.file.af;
-        let bc = self.file.bc;
-        let de = self.file.de;
-        let hl = self.file.hl;
-        let regs = &mut self.file;
+        let file = &mut self.file;
+        let af = file.af;
+        let bc = file.bc;
+        let de = file.de;
+        let hl = file.hl;
+        let sp = &mut file.sp;
+        let pc = &mut file.pc;
         match reg {
-            reg::Word::AF => af.store(regs, value),
-            reg::Word::BC => bc.store(regs, value),
-            reg::Word::DE => de.store(regs, value),
-            reg::Word::HL => hl.store(regs, value),
-            reg::Word::SP => *self.file.sp = value,
-            reg::Word::PC => *self.file.pc = value,
+            reg::Word::AF => af.store(file, value),
+            reg::Word::BC => bc.store(file, value),
+            reg::Word::DE => de.store(file, value),
+            reg::Word::HL => hl.store(file, value),
+            reg::Word::SP => sp.store(value),
+            reg::Word::PC => pc.store(value),
         }
     }
 }
@@ -283,12 +305,16 @@ impl Processor for Cpu {
         if let Stage::Execute(insn) = &self.stage {
             insn.clone()
         } else {
-            Instruction::new(self.read(*self.file.pc))
+            // Fetch opcode at PC
+            let pc = self.file.pc.load();
+            let opcode = self.read(pc);
+            // Construct instruction
+            Instruction::new(opcode)
         }
     }
 
-    fn goto(&mut self, pc: u16) {
-        *self.file.pc = pc;
+    fn goto(&mut self, addr: u16) {
+        self.file.pc.store(addr);
     }
 
     fn exec(&mut self, opcode: u8) {

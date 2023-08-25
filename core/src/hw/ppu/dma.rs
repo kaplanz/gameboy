@@ -1,6 +1,6 @@
 use log::{debug, trace};
 use remus::bus::Bus;
-use remus::{Address, Block, Device, Machine, Shared};
+use remus::{Address, Block, Cell, Device, Machine, Shared};
 
 use super::{Oam, SCREEN};
 
@@ -27,19 +27,29 @@ impl Dma {
 
 impl Address<u8> for Dma {
     fn read(&self, _: usize) -> u8 {
-        self.page
+        self.load()
     }
 
     fn write(&mut self, _: usize, value: u8) {
-        debug!("Starting DMA @ {value:#04x}00");
-        self.page = value;
-        self.idx = Some(0);
+        self.store(value);
     }
 }
 
 impl Block for Dma {
     fn reset(&mut self) {
         std::mem::take(self);
+    }
+}
+
+impl Cell<u8> for Dma {
+    fn load(&self) -> u8 {
+        self.page
+    }
+
+    fn store(&mut self, value: u8) {
+        debug!("Starting DMA @ {value:#04x}00");
+        self.page = value;
+        self.idx = Some(0);
     }
 }
 

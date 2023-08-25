@@ -7,7 +7,7 @@ use itertools::Itertools;
 use remus::bus::Bus;
 use remus::mem::Ram;
 use remus::reg::Register;
-use remus::{Address, Block, Board, Location, Machine, Shared};
+use remus::{Block, Board, Cell, Location, Machine, Shared};
 
 use self::dma::Dma;
 use self::exec::Mode;
@@ -169,7 +169,7 @@ impl Ppu {
         // 1. PPU is enabled
         let enabled = self.enabled();
         // 2. Scanline is top of screen
-        let topline = **self.file.ly.borrow() == 0;
+        let topline = self.file.ly.load() == 0;
         // 3. Dot is first of scanline
         let firstdot = self.dot == 0;
 
@@ -262,10 +262,10 @@ impl Ppu {
 
     /// Color a pixel according to the ppu's palette configuration.
     fn color(&self, pixel: &Pixel) -> Color {
-        let pal = **match pixel.meta.pal {
-            Palette::BgWin => self.file.bgp.borrow(),
-            Palette::Obp0 => self.file.obp0.borrow(),
-            Palette::Obp1 => self.file.obp1.borrow(),
+        let pal = match pixel.meta.pal {
+            Palette::BgWin => self.file.bgp.load(),
+            Palette::Obp0 => self.file.obp0.load(),
+            Palette::Obp1 => self.file.obp1.load(),
         };
         pixel.col.recolor(pal)
     }
@@ -284,8 +284,8 @@ impl Block for Ppu {
         self.file.dma.borrow_mut().set_oam(self.oam.clone());
 
         // Reset memory
-        self.vram.borrow_mut().reset();
-        self.oam.borrow_mut().reset();
+        self.vram.reset();
+        self.oam.reset();
 
         // Reset LCD
         self.lcd = Screen::default();
@@ -317,45 +317,46 @@ impl Location<u8> for Ppu {
 
     fn load(&self, reg: Self::Register) -> u8 {
         match reg {
-            Control::Lcdc => **self.file.lcdc.borrow(),
-            Control::Stat => **self.file.stat.borrow(),
-            Control::Scy  => **self.file.scy.borrow(),
-            Control::Scx  => **self.file.scx.borrow(),
-            Control::Ly   => **self.file.ly.borrow(),
-            Control::Lyc  => **self.file.lyc.borrow(),
-            Control::Dma  =>   self.file.dma.read(0),
-            Control::Bgp  => **self.file.bgp.borrow(),
-            Control::Obp0 => **self.file.obp0.borrow(),
-            Control::Obp1 => **self.file.obp1.borrow(),
-            Control::Wy   => **self.file.wy.borrow(),
-            Control::Wx   => **self.file.wx.borrow(),
+            Control::Lcdc => self.file.lcdc.load(),
+            Control::Stat => self.file.stat.load(),
+            Control::Scy  => self.file.scy.load(),
+            Control::Scx  => self.file.scx.load(),
+            Control::Ly   => self.file.ly.load(),
+            Control::Lyc  => self.file.lyc.load(),
+            Control::Dma  => self.file.dma.load(),
+            Control::Bgp  => self.file.bgp.load(),
+            Control::Obp0 => self.file.obp0.load(),
+            Control::Obp1 => self.file.obp1.load(),
+            Control::Wy   => self.file.wy.load(),
+            Control::Wx   => self.file.wx.load(),
         }
     }
 
     fn store(&mut self, reg: Self::Register, value: u8) {
         match reg {
-            Control::Lcdc => **self.file.lcdc.borrow_mut() = value,
-            Control::Stat => **self.file.stat.borrow_mut() = value,
-            Control::Scy  => **self.file.scy.borrow_mut()  = value,
-            Control::Scx  => **self.file.scx.borrow_mut()  = value,
-            Control::Ly   => **self.file.ly.borrow_mut()   = value,
-            Control::Lyc  => **self.file.lyc.borrow_mut()  = value,
-            Control::Dma  =>   self.file.dma.write(0, value),
-            Control::Bgp  => **self.file.bgp.borrow_mut()  = value,
-            Control::Obp0 => **self.file.obp0.borrow_mut() = value,
-            Control::Obp1 => **self.file.obp1.borrow_mut() = value,
-            Control::Wy   => **self.file.wy.borrow_mut()   = value,
-            Control::Wx   => **self.file.wx.borrow_mut()   = value,
+            Control::Lcdc => self.file.lcdc.store(value),
+            Control::Stat => self.file.stat.store(value),
+            Control::Scy  => self.file.scy.store(value),
+            Control::Scx  => self.file.scx.store(value),
+            Control::Ly   => self.file.ly.store(value),
+            Control::Lyc  => self.file.lyc.store(value),
+            Control::Dma  => self.file.dma.store(value),
+            Control::Bgp  => self.file.bgp.store(value),
+            Control::Obp0 => self.file.obp0.store(value),
+            Control::Obp1 => self.file.obp1.store(value),
+            Control::Wy   => self.file.wy.store(value),
+            Control::Wx   => self.file.wx.store(value),
         }
     }
 }
 
 impl Machine for Ppu {
     fn enabled(&self) -> bool {
-        Lcdc::Enable.get(**self.file.lcdc.borrow())
+        Lcdc::Enable.get(self.file.lcdc.load())
     }
 
     fn cycle(&mut self) {
+        // Execute a single PPU cycle
         self.mode = std::mem::take(&mut self.mode).exec(self);
 
         // Cycle the DMA every machine cycle
@@ -474,7 +475,7 @@ impl Debug {
     /// Constructs `Debug` info for the PPU.
     fn new(ppu: &Ppu) -> Self {
         // Extract scanline info
-        let lcdc = **ppu.file.lcdc.borrow();
+        let lcdc = ppu.file.lcdc.load();
         let bgwin = Lcdc::BgMap.get(lcdc);
 
         // Retrieve a copy of the VRAM
