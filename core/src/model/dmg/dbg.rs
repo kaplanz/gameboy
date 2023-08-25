@@ -6,51 +6,38 @@ use itertools::Itertools;
 
 use super::{ppu, GameBoy};
 
-/// Debug builder.
-pub struct Builder<'a> {
-    emu: &'a mut GameBoy,
-    dbg: Debug,
+/// Gather Gameboy Doctor debug info.
+///
+/// # Panics
+///
+/// Panics if Gameboy Doctor was not enabled on the emulator.
+pub fn doc(emu: &mut GameBoy) -> Doctor {
+    emu.doc
+        .as_mut()
+        .map(std::mem::take)
+        .expect("expected doctor to be enabled")
 }
 
-impl<'a> Builder<'a> {
-    /// Constructs a new `Builder` for [`Debug`] info.
-    pub fn new(emu: &'a mut GameBoy) -> Self {
-        Self {
-            emu,
-            dbg: Debug::default()
-        }
-    }
-
-    /// Finishes construction of the [`Debug`] info.
-    pub fn finish(self) -> Debug {
-        self.dbg
-    }
-
-    /// Populate all fields.
-    pub fn all(self) -> Self {
-        self.doc().ppu()
-    }
-
-    /// Populate Gameboy Doctor debug info.
-    pub fn doc(mut self) -> Self {
-        self.dbg.doc = self.emu.doc.as_mut().map(std::mem::take);
-        self
-    }
-
-    /// Populate PPU debug info.
-    pub fn ppu(mut self) -> Self {
-        self.dbg.ppu = Some(self.emu.ppu.debug());
-        self
-    }
+/// Gather PPU debug info.
+pub fn ppu(emu: &mut GameBoy) -> ppu::Debug {
+    emu.ppu.debug()
 }
 
 /// Debug information.
-///
-/// Uses a [`Builder`] for construction.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Debug {
-    pub doc: Option<Doctor>,
-    pub ppu: Option<ppu::Debug>,
+    pub doc: Doctor,
+    pub ppu: ppu::Debug,
+}
+
+impl Debug {
+    /// Constructs a new, fully popoulated `Debug`.
+    pub fn new(emu: &mut GameBoy) -> Self {
+        Self {
+            doc: doc(emu),
+            ppu: ppu(emu),
+        }
+    }
 }
 
 /// Doctor entries.
