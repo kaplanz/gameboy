@@ -3,14 +3,13 @@
 //! [Game Boy]: https://en.wikipedia.org/wiki/Game_Boy
 
 use std::cell::RefCell;
-use std::fmt::Display;
 use std::rc::Rc;
 
-use itertools::Itertools;
 use remus::bus::Bus;
 use remus::{Address, Block, Board, Device, Location, Machine, Shared};
 
 use self::cpu::Cpu;
+use self::dbg::Doctor;
 use self::mem::Memory;
 use crate::dev::Unmapped;
 use crate::dmg::cpu::Processor;
@@ -24,6 +23,7 @@ use crate::hw::serial::Serial;
 use crate::hw::timer::Timer;
 
 mod boot;
+mod dbg;
 mod mem;
 
 pub use self::boot::Rom as Boot;
@@ -107,11 +107,8 @@ impl GameBoy {
 
     /// Returns debug information about the model.
     #[must_use]
-    pub fn debug(&mut self) -> Debug {
-        Debug {
-            doc: self.doc.as_mut().map(std::mem::take),
-            ppu: self.ppu.debug(),
-        }
+    pub fn debug(&mut self) -> dbg::Builder {
+        dbg::Builder::new(self)
     }
 
     /// (Re)sets introspection with [Gameboy Doctor][gbdoc].
@@ -340,28 +337,6 @@ impl Machine for GameBoy {
 
         // Keep track of cycles executed
         self.clock = self.clock.wrapping_add(1);
-    }
-}
-
-/// Debug information.
-#[derive(Debug)]
-pub struct Debug {
-    pub doc: Option<Doctor>,
-    pub ppu: ppu::Debug,
-}
-
-/// Doctor entries.
-///
-/// An introspecive view of the emulator's state matching the format specified
-/// by [Gameboy Doctor][gbdoc].
-///
-/// [gbdoc]: https://robertheaton.com/gameboy-doctor
-#[derive(Debug, Default)]
-pub struct Doctor(Vec<String>);
-
-impl Display for Doctor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.iter().join("\n").fmt(f)
     }
 }
 
