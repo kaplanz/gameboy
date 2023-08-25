@@ -5,9 +5,9 @@ use std::sync::Arc;
 #[cfg(feature = "gbd")]
 use std::time::Duration;
 
-use eyre::{anyhow, Context};
+use eyre::Context;
 use gameboy::core::Emulator;
-use gameboy::dmg::{Button, GameBoy, Screen, SCREEN};
+use gameboy::dmg::{self, Button, GameBoy, Screen, SCREEN};
 use log::debug;
 use minifb::{Key, Window};
 #[cfg(feature = "gbd")]
@@ -212,14 +212,11 @@ impl App {
             if let Some(view) = &mut view {
                 if cycle == 0 {
                     // Gather debug info
-                    let info = emu.debug().ppu().finish();
-                    let ppu = info
-                        .ppu
-                        .ok_or_else(|| anyhow!("failed to extract debug info: ppu"))?;
+                    let info = dmg::dbg::ppu(&mut emu);
                     // Extract PPU state
-                    let tdat = ppu.tdat.map(|col| opts.pal[col as usize].into());
-                    let map1 = ppu.map1.map(|col| opts.pal[col as usize].into());
-                    let map2 = ppu.map2.map(|col| opts.pal[col as usize].into());
+                    let tdat = info.tdat.map(|col| opts.pal[col as usize].into());
+                    let map1 = info.map1.map(|col| opts.pal[col as usize].into());
+                    let map2 = info.map2.map(|col| opts.pal[col as usize].into());
                     // Display PPU state
                     view.tdat
                         .update_with_buffer(&tdat, 16 * 8, 24 * 8)
@@ -237,12 +234,9 @@ impl App {
             #[cfg(feature = "doc")]
             if let Some(out) = &mut doc {
                 // Gather debug info
-                let info = emu.debug().doc().finish();
-                let doc = info
-                    .doc
-                    .ok_or_else(|| anyhow!("failed to extract debug info: doc"))?;
+                let info = dmg::dbg::doc(&mut emu);
                 // Format, writing if non-empty
-                let note = format!("{doc}");
+                let note = format!("{info}");
                 if !note.is_empty() {
                     writeln!(out.log, "{note}").context("failed to write doctor log")?;
                 }

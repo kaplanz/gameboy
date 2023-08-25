@@ -23,8 +23,9 @@ use crate::hw::serial::Serial;
 use crate::hw::timer::Timer;
 
 mod boot;
-mod dbg;
 mod mem;
+
+pub mod dbg;
 
 pub use self::boot::Rom as Boot;
 pub use crate::emu::Screen as Dimensions;
@@ -107,8 +108,8 @@ impl GameBoy {
 
     /// Returns debug information about the model.
     #[must_use]
-    pub fn debug(&mut self) -> dbg::Builder {
-        dbg::Builder::new(self)
+    pub fn debug(&mut self) -> dbg::Debug {
+        dbg::Debug::new(self)
     }
 
     /// (Re)sets introspection with [Gameboy Doctor][gbdoc].
