@@ -146,11 +146,17 @@ impl App {
                             // Attempt to fetch command
                             let cmd = {
                                 // Attempt to fetch the next command
-                                match gbd.fetch() {
+                                if let cmd @ Some(_) = gbd.fetch() {
                                     // It worked; use it
-                                    cmd @ Some(_) => cmd,
-                                    // Couldn't fetch; prompt user
-                                    None => match gbd.prompt() {
+                                    cmd
+                                } else {
+                                    // Couldn't fetch; get program from user
+                                    match {
+                                        // Pause clock while awaiting user input
+                                        clk.pause();
+                                        // Present the prompt
+                                        gbd.prompt()
+                                    } {
                                         // Program input; fetch next iteration
                                         Ok(_) => continue 'gbd,
                                         // No input; repeat previous command
@@ -159,7 +165,7 @@ impl App {
                                         err @ Err(_) => {
                                             break 'res err;
                                         }
-                                    },
+                                    }
                                 }
                             };
                             // Extract fetched command
@@ -179,6 +185,9 @@ impl App {
                             Err(err) => tell::error!("{err}"),
                         }
                     }
+
+                    // Unconditionally resume the clock
+                    clk.resume();
                 }
 
                 // Cycle debugger to remain synchronized with emulator
@@ -186,7 +195,6 @@ impl App {
             }
 
             // Synchronize with wall-clock
-            // TODO: Pause when in GBD
             if cycle % divider == 0 && opts.speed != Speed::Max {
                 // Delay until clock is ready
                 clk.next();
