@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use remus::Cell;
+
 use super::draw::Draw;
 use super::{Interrupt, Mode, Ppu, SCREEN};
 
@@ -16,17 +18,17 @@ impl HBlank {
         if ppu.dot < Self::DOTS {
             Mode::HBlank(self)
         } else {
-            // Extract scanline info
-            let ly = &mut **ppu.file.ly.borrow_mut();
-            // Increment scanline and reset dot-clock
-            *ly += 1;
+            // Increment scanline
+            let ly = ppu.file.ly.load() + 1;
+            ppu.file.ly.store(ly);
+            // Reset dot-clock
             ppu.dot = 0;
 
             // Schedule VBlank interrupt
             ppu.pic.borrow_mut().req(Interrupt::VBlank);
 
             // Determine next mode
-            if (*ly as usize) < SCREEN.height {
+            if (ly as usize) < SCREEN.height {
                 // Begin next scanline
                 Mode::Scan(self.into())
             } else {

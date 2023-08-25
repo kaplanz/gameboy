@@ -1,4 +1,4 @@
-use remus::Address;
+use remus::{Address, Cell};
 
 use super::fifo::Fifo;
 use super::pixel::{Meta, Palette};
@@ -38,10 +38,10 @@ impl Fetch {
         }
 
         // Extract scanline info
-        let lcdc = **ppu.file.lcdc.borrow();
-        let scy = **ppu.file.scy.borrow();
-        let scx = **ppu.file.scx.borrow();
-        let ly = **ppu.file.ly.borrow();
+        let lcdc = ppu.file.lcdc.load();
+        let scy = ppu.file.scy.load();
+        let scx = ppu.file.scx.load();
+        let ly = ppu.file.ly.load();
 
         // Determine the tile base
         let base = match loc {
@@ -80,9 +80,9 @@ impl Fetch {
         use Location::{Background, Sprite, Window};
 
         // Extract scanline info
-        let lcdc = **ppu.file.lcdc.borrow();
-        let scy = **ppu.file.scy.borrow();
-        let ly = **ppu.file.ly.borrow();
+        let lcdc = ppu.file.lcdc.load();
+        let scy = ppu.file.scy.load();
+        let ly = ppu.file.ly.load();
 
         // Calculate the y-offset within the tile
         let yoff = match loc {
@@ -151,12 +151,12 @@ impl Stage {
                 // Fetch the tile number's index
                 let tnum = if let Some(obj) = sprite {
                     // Check if the sprite is tall (8x16)
-                    let lcdc = **ppu.file.lcdc.borrow();
+                    let lcdc = ppu.file.lcdc.load();
                     let tall = Lcdc::ObjSize.get(lcdc);
                     if tall {
                         // Determine if we're fetching the top or bottom
                         // tile of the tall sprite.
-                        let ly = **ppu.file.ly.borrow();
+                        let ly = ppu.file.ly.load();
                         let top = (obj.ypos..obj.ypos + 8).contains(&(ly + 16));
                         if top ^ obj.yflip {
                             obj.idx & 0b1111_1110
@@ -172,7 +172,7 @@ impl Stage {
                     // NOTE: How this is calculated depends on the type of the tile
                     //       being fetched.
                     let cpos = fetch.cpos(ppu, loc);
-                    ppu.vram.borrow().read(cpos as usize)
+                    ppu.vram.read(cpos as usize)
                 };
 
                 // NOTE: We can calculate the tile data address in advance. This
@@ -191,7 +191,7 @@ impl Stage {
                 }
 
                 // Fetch the first byte of the tile
-                let data0 = ppu.vram.borrow().read(addr as usize);
+                let data0 = ppu.vram.read(addr as usize);
 
                 // Progress to next stage
                 let addr = addr + 1;
@@ -199,7 +199,7 @@ impl Stage {
             }
             Stage::ReadData1 { addr, data0 } => {
                 // Fetch the seocnd byte of the tile
-                let data1 = ppu.vram.borrow().read(addr as usize);
+                let data1 = ppu.vram.read(addr as usize);
 
                 // Decode pixels from data
                 let row = Row::from([data0, data1]);

@@ -6,7 +6,7 @@ use remus::bus::adapt::Bank;
 use remus::bus::Bus;
 use remus::dev::Device;
 use remus::reg::Register;
-use remus::{mem, Address, Block, Board, Shared};
+use remus::{mem, Address, Block, Board, Cell, Shared};
 use thiserror::Error;
 
 use crate::dev::ReadOnly;
@@ -51,22 +51,22 @@ impl Rom {
 }
 
 impl Address<u8> for Rom {
-    fn read(&self, addr: usize) -> u8 {
-        self.bank.read(addr)
+    fn read(&self, index: usize) -> u8 {
+        self.bank.read(index)
     }
 
-    fn write(&mut self, addr: usize, value: u8) {
-        self.bank.write(addr, value);
+    fn write(&mut self, index: usize, value: u8) {
+        self.bank.write(index, value);
     }
 }
 
 impl Block for Rom {
     fn reset(&mut self) {
         // Reset controller
-        self.disable.borrow_mut().reset();
+        self.disable.reset();
         self.disable.borrow_mut().bank = self.bank.clone();
         // Reset bank
-        self.bank.borrow_mut().reset();
+        self.bank.reset();
         self.bank.borrow_mut().add(self.rom.clone().to_dynamic());
         self.bank.borrow_mut().set(0);
     }
@@ -129,13 +129,12 @@ pub struct Disable {
 }
 
 impl Address<u8> for Disable {
-    fn read(&self, index: usize) -> u8 {
-        self.boff.read(index)
+    fn read(&self, _: usize) -> u8 {
+        self.load()
     }
 
-    fn write(&mut self, index: usize, value: u8) {
-        self.boff.write(index, value);
-        self.bank.borrow_mut().set(value as usize);
+    fn write(&mut self, _: usize, value: u8) {
+        self.store(value);
     }
 }
 
@@ -144,7 +143,18 @@ impl Block for Disable {
         // Reset controller
         self.boff.reset();
         // Reset bank
-        self.bank.borrow_mut().set(*self.boff as usize);
+        self.bank.borrow_mut().set(self.boff.load() as usize);
+    }
+}
+
+impl Cell<u8> for Disable {
+    fn load(&self) -> u8 {
+        self.boff.load()
+    }
+
+    fn store(&mut self, value: u8) {
+        self.boff.store(value);
+        self.bank.borrow_mut().set(value as usize);
     }
 }
 

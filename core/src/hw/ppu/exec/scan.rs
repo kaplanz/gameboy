@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use remus::Address;
+use remus::{Address, Cell};
 
 use super::draw::Draw;
 use super::hblank::HBlank;
@@ -17,10 +17,10 @@ pub struct Scan {
 impl Scan {
     pub fn exec(mut self, ppu: &mut Ppu) -> Mode {
         // Extract the sprite and scanline info
-        let lcdc = **ppu.file.lcdc.borrow();
+        let lcdc = ppu.file.lcdc.load();
         let size = Lcdc::ObjSize.get(lcdc);
         let ht = [8, 16][usize::from(size)];
-        let ly = **ppu.file.ly.borrow();
+        let ly = ppu.file.ly.load();
 
         // Scanning a single entry takes 2 dots
         if ppu.dot % 2 == 0 {
@@ -31,7 +31,7 @@ impl Scan {
                 // Scan the current OAM entry
                 let mut obj = [0; 4];
                 for (off, byte) in obj.iter_mut().enumerate() {
-                    *byte = ppu.oam.borrow().read(self.idx + off);
+                    *byte = ppu.oam.read(self.idx + off);
                 }
                 // Parse entry into Sprite
                 let obj = Sprite::from(obj);

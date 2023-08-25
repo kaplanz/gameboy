@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use log::trace;
+use remus::Cell;
 
 use self::draw::Draw;
 use self::hblank::HBlank;
@@ -26,11 +27,12 @@ impl Mode {
         // Handle previous state
         {
             // Update STAT
-            let stat = &mut **ppu.file.stat.borrow_mut();
-            let ly = **ppu.file.ly.borrow();
-            let lyc = **ppu.file.lyc.borrow();
-            *stat ^= (*stat & 0x03) ^ u8::from(&self);
-            *stat ^= (*stat & 0x04) ^ u8::from(ly == lyc) << 2;
+            let mut stat = ppu.file.stat.load();
+            let ly = ppu.file.ly.load();
+            let lyc = ppu.file.lyc.load();
+            stat ^= (stat & 0x03) ^ u8::from(&self);
+            stat ^= (stat & 0x04) ^ u8::from(ly == lyc) << 2;
+            ppu.file.stat.store(stat);
 
             // Trigger interrupts
             if ppu.dot == 0 {
@@ -44,7 +46,7 @@ impl Mode {
                 // Mode 0
                 int |= u8::from(matches!(self, Mode::HBlank(_))) << 3;
                 // Check for interrupts
-                if int & (*stat & 0x78) != 0 {
+                if int & (stat & 0x78) != 0 {
                     ppu.pic.borrow_mut().req(Interrupt::LcdStat);
                 }
             }
