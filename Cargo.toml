@@ -1,9 +1,10 @@
 [package]
 name = "gameboy"
 version = "0.1.0"
+authors.workspace = true
 edition = "2021"
-repository = "https://github.com/kaplanz/gameboy"
-license = "MIT OR Apache-2.0"
+repository.workspace = true
+license.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -18,6 +19,11 @@ members = [
     "crates/phex",
     "crates/tell",
 ]
+
+[workspace.package]
+authors = ["Zakhary Kaplan <me@zakhary.dev>"]
+repository = "https://github.com/kaplanz/gameboy"
+license = "MIT OR Apache-2.0"
 
 [features]
 default = ["debug"]
