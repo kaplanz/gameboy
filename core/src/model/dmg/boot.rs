@@ -50,7 +50,7 @@ impl Rom {
     }
 }
 
-impl Address for Rom {
+impl Address<u8> for Rom {
     fn read(&self, addr: usize) -> u8 {
         self.bank.read(addr)
     }
@@ -128,7 +128,7 @@ pub struct Disable {
     bank: Shared<Bank>,
 }
 
-impl Address for Disable {
+impl Address<u8> for Disable {
     fn read(&self, index: usize) -> u8 {
         self.boff.read(index)
     }

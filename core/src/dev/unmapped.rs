@@ -22,7 +22,7 @@ impl<const N: usize> Unmapped<N> {
     }
 }
 
-impl<const N: usize> Address for Unmapped<N> {
+impl<const N: usize> Address<u8> for Unmapped<N> {
     fn read(&self, index: usize) -> u8 {
         warn!("called `Device::read({index:#06x})` on an `Unmapped`");
         self.0.read(index)
