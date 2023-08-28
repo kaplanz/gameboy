@@ -38,9 +38,9 @@ A cycle accurate emulator of the original 1989 Nintendo Game Boy.
   - [x] Background drawing
   - [x] Window drawing
   - [x] Sprite rendering
-- [ ] Implement timer
+- [x] Implement timer
   - [x] Functional correctness
-  - [ ] Implementation accuracy
+  - [x] Implementation accuracy
 - [ ] Performance enhancements
   - [ ] Benchmark tests
 

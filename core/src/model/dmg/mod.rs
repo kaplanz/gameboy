@@ -475,9 +475,15 @@ mod tests {
         // Timer
         (0xff04..=0xff07).for_each(|addr| emu.bus.write(addr, 0x08));
         (0x0000..=0x0003)
-            .zip([Timer::div, Timer::tima, Timer::tma, Timer::tac])
-            .map(|(_, get)| get(&emu.timer).read(0))
-            .for_each(|byte| assert_eq!(byte, 0x08));
+            .zip([
+                <Timer as Location<u8>>::Register::Div,
+                <Timer as Location<u8>>::Register::Tima,
+                <Timer as Location<u8>>::Register::Tma,
+                <Timer as Location<u8>>::Register::Tac,
+            ])
+            .map(|(_, reg)| emu.timer.load(reg))
+            .zip([0x00, 0x08, 0x08, 0x00])
+            .for_each(|(found, expected)| assert_eq!(found, expected));
         // Interrupt Active
         (0xff0f..=0xff0f).for_each(|addr| emu.bus.write(addr, 0x09));
         (0x0000..=0x0000)
