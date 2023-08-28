@@ -36,7 +36,7 @@ impl Scan {
                 // Parse entry into Sprite
                 let obj = Sprite::from(obj);
                 // Add sprite to be rendered if it's on the current scanline
-                if obj.xpos != 0 && (obj.ypos..obj.ypos + ht).contains(&(ly + 16)) {
+                if obj.xpos != 0 && (obj.ypos..obj.ypos.saturating_add(ht)).contains(&(ly + 16)) {
                     self.objs.push(obj);
                 }
             }
