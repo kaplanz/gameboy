@@ -130,7 +130,7 @@ impl Machine for Timer {
         if tac & 0x04 != 0 {
             // Determine TIMA divider
             let div = match tac & 0x03 {
-                0b00 => 0x2000,
+                0b00 => 0x0400,
                 0b01 => 0x0010,
                 0b10 => 0x0040,
                 0b11 => 0x0100,
