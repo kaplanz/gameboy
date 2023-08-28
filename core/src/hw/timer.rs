@@ -3,9 +3,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use log::{debug, trace};
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Block, Board, Cell, Location, Machine, Shared};
+use remus::{Address, Block, Board, Cell, Device, Location, Machine, Shared};
 
 use super::pic::{Interrupt, Pic};
 
@@ -31,7 +32,7 @@ pub enum Control {
 #[derive(Debug, Default)]
 pub struct Timer {
     // State
-    clock: usize,
+    andres: bool,
     // Connections
     pic: Rc<RefCell<Pic>>,
     // Control
@@ -51,26 +52,40 @@ impl Timer {
 
     /// Gets a reference to the timer's divider register.
     #[must_use]
-    pub fn div(&self) -> Shared<Register<u8>> {
+    pub fn div(&self) -> Shared<Div> {
         self.file.div.clone()
     }
 
     /// Gets a reference to the timer's counter register.
     #[must_use]
-    pub fn tima(&self) -> Shared<Register<u8>> {
+    pub fn tima(&self) -> Shared<Tima> {
         self.file.tima.clone()
     }
 
     /// Gets a reference to the timer's modulo register.
     #[must_use]
-    pub fn tma(&self) -> Shared<Register<u8>> {
+    pub fn tma(&self) -> Shared<Tma> {
         self.file.tma.clone()
     }
 
     /// Gets a reference to the timer's control register.
     #[must_use]
-    pub fn tac(&self) -> Shared<Register<u8>> {
+    pub fn tac(&self) -> Shared<Tac> {
         self.file.tac.clone()
+    }
+
+    /// Calculates the AND result.
+    ///
+    /// Used to determine whether TIMA will be incremented, as documented by
+    /// [Hacktix][gbedg].
+    ///
+    /// [gbedg]: https://github.com/Hacktix/GBEDG/blob/master/timers/index.md#timer-operation
+    fn and(&self) -> bool {
+        let ena = self.file.tac.borrow().ena();
+        let sel = self.file.tac.borrow().sel();
+        let div = self.file.div.borrow().div();
+        let bit = sel & div == 0;
+        ena & bit
     }
 }
 
@@ -114,45 +129,41 @@ impl Machine for Timer {
         true
     }
 
+    #[rustfmt::skip]
     fn cycle(&mut self) {
         // Extract control registers
-        let div = self.file.div.load();
+        let div = self.file.div.borrow().div();
         let tima = self.file.tima.load();
+        let reload = self.file.tima.borrow().reload;
         let tma = self.file.tma.load();
-        let tac = self.file.tac.load();
 
-        // Increment DIV every 256 cycles
-        if self.clock % 0x100 == 0 {
-            self.file.div.store(div.wrapping_add(1));
+        // Check if TIMA should be incremented
+        let and = self.and();           // calculate AND result
+        let fell = self.andres && !and; // check if falling
+        self.andres = and;              // store for next cycle
+
+        // Calculate next TIMA
+        if fell {
+            // Increment TIMA
+            let (tima, carry) = tima.overflowing_add(1);
+            self.file.tima.store(tima);
+            trace!("TIMA: {tima}");
+            // Store a pending reload on overflow
+            if carry {
+                self.file.tima.borrow_mut().reload = Some(div.wrapping_add(4));
+                debug!("scheduled TIMA reload");
+            }
+        } else if Some(div) == reload {
+            // Reload from TMA
+            self.file.tima.store(tma);
+            // Schedule Timer interrupt
+            self.pic.borrow_mut().req(Interrupt::Timer);
+            debug!("interrupt requested");
         }
 
-        // Increment TIMA if enabled
-        if tac & 0x04 != 0 {
-            // Determine TIMA divider
-            let div = match tac & 0x03 {
-                0b00 => 0x0400,
-                0b01 => 0x0010,
-                0b10 => 0x0040,
-                0b11 => 0x0100,
-                _ => unreachable!(),
-            };
-            // Check if this is a tic cycle
-            if self.clock % div == 0 {
-                // Increment TIMA
-                let tima = if let Some(tima) = tima.checked_add(1) {
-                    tima
-                } else {
-                    // Schedule Timer interrupt
-                    self.pic.borrow_mut().req(Interrupt::Timer);
-                    // Restart from TMA
-                    tma
-                };
-                self.file.tima.store(tima);
-            };
-        }
-
-        // Keep track of cycle count
-        self.clock = self.clock.wrapping_add(1);
+        // Increment the divider every T-cycle
+        // Note: This has the effect of incrementing DIV every 256 T-cycles.
+        self.file.div.borrow_mut().0.store(div.wrapping_add(1));
     }
 }
 
@@ -168,10 +179,10 @@ struct File {
     // │  1 B │ Modulo   │ Reg │ TMA   │
     // │  1 B │ Control  │ Reg │ TAC   │
     // └──────┴──────────┴─────┴───────┘
-    div:  Shared<Register<u8>>,
-    tima: Shared<Register<u8>>,
-    tma:  Shared<Register<u8>>,
-    tac:  Shared<Register<u8>>,
+    div:  Shared<Div>,
+    tima: Shared<Tima>,
+    tma:  Shared<Tma>,
+    tac:  Shared<Tac>,
 }
 
 impl Block for File {
@@ -200,5 +211,167 @@ impl Board for File {
         bus.map(0xff06, tma);  // │ ff06 │  1 B │ Modulo   │ Reg │
         bus.map(0xff07, tac);  // │ ff07 │  1 B │ Control  │ Reg │
                                // └──────┴──────┴──────────┴─────┘
+    }
+}
+
+/// Divider register.
+#[derive(Debug, Default)]
+pub struct Div(Register<u16>);
+
+impl Div {
+    /// Gets the internal clock (lower 8-bits).
+    #[must_use]
+    pub fn clk(&self) -> u8 {
+        (self.0.load() & 0x00ff) as u8
+    }
+
+    /// Gets the full internal register value.
+    #[must_use]
+    pub fn div(&self) -> u16 {
+        self.0.load()
+    }
+}
+
+impl Address<u8> for Div {
+    fn read(&self, _: usize) -> u8 {
+        self.load()
+    }
+
+    fn write(&mut self, _: usize, value: u8) {
+        self.store(value);
+    }
+}
+
+impl Block for Div {
+    fn reset(&mut self) {
+        self.0.reset();
+    }
+}
+
+impl Cell<u8> for Div {
+    /// Loads the value of DIV (upper 8-bits).
+    fn load(&self) -> u8 {
+        (self.0.load() & 0xff00 >> 8) as u8
+    }
+
+    fn store(&mut self, _: u8) {
+        self.0.store(0);
+    }
+}
+
+impl Device for Div {
+    fn contains(&self, index: usize) -> bool {
+        (0..self.len()).contains(&index)
+    }
+
+    fn len(&self) -> usize {
+        std::mem::size_of::<u8>()
+    }
+}
+
+/// Timer counter.
+#[derive(Debug, Default)]
+pub struct Tima {
+    reg: Register<u8>,
+    reload: Option<u16>,
+}
+
+impl Address<u8> for Tima {
+    fn read(&self, _: usize) -> u8 {
+        self.load()
+    }
+
+    fn write(&mut self, _: usize, value: u8) {
+        self.store(value);
+    }
+}
+
+impl Block for Tima {
+    fn reset(&mut self) {
+        self.reg.reset();
+    }
+}
+
+impl Cell<u8> for Tima {
+    fn load(&self) -> u8 {
+        self.reg.load()
+    }
+
+    fn store(&mut self, value: u8) {
+        self.reg.store(value);
+        self.reload = None; // reloads overridden on store
+    }
+}
+
+impl Device for Tima {
+    fn contains(&self, index: usize) -> bool {
+        self.reg.contains(index)
+    }
+
+    fn len(&self) -> usize {
+        self.reg.len()
+    }
+}
+
+/// Timer modulo.
+pub type Tma = Register<u8>;
+
+/// Timer control.
+#[derive(Debug, Default)]
+pub struct Tac(Register<u8>);
+
+impl Tac {
+    /// Gets the enable bit.
+    #[must_use]
+    pub fn ena(&self) -> bool {
+        self.0.load() & 0b100 != 0
+    }
+
+    /// Gets the clock select rate.
+    #[must_use]
+    pub fn sel(&self) -> u16 {
+        match self.0.load() & 0b11 {
+            0b01 => 0x0008,
+            0b10 => 0x0020,
+            0b11 => 0x0080,
+            0b00 => 0x0200,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl Address<u8> for Tac {
+    fn read(&self, _: usize) -> u8 {
+        self.load()
+    }
+
+    fn write(&mut self, _: usize, value: u8) {
+        self.store(value);
+    }
+}
+
+impl Block for Tac {
+    fn reset(&mut self) {
+        self.0.reset();
+    }
+}
+
+impl Cell<u8> for Tac {
+    fn load(&self) -> u8 {
+        self.0.load()
+    }
+
+    fn store(&mut self, value: u8) {
+        self.0.store(value & 0b111);
+    }
+}
+
+impl Device for Tac {
+    fn contains(&self, index: usize) -> bool {
+        (0..self.len()).contains(&index)
+    }
+
+    fn len(&self) -> usize {
+        std::mem::size_of::<u8>()
     }
 }
