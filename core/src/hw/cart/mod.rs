@@ -260,7 +260,7 @@ impl Board for Cartridge {
     }
 }
 
-/// A type specifying general categories of [`Cartridge`] error.
+/// A type specifying categories of [`Cartridge`] error.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("could not parse header")]

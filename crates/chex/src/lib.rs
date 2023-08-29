@@ -84,7 +84,7 @@ impl FromStr for Color {
     }
 }
 
-/// A type specifying general categories of [`Color`] error.
+/// A type specifying categories of [`Color`] error.
 #[derive(Clone, Debug, Error)]
 pub enum Error {
     /// Parse string was empty.

@@ -85,6 +85,7 @@ pub enum Palette {
     Obp1,
 }
 
+/// A type specifying categories of [`Pixel`] error.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("unknown color")]

@@ -326,7 +326,7 @@ impl Language {
     }
 }
 
-/// A type specifying categories of [`Language`] parse errors.
+/// A type specifying categories of [`Language`] errors.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
