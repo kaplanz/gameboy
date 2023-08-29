@@ -267,7 +267,7 @@ impl Machine for Debugger {
     }
 }
 
-/// A type specifying categories of [`Debugger`] parse errors.
+/// A type specifying categories of [`Debugger`] errors.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]

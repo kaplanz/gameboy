@@ -442,7 +442,7 @@ impl TryFrom<u8> for Kind {
     }
 }
 
-/// A type specifying general categories of [`Header`] error.
+/// A type specifying categories of [`Header`] error.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("missing header")]

@@ -83,6 +83,7 @@ impl Index<usize> for Palette {
     }
 }
 
+/// A type specifying categories of [`Color`] errors.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]

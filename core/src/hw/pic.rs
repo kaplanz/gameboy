@@ -143,7 +143,7 @@ impl From<Interrupt> for u8 {
     }
 }
 
-/// A type specifying general categories of [`Pic`] error.
+/// A type specifying categories of [`Pic`] error.
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("unknown interrupt")]
