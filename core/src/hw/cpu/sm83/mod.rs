@@ -7,10 +7,11 @@ use std::fmt::{Debug, Display, Write};
 use std::rc::Rc;
 
 use enuf::Enuf;
-use log::{debug, trace};
+use log::{debug, error, trace};
 use remus::bus::Bus;
 use remus::reg::Register;
 use remus::{Address, Block, Board, Cell, Location, Machine, Shared};
+use thiserror::Error;
 
 use crate::hw::pic::Pic;
 
@@ -19,7 +20,7 @@ mod insn;
 pub use self::insn::Instruction;
 pub use super::Processor;
 
-/// Regsiter sets.
+/// Register sets.
 pub mod reg {
     /// 8-bit register set.
     #[derive(Clone, Copy, Debug)]
@@ -49,19 +50,16 @@ pub mod reg {
 /// SM83 central processing unit.
 #[derive(Debug, Default)]
 pub struct Cpu {
-    /// Memory address bus.
-    bus: Shared<Bus>,
-    /// Programmable interrupt controller.
-    pic: Rc<RefCell<Pic>>,
-    /// Internal register set.
-    file: File,
-    /// Run status.
-    status: Status,
-    /// Execution stage.
+    // State
     stage: Stage,
-    /// Interrupt master enable.
+    run: Status,
     ime: Ime,
     halt_bug: bool,
+    // Connections
+    bus: Shared<Bus>,
+    pic: Rc<RefCell<Pic>>,
+    /// Control
+    file: File,
 }
 
 impl Cpu {
@@ -214,7 +212,7 @@ impl Block for Cpu {
         self.pic.borrow_mut().reset();
         self.file.reset();
         // Reset to initial state
-        self.status = Status::default();
+        self.run = Status::default();
         self.stage = Stage::default();
         self.ime = Ime::default();
     }
@@ -290,7 +288,7 @@ impl Location<u16> for Cpu {
 
 impl Machine for Cpu {
     fn enabled(&self) -> bool {
-        matches!(self.status, Status::Enabled)
+        matches!(self.run, Status::Enabled)
     }
 
     fn cycle(&mut self) {
@@ -319,10 +317,14 @@ impl Processor for Cpu {
 
     fn exec(&mut self, opcode: u8) {
         // Create a new instruction...
-        let mut insn = Some(Instruction::new(opcode));
+        let mut insn = Ok(Some(Instruction::new(opcode)));
         // ... then execute it until completion
-        while let Some(work) = insn {
+        while let Ok(Some(work)) = insn {
             insn = work.exec(self);
+        }
+        // Report any errors
+        if let Err(err) = insn {
+            error!("{err}");
         }
     }
 
@@ -333,7 +335,7 @@ impl Processor for Cpu {
     }
 
     fn wake(&mut self) {
-        self.status = Status::Enabled;
+        self.run = Status::Enabled;
     }
 }
 
@@ -522,6 +524,7 @@ pub enum Stage {
 }
 
 impl Stage {
+    #[allow(clippy::match_same_arms)]
     fn exec(mut self, cpu: &mut Cpu) -> Self {
         // If we're `Stage::Done`, proceed to `Stage::Fetch` this cycle
         if let Stage::Done = self {
@@ -593,8 +596,15 @@ impl Stage {
             let insn = insn.exec(cpu);
             // Proceed to next stage
             self = match insn {
-                Some(insn) => Stage::Execute(insn),
-                None => Stage::Done,
+                Ok(Some(insn)) => Stage::Execute(insn),
+                Ok(None) => Stage::Done,
+                Err(insn::Error::Overwrite(insn)) => Stage::Execute(insn),
+                Err(err) => {
+                    // Log the error
+                    error!("{err}");
+                    // Continue to next instruction
+                    Stage::Done
+                }
             };
         }
 
@@ -615,4 +625,11 @@ impl Ime {
     fn enabled(&self) -> bool {
         matches!(self, Self::Enabled)
     }
+}
+
+/// A type specifying general categories of [`Instruction`] error.
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error(transparent)]
+    Instruction(#[from] insn::Error),
 }
