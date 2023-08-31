@@ -17,9 +17,11 @@ use tracing_subscriber::layer::Layered;
 #[cfg(feature = "gbd")]
 use tracing_subscriber::{reload, EnvFilter, Registry};
 
-use crate::app::{App, Opts};
+use crate::app::{App, Settings};
+#[cfg(feature = "debug")]
+use crate::app::Debug;
 use crate::cli::Args;
-#[cfg(feature = "doc")]
+#[cfg(feature = "doctor")]
 use crate::doc::Doctor;
 #[cfg(feature = "gbd")]
 use crate::gbd::Debugger;
@@ -28,7 +30,7 @@ use crate::view::View;
 
 mod app;
 mod cli;
-#[cfg(feature = "doc")]
+#[cfg(feature = "doctor")]
 mod doc;
 #[cfg(feature = "gbd")]
 mod gbd;
@@ -110,7 +112,7 @@ fn main() -> Result<()> {
         None
     };
 
-    #[cfg(feature = "doc")]
+    #[cfg(feature = "doctor")]
     // Open doctor logfile
     let doc = if let Some(path) = args.doc {
         Some(&path)
@@ -129,19 +131,27 @@ fn main() -> Result<()> {
         .then_some(Debugger::new())
         .map(|gdb| gdb.reload(handle));
 
-    // Prepare app, options
+    // Prepare settings
     let Args { pal, speed, .. } = args;
-    let opts = Opts { title, pal, speed };
-    let app = App {
-        opts,
-        emu,
-        win,
-        #[cfg(feature = "doc")]
+    let cfg = Settings { pal, speed };
+    // Prepare debug info
+    #[cfg(feature = "debug")]
+    let debug = Debug {
+        #[cfg(feature = "doctor")]
         doc,
         #[cfg(feature = "gbd")]
         gbd,
         #[cfg(feature = "view")]
         view,
+    };
+    // Prepare application
+    let app = App {
+        title,
+        cfg,
+        emu,
+        win,
+        #[cfg(feature = "debug")]
+        debug,
     };
 
     // Run the app

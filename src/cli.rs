@@ -71,7 +71,7 @@ pub struct Args {
     #[arg(value_enum)]
     pub speed: Speed,
 
-    #[cfg(feature = "doc")]
+    #[cfg(feature = "doctor")]
     /// Doctor logfile path.
     ///
     /// Enables logging at the provided path of the emulator's state after every

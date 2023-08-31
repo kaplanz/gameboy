@@ -1,4 +1,4 @@
-#[cfg(feature = "doc")]
+#[cfg(feature = "doctor")]
 use std::io::Write;
 #[cfg(feature = "gbd")]
 use std::sync::Arc;
@@ -14,7 +14,7 @@ use minifb::{Key, Window};
 use parking_lot::Mutex;
 use remus::{Clock, Machine};
 
-#[cfg(feature = "doc")]
+#[cfg(feature = "doctor")]
 use crate::doc::Doctor;
 #[cfg(feature = "gbd")]
 use crate::gbd;
@@ -25,19 +25,29 @@ use crate::pal::Palette;
 use crate::view::View;
 use crate::{Speed, FREQ};
 
+// Clock divider for more efficient synchronization.
+const DIVIDER: u32 = 0x100;
+
 #[derive(Debug)]
-pub struct Opts {
+pub struct App {
     pub title: String,
+    pub cfg: Settings,
+    pub emu: GameBoy,
+    pub win: Window,
+    #[cfg(feature = "debug")]
+    pub debug: Debug,
+}
+
+#[derive(Debug)]
+pub struct Settings {
     pub pal: Palette,
     pub speed: Speed,
 }
 
+#[cfg(feature = "debug")]
 #[derive(Debug)]
-pub struct App {
-    pub opts: Opts,
-    pub emu: GameBoy,
-    pub win: Window,
-    #[cfg(feature = "doc")]
+pub struct Debug {
+    #[cfg(feature = "doctor")]
     pub doc: Option<Doctor>,
     #[cfg(feature = "gbd")]
     pub gbd: Option<Debugger>,
@@ -49,22 +59,17 @@ impl App {
     #[allow(clippy::too_many_lines)]
     pub fn run(self) -> crate::Result<()> {
         let Self {
-            opts,
+            title,
+            cfg,
             mut emu,
             mut win,
-            #[cfg(feature = "doc")]
-            mut doc,
-            #[cfg(feature = "gbd")]
-            gbd,
-            #[cfg(feature = "view")]
-            mut view,
+            #[cfg(feature = "debug")]
+            mut debug,
         } = self;
-        let title = opts.title;
 
         // Create 4 MiHz clock to sync emulator
-        let divider = 0x100; // user a clock divider to sync
         #[rustfmt::skip]
-        let freq = match opts.speed {
+        let freq = match cfg.speed {
             Speed::Half         => Some(FREQ / 2),
             Speed::Full         => Some(FREQ),
             Speed::Double       => Some(2 * FREQ),
@@ -72,7 +77,7 @@ impl App {
             Speed::Custom(freq) => Some(freq),
             Speed::Max          => None,
         };
-        let mut clk = freq.map(|freq| freq / divider).map(Clock::with_freq);
+        let mut clk = freq.map(|freq| freq / DIVIDER).map(Clock::with_freq);
 
         // Initialize timer, counters
         let mut now = std::time::Instant::now();
@@ -80,12 +85,12 @@ impl App {
         let mut fps = 0;
 
         // Enable doctor when used
-        #[cfg(feature = "doc")]
-        emu.set_doc(doc.is_some());
+        #[cfg(feature = "doctor")]
+        emu.set_doc(debug.doc.is_some());
 
         // Prepare debugger when used
         #[cfg(feature = "gbd")]
-        let mut gbd = gbd.map(Mutex::new).map(Arc::new);
+        let mut gbd = debug.gbd.map(Mutex::new).map(Arc::new);
         #[cfg(feature = "gbd")]
         if let Some(gbd) = gbd.as_ref().map(Arc::clone) {
             {
@@ -196,7 +201,7 @@ impl App {
             }
 
             // Synchronize with wall-clock
-            if cycle % divider == 0 {
+            if cycle % DIVIDER == 0 {
                 // Delay until clock is ready
                 clk.as_mut().map(Iterator::next);
             }
@@ -209,7 +214,7 @@ impl App {
             emu.redraw(|screen: &Screen| {
                 let buf = screen
                     .iter()
-                    .map(|&col| opts.pal[col as usize].into())
+                    .map(|&col| cfg.pal[col as usize].into())
                     .collect::<Vec<_>>();
                 winres = win.update_with_buffer(&buf, SCREEN.width, SCREEN.height);
                 fps += 1; // update frames drawn
@@ -218,14 +223,14 @@ impl App {
 
             // Update the debug view every second
             #[cfg(feature = "view")]
-            if let Some(view) = &mut view {
+            if let Some(view) = &mut debug.view {
                 if cycle == 0 {
                     // Gather debug info
                     let info = dmg::dbg::ppu(&mut emu);
                     // Extract PPU state
-                    let tdat = info.tdat.map(|col| opts.pal[col as usize].into());
-                    let map1 = info.map1.map(|col| opts.pal[col as usize].into());
-                    let map2 = info.map2.map(|col| opts.pal[col as usize].into());
+                    let tdat = info.tdat.map(|col| cfg.pal[col as usize].into());
+                    let map1 = info.map1.map(|col| cfg.pal[col as usize].into());
+                    let map2 = info.map2.map(|col| cfg.pal[col as usize].into());
                     // Display PPU state
                     view.tdat
                         .update_with_buffer(&tdat, 16 * 8, 24 * 8)
@@ -240,8 +245,8 @@ impl App {
             }
 
             // Log doctor entries
-            #[cfg(feature = "doc")]
-            if let Some(out) = &mut doc {
+            #[cfg(feature = "doctor")]
+            if let Some(out) = &mut debug.doc {
                 // Gather debug info
                 let info = dmg::dbg::doc(&mut emu);
                 // Format, writing if non-empty
