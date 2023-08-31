@@ -82,7 +82,7 @@ impl App {
         // Initialize timer, counters
         let mut now = std::time::Instant::now();
         let mut cycle = 0;
-        let mut fps = 0;
+        let mut frame = 0;
 
         // Enable doctor when used
         #[cfg(feature = "doctor")]
@@ -120,19 +120,20 @@ impl App {
         // Emulation loop
         while win.is_open() {
             // Calculate wall-clock frequency
-            if now.elapsed().as_secs() > 0 {
+            if cycle % DIVIDER == 0 && now.elapsed().as_secs() > 0 {
+                // Calculate frames per cycle
+                let fps = f64::from(frame) / now.elapsed().as_secs_f64();
                 // Print cycle stats
                 debug!(
-                    "Frequency: {freq:0.4} MHz ({speedup:.1}%), FPS: {fps} Hz",
+                    "Frequency: {freq:0.4} MHz ({speedup:.1}%), FPS: {fps:.1} Hz",
                     freq = f64::from(cycle) / 1e6,
                     speedup = 100. * f64::from(cycle) / f64::from(FREQ)
                 );
                 // Update the title to display the frequency
-                win.set_title(&format!("{title} ({fps} Hz)"));
+                win.set_title(&format!("{title} ({fps:.1} Hz)"));
                 // Reset timer, counters
                 now = std::time::Instant::now();
-                cycle = 0;
-                fps = 0;
+                frame = 0;
             }
 
             // Optionally run the debugger
@@ -217,14 +218,14 @@ impl App {
                     .map(|&col| cfg.pal[col as usize].into())
                     .collect::<Vec<_>>();
                 winres = win.update_with_buffer(&buf, SCREEN.width, SCREEN.height);
-                fps += 1; // update frames drawn
+                frame += 1; // update frames drawn
             });
             winres.context("failed to redraw screen")?; // return early if window update failed
 
             // Update the debug view every second
             #[cfg(feature = "view")]
             if let Some(view) = &mut debug.view {
-                if cycle == 0 {
+                if frame == 0 {
                     // Gather debug info
                     let info = dmg::dbg::ppu(&mut emu);
                     // Extract PPU state
