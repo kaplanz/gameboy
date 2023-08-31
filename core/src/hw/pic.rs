@@ -3,6 +3,7 @@
 use std::fmt::Display;
 
 use enuf::Enuf;
+use log::trace;
 use remus::bus::Bus;
 use remus::reg::Register;
 use remus::{Block, Board, Cell, Shared};
@@ -30,20 +31,29 @@ impl Pic {
         self.enable.clone()
     }
 
+    /// Fetches the first pending interrupt.
     pub fn int(&self) -> Option<Interrupt> {
         let active = self.active.load();
         let enable = self.enable.load();
-        (active & enable & 0x1f).try_into().ok()
+        let int = (active & enable & 0x1f).try_into().ok();
+        if let Some(int) = int {
+            trace!("interrupt pending: {int:?}");
+        }
+        int
     }
 
+    /// Requests an interrupt.
     pub fn req(&mut self, int: Interrupt) {
         let active = self.active.load() | 0xe0 | int as u8;
         self.active.store(active);
+        trace!("interrupt requested: {int:?}");
     }
 
+    /// Acknowledges an interrupt.
     pub fn ack(&mut self, int: Interrupt) {
         let active = self.active.load() & !(int as u8);
         self.active.store(active);
+        trace!("interrupt acknowledged: {int:?}");
     }
 }
 

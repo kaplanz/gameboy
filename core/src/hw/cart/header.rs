@@ -243,7 +243,7 @@ impl TryFrom<&[u8]> for Header {
         // Verify global checksum
         let chk = Self::gchk(rom);
         if chk != gchk {
-            warn!("Global checksum failed: {chk:#06x} != {gchk:#06x}");
+            warn!("global checksum failed: {chk:#06x} != {gchk:#06x}");
         }
 
         Ok(Self {

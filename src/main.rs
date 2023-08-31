@@ -171,7 +171,7 @@ fn boot(path: Option<PathBuf>) -> Result<Option<Boot>> {
             f.read_exact(&mut buf)
                 .with_context(|| format!("failed to read full boot ROM: `{}`", boot.display()))?;
             info!(
-                "Read {} bytes from boot ROM: `{}`",
+                "read {} bytes from boot ROM: `{}`",
                 buf.len(),
                 boot.display(),
             );
@@ -198,7 +198,7 @@ fn cart(path: Option<PathBuf>, chk: bool, force: bool) -> Result<Cartridge> {
                 .take(0x0080_0000)
                 .read_to_end(&mut buf)
                 .with_context(|| format!("failed to read ROM: `{}`", path.display()))?;
-            info!("Read {read} bytes from ROM: `{}`", path.display());
+            info!("read {read} bytes from ROM: `{}`", path.display());
 
             buf
         };
@@ -212,7 +212,7 @@ fn cart(path: Option<PathBuf>, chk: bool, force: bool) -> Result<Cartridge> {
             let cart = Cartridge::checked(&rom)
                 // exit on failure
                 .with_context(|| format!("failed ROM integrity check: `{}`", path.display()))?;
-            info!("Passed ROM integrity check");
+            info!("passed ROM integrity check");
 
             cart
         } else {
@@ -221,12 +221,12 @@ fn cart(path: Option<PathBuf>, chk: bool, force: bool) -> Result<Cartridge> {
                 // exit on failure
                 .with_context(|| format!("failed to load cartridge: `{}`", path.display()))?
         };
-        info!("Loaded cartridge:\n{}", cart.header());
+        info!("loaded cartridge:\n{}", cart.header());
 
         Ok(cart)
     } else {
         ensure!(force, "missing cartridge");
-        warn!("Missing cartridge; defaulting to blank");
+        warn!("missing cartridge; defaulting to blank");
         Ok(Cartridge::blank())
     }
 }

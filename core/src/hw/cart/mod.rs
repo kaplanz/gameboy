@@ -48,7 +48,7 @@ impl Cartridge {
     pub fn new(rom: &[u8]) -> Result<Self, Error> {
         // Parse cartridge header
         let header = Header::try_from(rom)?;
-        debug!("Header:\n{header}");
+        debug!("header:\n{header}");
 
         // Construct memory bank controller
         let mbc = Self::mbc(&header, rom)?;
@@ -64,7 +64,7 @@ impl Cartridge {
     pub fn checked(rom: &[u8]) -> Result<Self, Error> {
         // Check then parse cartridge header
         let header = Header::check(rom).and_then(|_| Header::try_from(rom))?;
-        debug!("Header:\n{header}");
+        debug!("header:\n{header}");
 
         // Construct memory bank controller
         let mbc = Self::mbc(&header, rom)?;
@@ -80,7 +80,7 @@ impl Cartridge {
     pub fn unchecked(rom: &[u8]) -> Self {
         // Parse cartridge header
         let header = Header::try_from(rom).ok().unwrap_or_else(Header::blank);
-        debug!("Header:\n{header}");
+        debug!("header:\n{header}");
 
         // Construct memory bank controller
         let mbc = Self::mbc(&header, rom).ok().unwrap();
@@ -134,15 +134,15 @@ impl Cartridge {
             match read.cmp(&header.romsz) {
                 Ordering::Less => {
                     warn!(
-                        "Initialized {init} bytes; remaining {diff} bytes uninitialized",
+                        "initialized {init} bytes; remaining {diff} bytes uninitialized",
                         init = read,
                         diff = header.romsz - read
                     );
                 }
-                Ordering::Equal => info!("Initialized {read} bytes"),
+                Ordering::Equal => info!("initialized {read} bytes"),
                 Ordering::Greater => {
                     warn!(
-                        "Initialized {init} bytes; remaining {diff} bytes truncated",
+                        "initialized {init} bytes; remaining {diff} bytes truncated",
                         init = header.romsz,
                         diff = read - header.romsz
                     );

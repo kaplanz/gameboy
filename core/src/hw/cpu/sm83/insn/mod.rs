@@ -2,6 +2,7 @@
 
 use std::fmt::{Debug, Display};
 
+use log::trace;
 use thiserror::Error;
 
 use self::exec::Operation;
@@ -63,6 +64,7 @@ impl Instruction {
     /// Errors if the instruction failed to execute.
     pub fn exec(mut self, cpu: &mut Cpu) -> Result<Option<Self>> {
         // Execute operation
+        trace!("{self:?}");
         let res = self.oper.exec(self.code, cpu)?;
         // Extract next stage
         self.oper = match res {

@@ -69,9 +69,9 @@ impl Joypad {
         // Schedule interrupt on updated value
         if (prev & 0x0f) != (next & 0x0f) {
             self.pic.borrow_mut().req(Interrupt::Joypad);
-            debug!("Input {next:#010b}: {keys:?}"); // log updates with `debug`
+            debug!("input {next:#010b}: {keys:?}"); // log updates with `debug`
         } else if !is_empty {
-            trace!("Input {next:#010b}: {keys:?}"); // log others with `trace`
+            trace!("input {next:#010b}: {keys:?}"); // log others with `trace`
         }
 
         // Update controller state (inverted)

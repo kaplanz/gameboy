@@ -529,7 +529,7 @@ impl Stage {
         // If we're `Stage::Done`, proceed to `Stage::Fetch` this cycle
         if let Stage::Done = self {
             // Log previous register stage
-            trace!("Registers:\n{}", cpu.file);
+            trace!("registers:\n{}", cpu.file);
 
             // Check for pending interrupts
             let int = match cpu.ime {
@@ -543,7 +543,7 @@ impl Stage {
                 cpu.pic.borrow_mut().ack(int);
                 // Skip `Stage::Fetch`
                 let insn = Instruction::int(int);
-                debug!("0xXXXX: {insn}");
+                debug!("{:06x}: {insn}", int.handler());
                 self = Stage::Execute(insn);
             }
             // ... or fetch next instruction

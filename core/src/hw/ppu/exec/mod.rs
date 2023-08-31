@@ -53,7 +53,7 @@ impl Mode {
         }
 
         // Execute the current PPU mode
-        trace!("PPU @ {:03}:\n{self}", ppu.dot);
+        trace!("{:03}: {self:?}", ppu.dot);
         match self {
             Mode::Scan(scan) => scan.exec(ppu),
             Mode::Draw(draw) => draw.exec(ppu),

@@ -47,7 +47,7 @@ impl Cell<u8> for Dma {
     }
 
     fn store(&mut self, value: u8) {
-        debug!("Starting DMA @ {value:#04x}00");
+        debug!("starting DMA @ {value:#04x}00");
         self.page = value;
         self.idx = Some(0);
     }
@@ -74,7 +74,7 @@ impl Machine for Dma {
         let addr = (u16::from(self.page) << 8) | (*idx as u16);
         // Read this byte
         let data = self.bus.read(addr as usize);
-        trace!("Transferring OAM({idx:#04x}) <- *{addr:#06x} = {data:#04x}");
+        trace!("transferring OAM[{idx:#04x}] <- *{addr:#06x} = {data:#04x}");
         // Write this byte
         self.oam.write(*idx as usize, data);
         // Increment the address
