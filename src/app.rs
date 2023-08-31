@@ -7,7 +7,9 @@ use std::time::Duration;
 
 use eyre::Context;
 use gameboy::core::Emulator;
-use gameboy::dmg::{self, Button, GameBoy, Screen, SCREEN};
+#[allow(unused_imports)]
+use gameboy::dmg;
+use gameboy::dmg::{Button, GameBoy, Screen, SCREEN};
 use log::debug;
 use minifb::{Key, Window};
 #[cfg(feature = "gbd")]
@@ -58,6 +60,7 @@ pub struct Debug {
 impl App {
     #[allow(clippy::too_many_lines)]
     pub fn run(self) -> crate::Result<()> {
+        #[allow(unused_mut, unused_variables)]
         let Self {
             title,
             cfg,
