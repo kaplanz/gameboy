@@ -191,6 +191,7 @@ impl Debugger {
             Disable(point)          => exec::disable(self, point),
             Enable(point)           => exec::enable(self, point),
             Freq(cycle)             => exec::freq(self, cycle),
+            Goto(addr)              => exec::goto(emu, addr),
             Help(what)              => exec::help(what),
             Ignore(point, many)     => exec::ignore(self, point, many),
             Info(what)              => exec::info(self, what),

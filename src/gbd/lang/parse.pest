@@ -34,8 +34,8 @@ Filter        = @{ Directive ~ ("," ~ Filter)? }
 
 Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KDisable | KEnable | KFreq |
-                   KHelp | KIgnore | KInfo | KJump | KLoad | KLog | KList |
-                   KQuit | KRead | KReset | KStore | KStep | KWrite }
+                   KGoto | KHelp | KIgnore | KInfo | KJump | KLoad | KLog |
+                   KList | KQuit | KRead | KReset | KStore | KStep | KWrite }
     KBreak    =  { ^"break" | ^"brea" | ^"bre" | ^"br" | ^"b" }
     KContinue =  { ^"continue" | ^"continu" | ^"contin" | ^"conti" | ^"cont" |
                    ^"con" | ^"co" | ^"c" }
@@ -45,6 +45,7 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
     KEnable   =  { ^"enable" | ^"enabl" | ^"enab" | ^"ena" | ^"en" | ^"e" }
     KFreq     =  { ^"frequency" | ^"frequenc" | ^"frequen" | ^"freque" |
                    ^"frequ" | ^"freq" | ^"fre" | ^"fr" | ^"f" }
+    KGoto     =  { ^"goto" | ^"got" | ^"go" | ^"g" }
     KHelp     =  { ^"help" | ^"hel" | ^"he" | ^"h" }
     KIgnore   =  { ^"ignore" | ^"ignor" | ^"igno" | ^"ign" | ^"ig" }
     KInfo     =  { ^"info" | ^"inf" | ^"in" | ^"i" }
@@ -100,9 +101,9 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
         HL    =  { ^"hl" }
         SP    =  { ^"sp" }
         PC    =  { ^"pc" }
-  Command     = _{ Break | Continue | Delete | Disable | Enable | Freq | Help |
-                   Ignore | Info | Jump | Load | Log | List | Quit | Read |
-                   Reset | Store | Step | Write }
+  Command     = _{ Break | Continue | Delete | Disable | Enable | Freq | Goto |
+                   Help | Ignore | Info | Jump | Load | Log | List | Quit |
+                   Read | Reset | Store | Step | Write }
     Break     =  { KBreak ~ UInt }
     Continue  =  { KContinue }
     Delete    =  { KDelete ~ UInt }
@@ -113,6 +114,7 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
         Dot   =  { ^"tstate" | ^"t" | ^"dot"  | ^"d" }
         Insn  =  { ^"instruction"   | ^"insn" | ^"i" }
         Mach  =  { ^"machine"       | ^"mach" | ^"m" }
+    Goto      =  { KGoto ~ UInt }
     Help      =  { KHelp ~ Keyword? }
     Ignore    =  { KIgnore ~ UInt ~ UInt }
     Info      =  { KInfo ~ SInfo? }
