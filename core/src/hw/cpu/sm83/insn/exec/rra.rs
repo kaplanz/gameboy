@@ -31,11 +31,11 @@ fn execute(code: u8, cpu: &mut Cpu) -> Return {
     }
 
     // Execute RRA
-    let flags = &mut cpu.file.f.load();
+    let flags = &cpu.file.f.load();
     let acc = cpu.file.a.load();
     let cin = Flag::C.get(flags);
     let carry = acc & 0x01 != 0;
-    let res = ((cin as u8) << 7) | *cpu.file.a >> 1;
+    let res = ((cin as u8) << 7) | acc >> 1;
     cpu.file.a.store(res);
 
     // Set flags

@@ -214,7 +214,7 @@ fn execute_word(code: u8, cpu: &mut Cpu, word: u16) -> Return {
         0xfa => {
             // Execute LD A, [a16]
             let op2 = cpu.read(word);
-            *cpu.file.a = op2;
+            cpu.file.a.store(op2);
         }
         code => return Err(Error::Opcode(code)),
     }

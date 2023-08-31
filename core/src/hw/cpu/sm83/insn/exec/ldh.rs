@@ -60,7 +60,8 @@ fn execute(code: u8, cpu: &mut Cpu, a8: u8) -> Return {
         }
         0xf0 | 0xf2 => {
             // Execute LDH A, {a8, C}
-            *cpu.file.a = cpu.read(addr);
+            let op2 = cpu.read(addr);
+            cpu.file.a.store(op2);
         }
         code => return Err(Error::Opcode(code)),
     }

@@ -72,8 +72,7 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
 fn execute(_: u8, cpu: &mut Cpu, op1: u16, op2: u16) -> Return {
     // Execute ADDW
     let (res, carry) = op1.overflowing_add(op2);
-    let hl = cpu.file.hl;
-    hl.store(&mut cpu.file, res);
+    (cpu.file.hl.store)(&mut cpu.file, res);
 
     // Set flags
     let flags = &mut cpu.file.f.load();

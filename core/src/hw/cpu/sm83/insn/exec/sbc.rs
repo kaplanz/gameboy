@@ -53,8 +53,9 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
 
 fn execute(_: u8, cpu: &mut Cpu, op2: u8) -> Return {
     // Execute SUB
+    let flags = &cpu.file.f.load();
     let acc = cpu.file.a.load();
-    let cin = Flag::C.get(&cpu.file.f) as u8;
+    let cin = Flag::C.get(flags) as u8;
     let (res, carry0) = acc.overflowing_sub(op2);
     let (res, carry1) = res.overflowing_sub(cin);
     cpu.file.a.store(res);
