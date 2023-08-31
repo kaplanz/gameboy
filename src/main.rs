@@ -17,9 +17,9 @@ use tracing_subscriber::layer::Layered;
 #[cfg(feature = "gbd")]
 use tracing_subscriber::{reload, EnvFilter, Registry};
 
-use crate::app::{App, Settings};
 #[cfg(feature = "debug")]
 use crate::app::Debug;
+use crate::app::{App, Settings};
 use crate::cli::Args;
 #[cfg(feature = "doctor")]
 use crate::doc::Doctor;
