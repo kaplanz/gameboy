@@ -26,11 +26,11 @@ repository = "https://github.com/kaplanz/gameboy"
 license = "MIT OR Apache-2.0"
 
 [features]
-default = ["debug"]
-debug = ["doc", "gbd", "view"]
-doc = []
-gbd = ["dep:ctrlc", "dep:phex", "dep:parking_lot"]
-view = []
+default = ["doctor", "gbd", "view"]
+debug = []
+doctor = ["debug"]
+gbd = ["debug", "dep:ctrlc", "dep:phex", "dep:parking_lot"]
+view = ["debug"]
 
 [dependencies]
 clap = { version = "4.4.1", features = ["derive", "env", "wrap_help"] }
