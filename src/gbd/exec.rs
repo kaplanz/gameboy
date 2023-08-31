@@ -76,6 +76,13 @@ pub fn freq(gbd: &mut Debugger, cycle: Cycle) -> Result<()> {
     Ok(())
 }
 
+pub fn goto(emu: &mut GameBoy, addr: u16) -> Result<()> {
+    // Jump to specified address
+    emu.cpu_mut().goto(addr);
+
+    Ok(())
+}
+
 pub fn help(what: Option<Keyword>) -> Result<()> {
     if let Some(what) = what {
         debug!("help: `{what:?}`");

@@ -75,6 +75,10 @@ impl Language {
                 };
                 Command::Freq(cycle)
             }
+            Rule::Goto => {
+                let addr = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                Command::Goto(addr)
+            }
             Rule::Help => {
                 let what = args.next().map(Self::kword).transpose()?;
                 Command::Help(what)
@@ -244,6 +248,7 @@ impl Language {
             Rule::KDisable  => Keyword::Disable,
             Rule::KEnable   => Keyword::Enable,
             Rule::KFreq     => Keyword::Freq,
+            Rule::KGoto     => Keyword::Goto,
             Rule::KHelp     => Keyword::Help,
             Rule::KIgnore   => Keyword::Ignore,
             Rule::KInfo     => Keyword::Info,
