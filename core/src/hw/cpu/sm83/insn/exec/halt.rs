@@ -1,4 +1,4 @@
-use super::*;
+use super::{Cpu, Error, Execute, Operation, Return, Status};
 
 pub const fn default() -> Operation {
     Operation::Halt(Halt::Execute)

@@ -17,11 +17,6 @@
 #![allow(clippy::unnecessary_wraps)]
 #![allow(clippy::wildcard_imports)]
 
-use std::ops::{BitAnd, BitOr, BitXor};
-
-use enuf::Enuf;
-use remus::Cell;
-
 use super::{helpers, Cpu, Error, Execute, Flag, Ime, Instruction, Result, Status};
 
 type Return = Result<Option<Operation>>;

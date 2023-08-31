@@ -1,4 +1,9 @@
-use super::*;
+use std::ops::BitOr;
+
+use enuf::Enuf;
+use remus::Cell;
+
+use super::{helpers, Cpu, Error, Execute, Flag, Operation, Return};
 
 pub const fn default() -> Operation {
     Operation::Or(Or::Fetch)
