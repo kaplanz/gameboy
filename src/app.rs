@@ -82,6 +82,7 @@ impl App {
         // Initialize timer, counters
         let mut now = std::time::Instant::now();
         let mut cycle = 0;
+        let mut stamp = 0;
         let mut frame = 0;
 
         // Enable doctor when used
@@ -121,18 +122,21 @@ impl App {
         while win.is_open() {
             // Calculate wall-clock frequency
             if cycle % DIVIDER == 0 && now.elapsed().as_secs() > 0 {
-                // Calculate frames per cycle
-                let fps = f64::from(frame) / now.elapsed().as_secs_f64();
+                // Calculate stats
+                let iters = cycle - stamp; // iterations since last probe
+                let freq = f64::from(iters) / now.elapsed().as_secs_f64();
+                let speedup = freq / f64::from(FREQ);
+                let fps = 60. * speedup;
                 // Print cycle stats
                 debug!(
-                    "Frequency: {freq:0.4} MHz ({speedup:.1}%), FPS: {fps:.1} Hz",
-                    freq = f64::from(cycle) / 1e6,
-                    speedup = 100. * f64::from(cycle) / f64::from(FREQ)
+                    "frequency: {freq:>7.4} MHz, speedup: {speedup:>5.1}%, frame rate: {fps:>6.2} Hz",
+                    freq = freq / 1e6, speedup = 100. * speedup,
                 );
                 // Update the title to display the frequency
                 win.set_title(&format!("{title} ({fps:.1} Hz)"));
                 // Reset timer, counters
                 now = std::time::Instant::now();
+                stamp = cycle;
                 frame = 0;
             }
 
