@@ -147,11 +147,11 @@ impl Machine for Timer {
             // Increment TIMA
             let (tima, carry) = tima.overflowing_add(1);
             self.file.tima.store(tima);
-            trace!("TIMA: {tima}");
+            trace!("timer: {tima}");
             // Store a pending reload on overflow
             if carry {
                 self.file.tima.borrow_mut().reload = Some(div.wrapping_add(4));
-                debug!("scheduled TIMA reload");
+                debug!("scheduled timer reload");
             }
         } else if Some(div) == reload {
             // Reload from TMA
