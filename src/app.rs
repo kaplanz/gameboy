@@ -63,15 +63,16 @@ impl App {
 
         // Create 4 MiHz clock to sync emulator
         let divider = 0x100; // user a clock divider to sync
+        #[rustfmt::skip]
         let freq = match opts.speed {
-            Speed::Half => FREQ / 2,
-            Speed::Full => FREQ,
-            Speed::Double => 2 * FREQ,
-            Speed::Triple => 3 * FREQ,
-            Speed::Max => divider, // special case
-            Speed::Custom(freq) => freq,
+            Speed::Half         => Some(FREQ / 2),
+            Speed::Full         => Some(FREQ),
+            Speed::Double       => Some(2 * FREQ),
+            Speed::Triple       => Some(3 * FREQ),
+            Speed::Custom(freq) => Some(freq),
+            Speed::Max          => None,
         };
-        let mut clk = Clock::with_freq(freq / divider);
+        let mut clk = freq.map(|freq| freq / divider).map(Clock::with_freq);
 
         // Initialize timer, counters
         let mut now = std::time::Instant::now();
@@ -153,7 +154,7 @@ impl App {
                                     // Couldn't fetch; get program from user
                                     match {
                                         // Pause clock while awaiting user input
-                                        clk.pause();
+                                        clk.as_mut().map(Clock::pause);
                                         // Present the prompt
                                         gbd.prompt()
                                     } {
@@ -187,7 +188,7 @@ impl App {
                     }
 
                     // Unconditionally resume the clock
-                    clk.resume();
+                    clk.as_mut().map(Clock::resume);
                 }
 
                 // Cycle debugger to remain synchronized with emulator
@@ -195,9 +196,9 @@ impl App {
             }
 
             // Synchronize with wall-clock
-            if cycle % divider == 0 && opts.speed != Speed::Max {
+            if cycle % divider == 0 {
                 // Delay until clock is ready
-                clk.next();
+                clk.as_mut().map(Iterator::next);
             }
 
             // Perform a single cycle
