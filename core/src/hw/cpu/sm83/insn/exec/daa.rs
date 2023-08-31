@@ -31,9 +31,10 @@ fn execute(code: u8, cpu: &mut Cpu) -> Return {
     }
 
     // Execute DAA
-    let didsub = Flag::N.get(&cpu.file.f);
-    let hcarry = Flag::H.get(&cpu.file.f);
-    let mut carry = Flag::C.get(&cpu.file.f);
+    let flags = &cpu.file.f.load();
+    let didsub = Flag::N.get(flags);
+    let hcarry = Flag::H.get(flags);
+    let mut carry = Flag::C.get(flags);
     let mut adj = 0i8;
     let acc = cpu.file.a.load();
     if hcarry || (!didsub && (acc & 0x0f) > 0x09) {

@@ -45,16 +45,13 @@ fn execute(code: u8, cpu: &mut Cpu, op1: u16) -> Return {
     let res = op1.wrapping_sub(1);
     match code {
         0x0b => {
-            let bc = cpu.file.bc;
-            bc.store(&mut cpu.file, res);
+            (cpu.file.bc.store)(&mut cpu.file, res);
         }
         0x1b => {
-            let de = cpu.file.de;
-            de.store(&mut cpu.file, res);
+            (cpu.file.de.store)(&mut cpu.file, res);
         }
         0x2b => {
-            let hl = cpu.file.hl;
-            hl.store(&mut cpu.file, res);
+            (cpu.file.hl.store)(&mut cpu.file, res);
         }
         0x3b => cpu.file.sp.store(res),
         code => return Err(Error::Opcode(code)),

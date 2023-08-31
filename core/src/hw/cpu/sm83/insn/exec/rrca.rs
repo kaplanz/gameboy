@@ -33,7 +33,7 @@ fn execute(code: u8, cpu: &mut Cpu) -> Return {
     // Execute RRCA
     let acc = cpu.file.a.load();
     let carry = acc & 0x01 != 0;
-    let res = ((carry as u8) << 7) | *cpu.file.a >> 1;
+    let res = ((carry as u8) << 7) | acc >> 1;
     cpu.file.a.store(res);
 
     // Set flags

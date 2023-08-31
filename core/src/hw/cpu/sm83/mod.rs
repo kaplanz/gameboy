@@ -269,19 +269,13 @@ impl Location<u16> for Cpu {
 
     fn store(&mut self, reg: Self::Register, value: u16) {
         let file = &mut self.file;
-        let af = file.af;
-        let bc = file.bc;
-        let de = file.de;
-        let hl = file.hl;
-        let sp = &mut file.sp;
-        let pc = &mut file.pc;
         match reg {
-            reg::Word::AF => af.store(file, value),
-            reg::Word::BC => bc.store(file, value),
-            reg::Word::DE => de.store(file, value),
-            reg::Word::HL => hl.store(file, value),
-            reg::Word::SP => sp.store(value),
-            reg::Word::PC => pc.store(value),
+            reg::Word::AF => (file.af.store)(file, value),
+            reg::Word::BC => (file.bc.store)(file, value),
+            reg::Word::DE => (file.de.store)(file, value),
+            reg::Word::HL => (file.hl.store)(file, value),
+            reg::Word::SP => file.sp.store(value),
+            reg::Word::PC => file.pc.store(value),
         }
     }
 }
@@ -385,53 +379,53 @@ impl Default for File {
             a: Register::default(),
             f: Register::default(),
             af: Wide {
-                load: |regs: &File| {
-                    let a = *regs.a as u16;
-                    let f = *regs.f as u16;
+                load: |file: &File| {
+                    let a = file.a.load() as u16;
+                    let f = file.f.load() as u16;
                     (a << 8) | f
                 },
-                store: |regs: &mut File, af: u16| {
-                    *regs.a = ((af & 0xff00) >> 8) as u8;
-                    *regs.f = (af & 0x00ff) as u8;
+                store: |file: &mut File, af: u16| {
+                    file.a.store(((af & 0xff00) >> 8) as u8);
+                    file.f.store((af & 0x00ff) as u8);
                 },
             },
             b: Register::default(),
             c: Register::default(),
             bc: Wide {
-                load: |regs: &File| {
-                    let b = *regs.b as u16;
-                    let c = *regs.c as u16;
+                load: |file: &File| {
+                    let b = file.b.load() as u16;
+                    let c = file.c.load() as u16;
                     (b << 8) | c
                 },
-                store: |regs: &mut File, bc: u16| {
-                    *regs.b = ((bc & 0xff00) >> 8) as u8;
-                    *regs.c = (bc & 0x00ff) as u8;
+                store: |file: &mut File, bc: u16| {
+                    file.b.store(((bc & 0xff00) >> 8) as u8);
+                    file.c.store((bc & 0x00ff) as u8);
                 },
             },
             d: Register::default(),
             e: Register::default(),
             de: Wide {
-                load: |regs: &File| {
-                    let d = *regs.d as u16;
-                    let e = *regs.e as u16;
+                load: |file: &File| {
+                    let d = file.d.load() as u16;
+                    let e = file.e.load() as u16;
                     (d << 8) | e
                 },
-                store: |regs: &mut File, de: u16| {
-                    *regs.d = ((de & 0xff00) >> 8) as u8;
-                    *regs.e = (de & 0x00ff) as u8;
+                store: |file: &mut File, de: u16| {
+                    file.d.store(((de & 0xff00) >> 8) as u8);
+                    file.e.store((de & 0x00ff) as u8);
                 },
             },
             h: Register::default(),
             l: Register::default(),
             hl: Wide {
-                load: |regs: &File| {
-                    let h = *regs.h as u16;
-                    let l = *regs.l as u16;
+                load: |file: &File| {
+                    let h = file.h.load() as u16;
+                    let l = file.l.load() as u16;
                     (h << 8) | l
                 },
-                store: |regs: &mut File, hl: u16| {
-                    *regs.h = ((hl & 0xff00) >> 8) as u8;
-                    *regs.l = (hl & 0x00ff) as u8;
+                store: |file: &mut File, hl: u16| {
+                    file.h.store(((hl & 0xff00) >> 8) as u8);
+                    file.l.store((hl & 0x00ff) as u8);
                 },
             },
             sp: Register::default(),
@@ -443,17 +437,17 @@ impl Default for File {
 impl Display for File {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "┌───┬────┬───┬────┐")?;
-        writeln!(f, "│ A │ {:02x} │ F │ {:02x} │", *self.a, *self.f)?;
+        writeln!(f, "│ A │ {:02x} │ F │ {:02x} │", self.a.load(), self.f.load())?;
         writeln!(f, "├───┼────┼───┼────┤")?;
-        writeln!(f, "│ B │ {:02x} │ C │ {:02x} │", *self.b, *self.c)?;
+        writeln!(f, "│ B │ {:02x} │ C │ {:02x} │", self.b.load(), self.c.load())?;
         writeln!(f, "├───┼────┼───┼────┤")?;
-        writeln!(f, "│ D │ {:02x} │ E │ {:02x} │", *self.d, *self.e)?;
+        writeln!(f, "│ D │ {:02x} │ E │ {:02x} │", self.d.load(), self.e.load())?;
         writeln!(f, "├───┼────┼───┼────┤")?;
-        writeln!(f, "│ H │ {:02x} │ L │ {:02x} │", *self.h, *self.l)?;
+        writeln!(f, "│ H │ {:02x} │ L │ {:02x} │", self.h.load(), self.l.load())?;
         writeln!(f, "├───┴────┼───┴────┤")?;
-        writeln!(f, "│   SP   │  {:04x}  │", *self.sp)?;
+        writeln!(f, "│   SP   │  {:04x}  │", self.sp.load())?;
         writeln!(f, "├────────┼────────┤")?;
-        writeln!(f, "│   PC   │  {:04x}  │", *self.pc)?;
+        writeln!(f, "│   PC   │  {:04x}  │", self.pc.load())?;
         write!(f, "└────────┴────────┘")
     }
 }
@@ -556,7 +550,7 @@ impl Stage {
         // If we're `Stage::Fetch,` proceed to `Stage::Execute(_)` this cycle
         if let Stage::Fetch = self {
             // Read the next instruction
-            let pc = *cpu.file.pc;
+            let pc = cpu.file.pc.load();
             let opcode = cpu.fetchbyte();
 
             // Decode the instruction
@@ -565,7 +559,9 @@ impl Stage {
             // Check for HALT bug
             if cpu.halt_bug {
                 // Service the bug by rolling back the PC
-                *cpu.file.pc = cpu.file.pc.wrapping_sub(1);
+                let mut pc = cpu.file.pc.load();
+                pc = pc.wrapping_sub(1);
+                cpu.file.pc.store(pc);
                 cpu.halt_bug = false;
             }
 
@@ -574,7 +570,8 @@ impl Stage {
             debug!(
                 "{pc:#06x}: {}",
                 if opcode == 0xcb {
-                    let opcode = cpu.bus.read(*cpu.file.pc as usize);
+                    let pc = cpu.file.pc.load();
+                    let opcode = cpu.bus.read(pc as usize);
                     format!("{}", Instruction::prefix(opcode))
                 } else {
                     format!("{insn}")

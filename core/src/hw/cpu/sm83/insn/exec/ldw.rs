@@ -84,11 +84,12 @@ fn delay(_: u8, _: &mut Cpu, op2: u16) -> Return {
 
 fn execute(code: u8, cpu: &mut Cpu, op2: u16) -> Return {
     // Execute LDW
+    let file = &mut cpu.file;
     match code {
-        0x01 => (cpu.file.bc.store)(&mut cpu.file, op2),
-        0x11 => (cpu.file.de.store)(&mut cpu.file, op2),
-        0x21 => (cpu.file.hl.store)(&mut cpu.file, op2),
-        0x31 | 0xf9 => *cpu.file.sp = op2,
+        0x01 => (file.bc.store)(file, op2),
+        0x11 => (file.de.store)(file, op2),
+        0x21 => (file.hl.store)(file, op2),
+        0x31 | 0xf9 => file.sp.store(op2),
         code => return Err(Error::Opcode(code)),
     }
 
@@ -131,11 +132,10 @@ fn done_0x08(_: u8, _: &mut Cpu) -> Return {
 
 fn execute_0xf8(_: u8, cpu: &mut Cpu, e8: u8) -> Return {
     // LD HL, SP + e8
-    let sp = *cpu.file.sp;
+    let sp = cpu.file.sp.load();
     let e16 = e8 as i8 as u16;
     let res = sp.wrapping_add(e16);
-    let hl = cpu.file.hl;
-    hl.store(&mut cpu.file, res);
+    (cpu.file.hl.store)(&mut cpu.file, res);
 
     // Set flags
     let flags = &mut cpu.file.f.load();
