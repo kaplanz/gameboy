@@ -1,4 +1,6 @@
-use super::*;
+use remus::Cell;
+
+use super::{Cpu, Error, Execute, Ime, Operation, Return};
 use crate::hw::pic::Interrupt;
 
 #[derive(Clone, Debug, Default)]

@@ -1,4 +1,4 @@
-use super::*;
+use super::{Cpu, Error, Execute, Ime, Operation, Return};
 
 pub const fn default() -> Operation {
     Operation::Ei(Ei::Execute)

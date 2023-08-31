@@ -1,4 +1,4 @@
-use super::*;
+use super::{Cpu, Error, Execute, Instruction, Operation, Return};
 
 pub const fn default() -> Operation {
     Operation::Prefix(Prefix::Fetch)

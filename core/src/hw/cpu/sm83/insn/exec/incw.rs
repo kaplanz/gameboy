@@ -1,4 +1,6 @@
-use super::*;
+use remus::Cell;
+
+use super::{Cpu, Error, Execute, Operation, Return};
 
 pub const fn default() -> Operation {
     Operation::Incw(Incw::Fetch)

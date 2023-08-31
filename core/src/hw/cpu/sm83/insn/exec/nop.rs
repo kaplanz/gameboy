@@ -1,4 +1,4 @@
-use super::*;
+use super::{Cpu, Error, Execute, Operation, Return};
 
 pub const fn default() -> Operation {
     Operation::Nop(Nop::Execute)

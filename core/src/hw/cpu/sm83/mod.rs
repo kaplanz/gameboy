@@ -437,13 +437,33 @@ impl Default for File {
 impl Display for File {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "┌───┬────┬───┬────┐")?;
-        writeln!(f, "│ A │ {:02x} │ F │ {:02x} │", self.a.load(), self.f.load())?;
+        writeln!(
+            f,
+            "│ A │ {:02x} │ F │ {:02x} │",
+            self.a.load(),
+            self.f.load()
+        )?;
         writeln!(f, "├───┼────┼───┼────┤")?;
-        writeln!(f, "│ B │ {:02x} │ C │ {:02x} │", self.b.load(), self.c.load())?;
+        writeln!(
+            f,
+            "│ B │ {:02x} │ C │ {:02x} │",
+            self.b.load(),
+            self.c.load()
+        )?;
         writeln!(f, "├───┼────┼───┼────┤")?;
-        writeln!(f, "│ D │ {:02x} │ E │ {:02x} │", self.d.load(), self.e.load())?;
+        writeln!(
+            f,
+            "│ D │ {:02x} │ E │ {:02x} │",
+            self.d.load(),
+            self.e.load()
+        )?;
         writeln!(f, "├───┼────┼───┼────┤")?;
-        writeln!(f, "│ H │ {:02x} │ L │ {:02x} │", self.h.load(), self.l.load())?;
+        writeln!(
+            f,
+            "│ H │ {:02x} │ L │ {:02x} │",
+            self.h.load(),
+            self.l.load()
+        )?;
         writeln!(f, "├───┴────┼───┴────┤")?;
         writeln!(f, "│   SP   │  {:04x}  │", self.sp.load())?;
         writeln!(f, "├────────┼────────┤")?;
