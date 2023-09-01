@@ -19,9 +19,7 @@ use remus::{Clock, Machine};
 #[cfg(feature = "doctor")]
 use crate::doc::Doctor;
 #[cfg(feature = "gbd")]
-use crate::gbd;
-#[cfg(feature = "gbd")]
-use crate::gbd::Debugger;
+use crate::gbd::{self, Debugger};
 use crate::gui::Gui;
 use crate::pal::Palette;
 use crate::{Speed, FREQ};
@@ -55,6 +53,7 @@ pub struct Debug {
 }
 
 impl App {
+    /// Runs the application.
     #[allow(clippy::too_many_lines)]
     pub fn run(self) -> crate::Result<()> {
         #[allow(unused_mut, unused_variables)]
@@ -153,59 +152,13 @@ impl App {
                 // Sync with console
                 gbd.sync(&emu);
 
-                // Perform debugger actions
+                // Run debugger when enabled
                 if gbd.enabled() {
-                    // Provide information to user before prompting for command
-                    gbd.inform(&emu);
-                    // Prompt and execute commands until emulation resumed
-                    gbd.pause();
-                    'gbd: while gbd.paused() {
-                        let res = 'res: {
-                            // Attempt to fetch command
-                            let cmd = {
-                                // Attempt to fetch the next command
-                                if let cmd @ Some(_) = gbd.fetch() {
-                                    // It worked; use it
-                                    cmd
-                                } else {
-                                    // Couldn't fetch; get program from user
-                                    match {
-                                        // Pause clock while awaiting user input
-                                        clk.as_mut().map(Clock::pause);
-                                        // Present the prompt
-                                        gbd.prompt()
-                                    } {
-                                        // Program input; fetch next iteration
-                                        Ok(_) => continue 'gbd,
-                                        // No input; repeat previous command
-                                        Err(gbd::Error::NoInput) => gbd.prev().cloned(),
-                                        // Prompt error; handle upstream
-                                        err @ Err(_) => {
-                                            break 'res err;
-                                        }
-                                    }
-                                }
-                            };
-                            // Extract fetched command
-                            let Some(cmd) = cmd else {
-                                // Command still not found; this case should
-                                // only occur when no input has been provided,
-                                // as otherwise the previously executed command
-                                // should be repeated.
-                                continue 'gbd;
-                            };
-                            // Execute fetched command
-                            gbd.exec(&mut emu, cmd)
-                        };
-                        match res {
-                            Ok(_) => (),
-                            Err(gbd::Error::Quit) => return Ok(()),
-                            Err(err) => tell::error!("{err}"),
-                        }
+                    let res = gbd.run(&mut emu, &mut clk);
+                    // Quit if requested
+                    if matches!(res, Err(gbd::Error::Quit)) {
+                        return Ok(());
                     }
-
-                    // Unconditionally resume the clock
-                    clk.as_mut().map(Clock::resume);
                 }
 
                 // Cycle debugger to remain synchronized with emulator
