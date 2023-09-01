@@ -35,6 +35,14 @@ pub struct Args {
     #[arg(short, long)]
     pub force: bool,
 
+    /// Run without starting a UI.
+    ///
+    /// Runs the emulator without initializing and opening the UI. When compiled
+    /// with GBD support, the emulator will also present a debugging prompt
+    /// (implies --gbd).
+    #[arg(short = 'H', long)]
+    pub headless: bool,
+
     /// Logging level.
     ///
     /// A comma-separated list of logging directives, parsed using `env_logger`.
