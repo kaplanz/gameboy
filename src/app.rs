@@ -9,9 +9,9 @@ use eyre::Context;
 use gameboy::core::Emulator;
 #[allow(unused_imports)]
 use gameboy::dmg;
-use gameboy::dmg::{Button, GameBoy, Screen, SCREEN};
+use gameboy::dmg::{Button, GameBoy, Screen};
 use log::debug;
-use minifb::{Key, Window};
+use minifb::Key;
 #[cfg(feature = "gbd")]
 use parking_lot::Mutex;
 use remus::{Clock, Machine};
@@ -22,9 +22,8 @@ use crate::doc::Doctor;
 use crate::gbd;
 #[cfg(feature = "gbd")]
 use crate::gbd::Debugger;
+use crate::gui::Gui;
 use crate::pal::Palette;
-#[cfg(feature = "view")]
-use crate::view::View;
 use crate::{Speed, FREQ};
 
 // Clock divider for more efficient synchronization.
@@ -35,9 +34,9 @@ pub struct App {
     pub title: String,
     pub cfg: Settings,
     pub emu: GameBoy,
-    pub win: Window,
+    pub gui: Option<Gui>,
     #[cfg(feature = "debug")]
-    pub debug: Debug,
+    pub dbg: Debug,
 }
 
 #[derive(Debug)]
@@ -53,8 +52,6 @@ pub struct Debug {
     pub doc: Option<Doctor>,
     #[cfg(feature = "gbd")]
     pub gbd: Option<Debugger>,
-    #[cfg(feature = "view")]
-    pub view: Option<View>,
 }
 
 impl App {
@@ -65,9 +62,9 @@ impl App {
             title,
             cfg,
             mut emu,
-            mut win,
+            mut gui,
             #[cfg(feature = "debug")]
-            mut debug,
+            mut dbg,
         } = self;
 
         // Create 4 MiHz clock to sync emulator
@@ -90,11 +87,11 @@ impl App {
 
         // Enable doctor when used
         #[cfg(feature = "doctor")]
-        emu.set_doc(debug.doc.is_some());
+        emu.set_doc(dbg.doc.is_some());
 
         // Prepare debugger when used
         #[cfg(feature = "gbd")]
-        let mut gbd = debug.gbd.map(Mutex::new).map(Arc::new);
+        let mut gbd = dbg.gbd.map(Mutex::new).map(Arc::new);
         #[cfg(feature = "gbd")]
         if let Some(gbd) = gbd.as_ref().map(Arc::clone) {
             {
@@ -122,7 +119,12 @@ impl App {
         }
 
         // Emulation loop
-        while win.is_open() {
+        loop {
+            // Break when GUI is closed
+            if let Some(false) = gui.as_ref().map(Gui::alive) {
+                break;
+            }
+
             // Calculate wall-clock frequency
             if cycle % DIVIDER == 0 && now.elapsed().as_secs() > 0 {
                 // Calculate stats
@@ -130,20 +132,22 @@ impl App {
                 let freq = f64::from(iters) / now.elapsed().as_secs_f64();
                 let speedup = freq / f64::from(FREQ);
                 let fps = 60. * speedup;
-                // Print cycle stats
+                // Log stats
                 debug!(
                     "frequency: {freq:>7.4} MHz, speedup: {speedup:>5.1}%, frame rate: {fps:>6.2} Hz",
                     freq = freq / 1e6, speedup = 100. * speedup,
                 );
-                // Update the title to display the frequency
-                win.set_title(&format!("{title} ({fps:.1} Hz)"));
+                // Display frequency in GUI
+                if let Some(gui) = gui.as_mut() {
+                    gui.main.set_title(&format!("{title} ({fps:.1} Hz)"));
+                }
                 // Reset timer, counters
                 now = std::time::Instant::now();
                 stamp = cycle;
                 frame = 0;
             }
 
-            // Optionally run the debugger
+            // Run debugger when enabled
             #[cfg(feature = "gbd")]
             if let Some(mut gbd) = gbd.as_mut().map(|gbd| gbd.lock()) {
                 // Sync with console
@@ -214,47 +218,52 @@ impl App {
                 clk.as_mut().map(Iterator::next);
             }
 
-            // Perform a single cycle
+            // Emulate a single cycle
             emu.cycle();
 
-            // Redraw the screen (if needed)
-            let mut winres = Ok(());
-            emu.redraw(|screen: &Screen| {
-                let buf = screen
-                    .iter()
-                    .map(|&col| cfg.pal[col as usize].into())
-                    .collect::<Vec<_>>();
-                winres = win.update_with_buffer(&buf, SCREEN.width, SCREEN.height);
-                frame += 1; // update frames drawn
-            });
-            winres.context("failed to redraw screen")?; // return early if window update failed
+            // Redraw GUI
+            if let Some(gui) = gui.as_mut() {
+                // Redraw main window
+                let mut res = Ok(());
+                emu.redraw(|screen: &Screen| {
+                    // Collect PPU screen into buffer
+                    let buf = screen
+                        .iter()
+                        .map(|&col| cfg.pal[col as usize].into())
+                        .collect::<Vec<_>>();
+                    // Redraw main window
+                    res = gui.main.redraw(&buf);
+                    frame += 1; // update frames drawn
+                });
+                res.context("failed to redraw screen")?; // return early if window update failed
 
-            // Update the debug view every second
-            #[cfg(feature = "view")]
-            if let Some(view) = &mut debug.view {
-                if frame == 0 {
-                    // Gather debug info
-                    let info = dmg::dbg::ppu(&mut emu);
-                    // Extract PPU state
-                    let tdat = info.tdat.map(|col| cfg.pal[col as usize].into());
-                    let map1 = info.map1.map(|col| cfg.pal[col as usize].into());
-                    let map2 = info.map2.map(|col| cfg.pal[col as usize].into());
-                    // Display PPU state
-                    view.tdat
-                        .update_with_buffer(&tdat, 16 * 8, 24 * 8)
-                        .context("failed to redraw tile data")?;
-                    view.map1
-                        .update_with_buffer(&map1, 32 * 8, 32 * 8)
-                        .context("failed to redraw tile map 1")?;
-                    view.map2
-                        .update_with_buffer(&map2, 32 * 8, 32 * 8)
-                        .context("failed to redraw tile map 2")?;
+                // Redraw debug view
+                #[cfg(feature = "view")]
+                if let Some(view) = &mut gui.view {
+                    if frame == 0 {
+                        // Gather debug info
+                        let info = dmg::dbg::ppu(&mut emu);
+                        // Extract PPU state
+                        let tdat = info.tdat.map(|col| cfg.pal[col as usize].into());
+                        let map1 = info.map1.map(|col| cfg.pal[col as usize].into());
+                        let map2 = info.map2.map(|col| cfg.pal[col as usize].into());
+                        // Display PPU state
+                        view.tdat
+                            .redraw(&tdat)
+                            .context("failed to redraw tile data")?;
+                        view.map1
+                            .redraw(&map1)
+                            .context("failed to redraw tile map 1")?;
+                        view.map2
+                            .redraw(&map2)
+                            .context("failed to redraw tile map 2")?;
+                    }
                 }
             }
 
             // Log doctor entries
             #[cfg(feature = "doctor")]
-            if let Some(out) = &mut debug.doc {
+            if let Some(out) = &mut dbg.doc {
                 // Gather debug info
                 let info = dmg::dbg::doc(&mut emu);
                 // Format, writing if non-empty
@@ -264,10 +273,12 @@ impl App {
                 }
             }
 
-            // Send joypad input (sampled every 64 cycles)
-            if cycle % 0x40 == 0 {
-                #[rustfmt::skip]
-                let keys = win.get_keys().into_iter().filter_map(|key| match key {
+            // Send joypad input
+            if let Some(gui) = gui.as_mut() {
+                // NOTE: Input is sampled every 64 cycles.
+                if cycle % 0x40 == 0 {
+                    #[rustfmt::skip]
+                let keys = gui.main.get_keys().into_iter().filter_map(|key| match key {
                     Key::Z     => Some(Button::A),
                     Key::X     => Some(Button::B),
                     Key::Space => Some(Button::Select),
@@ -278,7 +289,8 @@ impl App {
                     Key::Down  => Some(Button::Down),
                     _ => None
                 }).collect::<Vec<_>>();
-                emu.send(&keys);
+                    emu.send(&keys);
+                }
             }
 
             // Clock another cycle

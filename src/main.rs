@@ -6,10 +6,10 @@ use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
 use eyre::{ensure, Result, WrapErr};
+use gameboy::core::dmg::Dimensions;
 use gameboy::dmg::cart::Cartridge;
 use gameboy::dmg::{Boot, GameBoy, SCREEN};
 use log::{info, warn};
-use minifb::{Scale, ScaleMode, Window, WindowOptions};
 #[cfg(feature = "gbd")]
 use tracing_subscriber::fmt::Layer;
 #[cfg(feature = "gbd")]
@@ -26,7 +26,8 @@ use crate::doc::Doctor;
 #[cfg(feature = "gbd")]
 use crate::gbd::Debugger;
 #[cfg(feature = "view")]
-use crate::view::View;
+use crate::gui::view::View;
+use crate::gui::{Gui, Window};
 
 mod app;
 mod cli;
@@ -34,9 +35,8 @@ mod cli;
 mod doc;
 #[cfg(feature = "gbd")]
 mod gbd;
+mod gui;
 mod pal;
-#[cfg(feature = "view")]
-mod view;
 
 #[cfg(feature = "gbd")]
 type Handle = reload::Handle<EnvFilter, Layered<Layer<Registry>, Registry>>;
@@ -94,22 +94,16 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    // Define window options
-    let opts = WindowOptions {
-        resize: true,
-        scale: Scale::X2,
-        scale_mode: ScaleMode::AspectRatioStretch,
-        ..Default::default()
-    };
-    // Create main window
-    let win = Window::new(&title, SCREEN.width, SCREEN.height, opts)?;
-
-    // Create debug views
-    #[cfg(feature = "view")]
-    let view = if args.view {
-        Some(View::new(opts))
-    } else {
+    // Initialize UI
+    let gui = if args.headless {
         None
+    } else {
+        let Dimensions { width, height } = SCREEN;
+        Some(Gui {
+            main: Window::new(&title, width, height)?,
+            #[cfg(feature = "view")]
+            view: args.view.then_some(View::new()?),
+        })
     };
 
     #[cfg(feature = "doctor")]
@@ -141,17 +135,15 @@ fn main() -> Result<()> {
         doc,
         #[cfg(feature = "gbd")]
         gbd,
-        #[cfg(feature = "view")]
-        view,
     };
     // Prepare application
     let app = App {
         title,
         cfg,
         emu,
-        win,
+        gui,
         #[cfg(feature = "debug")]
-        debug,
+        dbg: debug,
     };
 
     // Run the app
