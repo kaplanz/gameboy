@@ -123,7 +123,7 @@ fn main() -> Result<()> {
     let gbd = args
         .gbd
         .then_some(Debugger::new())
-        .map(|gdb| gdb.reload(handle));
+        .map(|gdb| gdb.set_log(handle));
 
     // Prepare settings
     let Args { pal, speed, .. } = args;

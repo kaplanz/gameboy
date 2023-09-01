@@ -6,7 +6,7 @@ use gameboy::dmg::cpu::{reg, Stage};
 use gameboy::dmg::GameBoy;
 use indexmap::IndexMap;
 use log::debug;
-use remus::{Block, Location, Machine};
+use remus::{Block, Clock, Location, Machine};
 use rustyline::error::ReadlineError;
 use rustyline::history::History;
 use rustyline::DefaultEditor as Readline;
@@ -73,7 +73,7 @@ impl Display for Mode {
 pub struct Debugger {
     // Application state
     cycle: usize,
-    reload: Option<Handle>,
+    log: Option<Handle>,
     // Console state
     pc: u16,
     state: Stage,
@@ -88,46 +88,115 @@ pub struct Debugger {
 }
 
 impl Debugger {
+    /// Creates a new `Debugger` instance.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Runs interactive debugger.
+    pub fn run(&mut self, emu: &mut GameBoy, clk: &mut Option<Clock>) -> Result<()> {
+        // Provide information to user before prompting for command
+        self.inform(emu);
+        // Prompt and execute commands until emulation resumed
+        self.pause();
+        'gbd: while self.paused() {
+            let res = 'res: {
+                // Attempt to fetch command
+                let cmd = {
+                    // Attempt to fetch the next command
+                    if let cmd @ Some(_) = self.fetch() {
+                        // It worked; use it
+                        cmd
+                    } else {
+                        // Couldn't fetch; get program from user
+                        match {
+                            // Pause clock while awaiting user input
+                            clk.as_mut().map(Clock::pause);
+                            // Present the prompt
+                            self.prompt()
+                        } {
+                            // Program input; fetch next iteration
+                            Ok(_) => continue 'gbd,
+                            // No input; repeat previous command
+                            Err(Error::NoInput) => self.prev().cloned(),
+                            // Prompt error; handle upstream
+                            err @ Err(_) => {
+                                break 'res err;
+                            }
+                        }
+                    }
+                };
+                // Extract fetched command
+                let Some(cmd) = cmd else {
+                    // Command still not found; this case should
+                    // only occur when no input has been provided,
+                    // as otherwise the previously executed command
+                    // should be repeated.
+                    continue 'gbd;
+                };
+                // Execute fetched command
+                self.exec(emu, cmd)
+            };
+            match res {
+                Ok(_) => (),
+                err @ Err(Error::Quit) => return err,
+                Err(err) => tell::error!("{err}"),
+            }
+        }
+
+        // Unconditionally resume the clock
+        clk.as_mut().map(Clock::resume);
+
+        Ok(())
+    }
+
+    /// Fetches the currently loaded program.
     #[allow(dead_code)]
     pub fn prog(&self) -> Option<&Program> {
         self.prog.as_ref()
     }
 
+    /// Returns the previously executed command.
     pub fn prev(&self) -> Option<&Command> {
         self.prev.as_ref()
     }
 
-    pub fn reload(mut self, handle: Handle) -> Self {
-        self.reload = Some(handle);
+    /// Sets the logging handle.
+    ///
+    /// Used to change the logging level filter.
+    pub fn set_log(mut self, handle: Handle) -> Self {
+        self.log = Some(handle);
         self
     }
 
+    /// Enables the debugger.
     pub fn enable(&mut self) {
         self.step = Some(0);
     }
 
+    /// Resumes console emulation.
     pub fn resume(&mut self) {
         self.play = true;
     }
 
+    /// Pauses console emuulation.
     pub fn pause(&mut self) {
         self.play = false;
     }
 
+    /// Checks if the console is paused.
     pub fn paused(&self) -> bool {
         !self.play
     }
 
+    /// Synchronizes the debugger with the console.
     pub fn sync(&mut self, emu: &GameBoy) {
         // Update program counter
         self.pc = emu.cpu().load(reg::Word::PC);
         self.state = emu.cpu().stage().clone();
     }
 
+    /// Informs the user of the current emulation context.
     pub fn inform(&self, emu: &GameBoy) {
         // Give context if recently paused
         if self.play {
@@ -135,6 +204,7 @@ impl Debugger {
         }
     }
 
+    /// Prompts the user for a debugger program.
     pub fn prompt(&mut self) -> Result<()> {
         // Lazily initialize prompt
         let line = if let Some(line) = &mut self.line {
@@ -171,10 +241,12 @@ impl Debugger {
         }
     }
 
+    /// Fetches the next command of the debugger program.
     pub fn fetch(&mut self) -> Option<Command> {
         self.prog.as_mut()?.pop_front()
     }
 
+    /// Executes a debugger command.
     #[rustfmt::skip]
     #[allow(clippy::enum_glob_use)]
     pub fn exec(&mut self, emu: &mut GameBoy, cmd: Command) -> Result<()> {

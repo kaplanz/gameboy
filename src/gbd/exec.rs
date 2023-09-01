@@ -165,7 +165,7 @@ pub fn list(gbd: &Debugger, emu: &GameBoy) -> Result<()> {
 #[allow(clippy::needless_pass_by_value)]
 pub fn log(gbd: &mut Debugger, filter: Option<String>) -> Result<()> {
     // Extract the reload handle
-    let handle = gbd.reload.as_mut().ok_or(Error::MissingReloadHandle)?;
+    let handle = gbd.log.as_mut().ok_or(Error::MissingReloadHandle)?;
 
     // Change the tracing filter
     if let Some(filter) = filter {
