@@ -48,14 +48,14 @@ impl Breakpoint {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
-pub enum Cycle {
+pub enum Mode {
     Dot,
     #[default]
     Mach,
     Insn,
 }
 
-impl Display for Cycle {
+impl Display for Mode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -79,7 +79,7 @@ pub struct Debugger {
     state: Stage,
     // Internal state
     play: bool,
-    freq: Cycle,
+    freq: Mode,
     step: Option<usize>,
     line: Option<Readline>,
     prog: Option<Program>,
@@ -190,7 +190,7 @@ impl Debugger {
             Delete(point)           => exec::delete(self, point),
             Disable(point)          => exec::disable(self, point),
             Enable(point)           => exec::enable(self, point),
-            Freq(cycle)             => exec::freq(self, cycle),
+            Freq(mode)              => exec::freq(self, mode),
             Goto(addr)              => exec::goto(emu, addr),
             Help(what)              => exec::help(what),
             Ignore(point, many)     => exec::ignore(self, point, many),
@@ -219,9 +219,9 @@ impl Debugger {
         let mcycle = self.cycle % 4 == 0;
         // Check if this is an edge cycle
         match self.freq {
-            Cycle::Dot => true,
-            Cycle::Mach => mcycle,
-            Cycle::Insn => mcycle && matches!(self.state, Stage::Done),
+            Mode::Dot => true,
+            Mode::Mach => mcycle,
+            Mode::Insn => mcycle && matches!(self.state, Stage::Done),
         }
     }
 }

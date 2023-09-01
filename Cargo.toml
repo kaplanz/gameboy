@@ -29,7 +29,7 @@ license = "MIT OR Apache-2.0"
 default = ["doctor", "gbd", "view"]
 debug = []
 doctor = ["debug"]
-gbd = ["debug", "dep:ctrlc", "dep:phex", "dep:parking_lot"]
+gbd = ["debug", "dep:ctrlc", "dep:displaydoc", "dep:phex", "dep:parking_lot"]
 view = ["debug"]
 
 [dependencies]
@@ -53,3 +53,4 @@ tell = { version = "0.1.0", path = "crates/tell" }
 thiserror = "1.0.47"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 bytecount = "0.6.3"
+displaydoc = { version = "0.2.4", optional = true }

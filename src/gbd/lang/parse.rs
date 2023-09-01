@@ -9,7 +9,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error;
 
-use super::{Command, Cycle, Keyword, Location, Program, Value};
+use super::{Command, Keyword, Location, Mode, Program, Value};
 
 pub fn prog(src: &str) -> Result<Program, Error> {
     Language::prog(src)
@@ -67,13 +67,13 @@ impl Language {
             }
             Rule::Freq => {
                 let pair = args.next().ok_or(Error::ExpectedRule)?;
-                let cycle = match pair.as_rule() {
-                    Rule::Dot => Cycle::Dot,
-                    Rule::Mach => Cycle::Mach,
-                    Rule::Insn => Cycle::Insn,
+                let mode = match pair.as_rule() {
+                    Rule::Dot => Mode::Dot,
+                    Rule::Mach => Mode::Mach,
+                    Rule::Insn => Mode::Insn,
                     rule => unreachable!("invalid rule: {rule:?}"),
                 };
-                Command::Freq(cycle)
+                Command::Freq(mode)
             }
             Rule::Goto => {
                 let addr = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;

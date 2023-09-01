@@ -3,12 +3,11 @@
 use std::cmp::Ordering;
 use std::ops::Range;
 
-use gameboy::dmg::cpu::{Processor, Stage};
-use log::debug;
+use gameboy::dmg::cpu::Processor;
 use remus::{Block, Location as _};
 
 use super::lang::{Keyword, Location, Value};
-use super::{Cycle, Debugger, Error, GameBoy, Result};
+use super::{Debugger, Error, GameBoy, Mode, Result};
 use crate::gbd::Breakpoint;
 
 pub fn r#break(gbd: &mut Debugger, addr: u16) -> Result<()> {
@@ -68,10 +67,10 @@ pub fn enable(gbd: &mut Debugger, point: usize) -> Result<()> {
     Ok(())
 }
 
-pub fn freq(gbd: &mut Debugger, cycle: Cycle) -> Result<()> {
+pub fn freq(gbd: &mut Debugger, mode: Mode) -> Result<()> {
     // Change the current frequency
-    gbd.freq = cycle;
-    tell::info!("frequency set to {cycle}");
+    gbd.freq = mode;
+    tell::info!("frequency set to {mode}");
 
     Ok(())
 }
@@ -84,10 +83,13 @@ pub fn goto(emu: &mut GameBoy, addr: u16) -> Result<()> {
 }
 
 pub fn help(what: Option<Keyword>) -> Result<()> {
-    if let Some(what) = what {
-        debug!("help: `{what:?}`");
+    // Extract the keyword
+    let what = what.unwrap_or(Keyword::Help);
+    // Print help info
+    let help = format!("{what}");
+    for line in help.split('\n') {
+        tell::info!("{line}");
     }
-    tell::error!("help is not yet available");
 
     Ok(())
 }
@@ -150,10 +152,7 @@ pub fn info(gbd: &Debugger, what: Option<Keyword>) -> Result<()> {
 }
 
 pub fn list(gbd: &Debugger, emu: &GameBoy) -> Result<()> {
-    let insn = match &emu.cpu().stage() {
-        Stage::Execute(insn) => insn.clone(),
-        _ => emu.cpu().insn(),
-    };
+    let insn = emu.cpu().insn();
     tell::info!(
         "{addr:#06x}: {opcode:02X} ; {insn}",
         addr = gbd.pc,
