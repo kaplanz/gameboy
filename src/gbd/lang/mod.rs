@@ -81,6 +81,33 @@ pub enum Command {
 #[derive(Clone, Debug, Display)]
 pub enum Keyword {
     /**
+     * Game Boy Debugger.
+     *
+     * COMMANDS:
+     * * `break`,     `br`,   `b`: Set breakpoint.
+     * * `continue`,  `cont`, `c`: Resume execution.
+     * * `delete`,    `del`      : Delete breakpoint.
+     * * `disable`,   `dis`,  `d`: Disable breakpoint.
+     * * `enable`,    `en`,   `e`: Enable breakpoint.
+     * * `frequency`, `freq`, `d`: Change step frequency.
+     * * `goto`,      `go`,   `g`: Goto address.
+     * * `help`,              `h`: Print help.
+     * * `ignore`,    `ig`,      : Ignore breakpoint.
+     * * `jump`,      `jp`,   `j`: Jump and execute.
+     * * `list`,      `ls`,   `l`: List instruction.
+     * * `load`,      `ld`,      : Load register.
+     * * `log`,       `lo`,      : Change logging level.
+     * * `quit`,              `q`: Quit emulator.
+     * * `read`,      `rd`,   `r`: Read address.
+     * * `reset`,     `res`,     : Reset emulator.
+     * * `step`,              `s`: Perform debugger step.
+     * * `store`,     `sr`,      : Store register.
+     * * `write`,     `wr`,   `w`: Write address.
+     *
+     * Use `help` for more information about how to use a command.
+     */
+    All,
+    /**
      * `break <ADDRESS>`
      *
      * Set breakpoint at specified location.

@@ -84,7 +84,7 @@ pub fn goto(emu: &mut GameBoy, addr: u16) -> Result<()> {
 
 pub fn help(what: Option<Keyword>) -> Result<()> {
     // Extract the keyword
-    let what = what.unwrap_or(Keyword::Help);
+    let what = what.unwrap_or(Keyword::All);
     // Print help info
     let help = format!("{what}");
     for line in help.split('\n') {
