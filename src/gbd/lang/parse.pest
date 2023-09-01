@@ -35,34 +35,31 @@ Filter        = @{ Directive ~ ("," ~ Filter)? }
 Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KDisable | KEnable | KFreq |
                    KGoto | KHelp | KIgnore | KInfo | KJump | KLoad | KLog |
-                   KList | KQuit | KRead | KReset | KStore | KStep | KWrite }
-    KBreak    =  { ^"break" | ^"brea" | ^"bre" | ^"br" | ^"b" }
-    KContinue =  { ^"continue" | ^"continu" | ^"contin" | ^"conti" | ^"cont" |
-                   ^"con" | ^"co" | ^"c" }
-    KDelete   =  { ^"delete" | ^"delet" | ^"dele" | ^"del" | ^"de" }
-    KDisable  =  { ^"disable" | ^"disabl" | ^"disab" | ^"disa" | ^"dis" | ^"di"
-                    | ^"d"}
-    KEnable   =  { ^"enable" | ^"enabl" | ^"enab" | ^"ena" | ^"en" | ^"e" }
-    KFreq     =  { ^"frequency" | ^"frequenc" | ^"frequen" | ^"freque" |
-                   ^"frequ" | ^"freq" | ^"fre" | ^"fr" | ^"f" }
-    KGoto     =  { ^"goto" | ^"got" | ^"go" | ^"g" }
-    KHelp     =  { ^"help" | ^"hel" | ^"he" | ^"h" }
-    KIgnore   =  { ^"ignore" | ^"ignor" | ^"igno" | ^"ign" | ^"ig" }
-    KInfo     =  { ^"info" | ^"inf" | ^"in" | ^"i" }
-    KJump     =  { ^"jump" | ^"jum" | ^"ju" | ^"j" }
-    KList     =  { ^"list" | ^"lis" | ^"li" | ^"l" }
-    KLoad     =  { ^"load" | ^"loa" | ^"ld" }
+                   KList | KQuit | KReset | KRead | KStore | KStep | KWrite }
+    KBreak    =  { ^"break"     | ^"br"   | ^"b" }
+    KContinue =  { ^"continue"  | ^"cont" | ^"c" }
+    KDelete   =  { ^"delete"    | ^"del"         }
+    KDisable  =  { ^"disable"   | ^"dis"  | ^"d" }
+    KEnable   =  { ^"enable"    | ^"en"   | ^"e" }
+    KFreq     =  { ^"frequency" | ^"freq" | ^"f" }
+    KGoto     =  { ^"goto"      | ^"go"   | ^"g" }
+    KHelp     =  { ^"help"                | ^"h" }
+    KIgnore   =  { ^"ignore"    | ^"ig"          }
+    KInfo     =  { ^"info"                | ^"i" }
+    KJump     =  { ^"jump"      | ^"jp"   | ^"j" }
+    KList     =  { ^"list"      | ^"ls"   | ^"l" }
+    KLoad     =  { ^"load"      | ^"ld"          }
       KLoadB  =  { ^"lb" }
       KLoadW  =  { ^"lw" }
-    KLog      =  { ^"log" | ^"lo" }
-    KQuit     =  { ^"quit" | ^"qui" | ^"qu" | ^"q" }
-    KRead     =  { ^"read" | ^"rea" | ^"re" | ^"r" }
-    KReset    =  { ^"reset" | ^"rese" | ^"res" }
-    KStep     =  { ^"step" | ^"ste"         | ^"s" }
-    KStore    =  { ^"store" | ^"stor" | ^"sto" | ^"st" }
+    KLog      =  { ^"log"       | ^"lo"          }
+    KQuit     =  { ^"quit"                | ^"q" }
+    KRead     =  { ^"read"      | ^"rd"   | ^"r" }
+    KReset    =  { ^"reset"     | ^"res"         }
+    KStep     =  { ^"step"                | ^"s" }
+    KStore    =  { ^"store"     | ^"sr"          }
       KStoreB =  { ^"sb" }
       KStoreW =  { ^"sw" }
-    KWrite    =  { ^"write" | ^"writ" | ^"wri" | ^"wr" | ^"w" }
+    KWrite    =  { ^"write"     | ^"wr"   | ^"w" }
   Location    = _{ WLocation | BLocation }
     BLocation = _{ Ppu | Timer | Byte }
       Byte    =  { A | F | B | C | D | E | H | L }
@@ -103,7 +100,7 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
         PC    =  { ^"pc" }
   Command     = _{ Break | Continue | Delete | Disable | Enable | Freq | Goto |
                    Help | Ignore | Info | Jump | Load | Log | List | Quit |
-                   Read | Reset | Store | Step | Write }
+                   Reset | Read | Store | Step | Write }
     Break     =  { KBreak ~ UInt }
     Continue  =  { KContinue }
     Delete    =  { KDelete ~ UInt }

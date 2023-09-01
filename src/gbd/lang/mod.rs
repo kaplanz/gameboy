@@ -88,6 +88,8 @@ pub enum Keyword {
      * Note that due to the SM83 CPU supporting multi-byte instructions, there
      * is a chance that the specified breakpoint will not occur upon an
      * instruction boundary. When this occurs, the breakpoint will NOT trigger.
+     *
+     * Aliases: `br`, `b`
      */
     Break,
     /**
@@ -98,6 +100,8 @@ pub enum Keyword {
      * Execution will continue until the next SIGINT signal (triggered most
      * commonly by supplying CTRL-C) is sent, or the executing program reaches a
      * breakpoint.
+     *
+     * Aliases: `cont`, `c`
      */
     Continue,
     /**
@@ -108,6 +112,8 @@ pub enum Keyword {
      * Note that breakpoint indices are generally not reused (monotonically
      * increasing), however, if another breakpoint is later created at the
      * address associated with a deleted breakpoint, the index will be restored.
+     *
+     * Aliases: `del`
      */
     Delete,
     /**
@@ -115,6 +121,8 @@ pub enum Keyword {
      *
      * Disable the breakpoint at the provided index, preventing it from pausing
      * execution when reached.
+     *
+     * Aliases: `dis`, `d`
      */
     Disable,
     /**
@@ -122,10 +130,12 @@ pub enum Keyword {
      *
      * Enable the breakpoint at the provided index, causing it to pause
      * execution when reached.
+     *
+     * Aliases: `en`, `e`
      */
     Enable,
     /**
-     * `freq <MODE>`
+     * `frequency <MODE>`
      *
      * Change the debugger's execution frequency.
      *
@@ -136,6 +146,8 @@ pub enum Keyword {
      * -------------- dots.
      * * instruction: Variable frequency, with a duration equal to the
      * -------------- instruction currently being executed.
+     *
+     * Aliases: `freq`, `f`
      *
      * See also: `step`
      */
@@ -150,6 +162,8 @@ pub enum Keyword {
      * potentially reading incorrect data if the executing instruction performs
      * a fetch.
      *
+     * Aliases: `go`, `g`
+     *
      * Alias of: `store pc <ADDRESS>`
      *
      * See also: `jump`
@@ -159,6 +173,8 @@ pub enum Keyword {
      * `help [COMMAND]`
      *
      * Print help for the provided command.
+     *
+     * Aliases: `h`
      */
     Help,
     /**
@@ -166,6 +182,8 @@ pub enum Keyword {
      *
      * Ignore the next <COUNT> crossings of the breakpoint at the specified
      * index.
+     *
+     * Aliases: `ig`
      */
     Ignore,
     /**
@@ -173,7 +191,9 @@ pub enum Keyword {
      *
      * Probe for information about a specified feature.
      *
-     * Currently only supports breakpoints, with the "break" keyword.
+     * Currently only supports breakpoints, with the `break` keyword.
+     *
+     * Aliases: `i`
      */
     Info,
     /**
@@ -185,6 +205,8 @@ pub enum Keyword {
      * complete execution at the specified address. This has the consequence of
      * potentially reading incorrect data if the executing instruction performs
      * a fetch.
+     *
+     * Aliases: `jp`, `j`
      */
     Jump,
     /**
@@ -195,6 +217,8 @@ pub enum Keyword {
      * If no instruction is being executed, decode and print the instruction at
      * the current value of the PC.
      *
+     * Aliases: `ls`, `l`
+     *
      * See also: `goto`
      */
     List,
@@ -203,7 +227,7 @@ pub enum Keyword {
      *
      * Load the value of the specified register and print.
      *
-     * If specified using the "lb" or "lw" alias, the specified resister must be
+     * If specified using the `lb` or `lw` alias, the specified resister must be
      * either byte or word size respectively.
      *
      * Valid 8-bit (byte) registers are:
@@ -214,6 +238,8 @@ pub enum Keyword {
      * Valid 16-bit (word) registers are:
      * * CPU: AF, BC, DE, HL, SP, PC
      *
+     * Aliases: `ld`
+     *
      * See also: `store`
      */
     Load,
@@ -223,12 +249,16 @@ pub enum Keyword {
      * Print or change the current logging level filter.
      *
      * See the format specified by the `env_logger` crate for more details.
+     *
+     * Aliases: `lo`
      */
     Log,
     /**
      * `quit`
      *
      * Exit the debugger, closing the program.
+     *
+     * Aliases: `q`
      */
     Quit,
     /**
@@ -244,6 +274,8 @@ pub enum Keyword {
      * imply the start or end of memory. If the left is larger than the right,
      * the read will overflow, wrapping around.
      *
+     * Aliases: `rd`, `r`
+     *
      * See also: `write`
      */
     Read,
@@ -251,12 +283,16 @@ pub enum Keyword {
      * `reset`
      *
      * Reset the emulator, equivalent to cycling the console's power switch.
+     *
+     * Aliases: `res`
      */
     Reset,
     /**
      * `step [COUNT]`
      *
      * Perform a (or many) steps of the debugger at the specified frequency.
+     *
+     * Aliases: `s`
      *
      * See also: `freq`
      */
@@ -266,7 +302,7 @@ pub enum Keyword {
      *
      * Store a value to the specified register and print.
      *
-     * If specified using the "sb" or "sw" alias, the specified resister must be
+     * If specified using the `sb` or `sw` alias, the specified resister must be
      * either byte or word size respectively.
      *
      * Valid 8-bit (byte) registers are:
@@ -276,6 +312,8 @@ pub enum Keyword {
      *
      * Valid 16-bit (word) registers are:
      * * CPU: AF, BC, DE, HL, SP, PC
+     *
+     * Aliases: `sr`
      *
      * See also: `load`
      */
@@ -295,6 +333,8 @@ pub enum Keyword {
      * Note that either or both of the left and right bounds can be omitted to
      * imply the start or end of memory. If the left is larger than the right,
      * the write will overflow, wrapping around.
+     *
+     * Aliases: `wr`, `w`
      *
      * See also: `read`
      */
