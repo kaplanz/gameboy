@@ -6,7 +6,8 @@
 
 use std::fmt::Debug;
 
-use remus::{Block, Dynamic};
+use remus::dev::Dynamic;
+use remus::Block;
 
 mod mbc1;
 mod nombc;

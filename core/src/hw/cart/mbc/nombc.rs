@@ -1,4 +1,5 @@
-use remus::{Block, Device, Dynamic, Shared};
+use remus::dev::{Device, Dynamic};
+use remus::{Block, Shared};
 
 use super::Mbc;
 use crate::dev::ReadOnly;
@@ -6,6 +7,7 @@ use crate::dev::ReadOnly;
 /// Rom (+ RAM) only; no MBC.
 #[derive(Debug)]
 pub struct NoMbc {
+    // Memory
     rom: Shared<ReadOnly<Dynamic>>,
     ram: Dynamic,
 }
@@ -23,9 +25,8 @@ impl NoMbc {
 
 impl Block for NoMbc {
     fn reset(&mut self) {
-        // Reset ROM
+        // Memory
         self.rom.reset();
-        // Reset RAM
         self.ram.reset();
     }
 }

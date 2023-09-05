@@ -1,5 +1,6 @@
 use log::warn;
-use remus::{Address, Block, Device};
+use remus::dev::Device;
+use remus::{Address, Block};
 
 /// Read-only device.
 ///
@@ -44,8 +45,7 @@ impl<D: Device> From<D> for ReadOnly<D> {
 
 #[cfg(test)]
 mod tests {
-    use remus::dev::Null;
-    use remus::Dynamic;
+    use remus::dev::{Dynamic, Null};
 
     use super::*;
 

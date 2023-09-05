@@ -2,15 +2,13 @@
 //!
 //! Model for the CPU core present on the Sharp LR35902.
 
-use std::cell::RefCell;
 use std::fmt::{Debug, Display, Write};
-use std::rc::Rc;
 
 use enuf::Enuf;
 use log::{debug, error, trace};
 use remus::bus::Bus;
 use remus::reg::Register;
-use remus::{Address, Block, Board, Cell, Location, Machine, Shared};
+use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
 use thiserror::Error;
 
 use crate::hw::pic::Pic;
@@ -55,22 +53,22 @@ pub struct Cpu {
     run: Status,
     ime: Ime,
     halt_bug: bool,
-    // Connections
-    bus: Shared<Bus>,
-    pic: Rc<RefCell<Pic>>,
-    /// Control
+    // Control
     file: File,
+    // Shared
+    bus: Shared<Bus>,
+    pic: Shared<Pic>,
 }
 
 impl Cpu {
-    /// Sets the CPU's address bus.
-    pub fn set_bus(&mut self, bus: Shared<Bus>) {
-        self.bus = bus;
-    }
-
-    /// Sets the CPU's programmable interrupt controller.
-    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
-        self.pic = pic;
+    /// Constructs a new `Cpu`.
+    #[must_use]
+    pub fn new(bus: Shared<Bus>, pic: Shared<Pic>) -> Self {
+        Self {
+            bus,
+            pic,
+            ..Default::default()
+        }
     }
 
     /// Gets the current execution stage.
@@ -207,19 +205,38 @@ impl Cpu {
 
 impl Block for Cpu {
     fn reset(&mut self) {
-        // Reset each sub-block
-        self.bus.reset();
-        self.pic.borrow_mut().reset();
+        // State
+        std::mem::take(&mut self.run);
+        std::mem::take(&mut self.stage);
+        std::mem::take(&mut self.ime);
+        std::mem::take(&mut self.halt_bug);
+        // Control
         self.file.reset();
-        // Reset to initial state
-        self.run = Status::default();
-        self.stage = Stage::default();
-        self.ime = Ime::default();
     }
 }
 
 impl Board for Cpu {
     fn connect(&self, _: &mut Bus) {}
+}
+
+impl Linked<Bus> for Cpu {
+    fn mine(&self) -> Shared<Bus> {
+        self.bus.clone()
+    }
+
+    fn link(&mut self, it: Shared<Bus>) {
+        self.bus = it;
+    }
+}
+
+impl Linked<Pic> for Cpu {
+    fn mine(&self) -> Shared<Pic> {
+        self.pic.clone()
+    }
+
+    fn link(&mut self, it: Shared<Pic>) {
+        self.pic = it;
+    }
 }
 
 impl Location<u8> for Cpu {
@@ -367,8 +384,7 @@ struct File {
 
 impl Block for File {
     fn reset(&mut self) {
-        // NOTE: the values of internal registers other than PC are undefined
-        //       after a reset.
+        // NOTE: Registers (other than PC) hold undefined values after a reset.
         self.pc.reset();
     }
 }

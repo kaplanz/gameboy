@@ -1,6 +1,7 @@
 use log::{debug, trace};
 use remus::bus::Bus;
-use remus::{Address, Block, Cell, Device, Machine, Shared};
+use remus::dev::Device;
+use remus::{Address, Block, Cell, Linked, Machine, Shared};
 
 use super::{Oam, SCREEN};
 
@@ -10,18 +11,19 @@ pub struct Dma {
     // State
     page: u8,
     idx: Option<u8>,
-    // Connections
+    // Shared
     bus: Shared<Bus>,
     oam: Shared<Oam>,
 }
 
 impl Dma {
-    pub fn set_bus(&mut self, bus: Shared<Bus>) {
-        self.bus = bus;
-    }
-
-    pub fn set_oam(&mut self, oam: Shared<Oam>) {
-        self.oam = oam;
+    /// Constructs a new `Dma`
+    pub fn new(bus: Shared<Bus>, oam: Shared<Oam>) -> Self {
+        Self {
+            bus,
+            oam,
+            ..Default::default()
+        }
     }
 }
 
@@ -37,7 +39,9 @@ impl Address<u8> for Dma {
 
 impl Block for Dma {
     fn reset(&mut self) {
-        std::mem::take(self);
+        // State
+        std::mem::take(&mut self.page);
+        std::mem::take(&mut self.idx);
     }
 }
 
@@ -60,6 +64,26 @@ impl Device for Dma {
 
     fn len(&self) -> usize {
         std::mem::size_of::<Self>()
+    }
+}
+
+impl Linked<Bus> for Dma {
+    fn mine(&self) -> Shared<Bus> {
+        self.bus.clone()
+    }
+
+    fn link(&mut self, it: Shared<Bus>) {
+        self.bus = it;
+    }
+}
+
+impl Linked<Oam> for Dma {
+    fn mine(&self) -> Shared<Oam> {
+        self.oam.clone()
+    }
+
+    fn link(&mut self, it: Shared<Oam>) {
+        self.oam = it;
     }
 }
 

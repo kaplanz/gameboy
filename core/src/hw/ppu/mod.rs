@@ -1,13 +1,10 @@
 //! Picture processing unit.
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use itertools::Itertools;
 use remus::bus::Bus;
 use remus::mem::Ram;
 use remus::reg::Register;
-use remus::{Block, Board, Cell, Location, Machine, Shared};
+use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
 
 use self::dma::Dma;
 use self::exec::Mode;
@@ -116,9 +113,8 @@ pub struct Ppu {
     dot: usize,
     winln: u8,
     mode: Mode,
-    // Connections
-    bus: Shared<Bus>,
-    pic: Rc<RefCell<Pic>>,
+    // Output
+    lcd: Screen,
     // Control
     // ┌──────┬──────────┬─────┐
     // │ Size │   Name   │ Dev │
@@ -135,19 +131,25 @@ pub struct Ppu {
     // └────────┴──────────┴─────┴───────┘
     vram: Shared<Vram>,
     oam: Shared<Oam>,
-    // Outputs
-    lcd: Screen,
+    // Shared
+    bus: Shared<Bus>,
+    pic: Shared<Pic>,
 }
 
 impl Ppu {
-    /// Set the PPU's bus.
-    pub fn set_bus(&mut self, bus: Shared<Bus>) {
-        self.bus = bus;
-    }
-
-    /// Sets the PPU's programmable interrupt controller.
-    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
-        self.pic = pic;
+    /// Constructs a new `Ppu`.
+    #[must_use]
+    pub fn new(bus: Shared<Bus>, pic: Shared<Pic>) -> Self {
+        // Construct shared blocks
+        let oam = Shared::from(Oam::default());
+        // Construct self
+        Self {
+            file: File::new(bus.clone(), oam.clone()),
+            oam,
+            bus,
+            pic,
+            ..Default::default()
+        }
     }
 
     /// Gets internal debug info.
@@ -273,22 +275,15 @@ impl Ppu {
 
 impl Block for Ppu {
     fn reset(&mut self) {
-        // Reset mode
-        self.mode = Mode::default();
-
-        // Reset control
+        // State
+        std::mem::take(&mut self.dot);
+        std::mem::take(&mut self.winln);
+        std::mem::take(&mut self.mode);
+        // Control
         self.file.reset();
-
-        // Reset DMA
-        self.file.dma.borrow_mut().set_bus(self.bus.clone());
-        self.file.dma.borrow_mut().set_oam(self.oam.clone());
-
-        // Reset memory
+        // Memory
         self.vram.reset();
         self.oam.reset();
-
-        // Reset LCD
-        self.lcd = Screen::default();
     }
 }
 
@@ -298,7 +293,7 @@ impl Board for Ppu {
         // Connect boards
         self.file.connect(bus);
 
-        // Extract memory
+        // Extract devices
         let vram = self.vram().to_dynamic();
         let oam  = self.oam().to_dynamic();
 
@@ -308,6 +303,26 @@ impl Board for Ppu {
         bus.map(0x8000, vram); // │ 8000 │  8 KiB │ Video  │ RAM │
         bus.map(0xfe00, oam);  // │ fe00 │  160 B │ Object │ RAM │
                                // └──────┴────────┴────────┴─────┘
+    }
+}
+
+impl Linked<Bus> for Ppu {
+    fn mine(&self) -> Shared<Bus> {
+        self.bus.clone()
+    }
+
+    fn link(&mut self, it: Shared<Bus>) {
+        self.bus = it;
+    }
+}
+
+impl Linked<Pic> for Ppu {
+    fn mine(&self) -> Shared<Pic> {
+        self.pic.clone()
+    }
+
+    fn link(&mut self, it: Shared<Pic>) {
+        self.pic = it;
     }
 }
 
@@ -401,6 +416,16 @@ struct File {
     wx:   Shared<Register<u8>>,
 }
 
+impl File {
+    /// Constructs a new `File`.
+    pub fn new(bus: Shared<Bus>, oam: Shared<Oam>) -> Self {
+        Self {
+            dma: Dma::new(bus, oam).into(),
+            ..Default::default()
+        }
+    }
+}
+
 impl Block for File {
     fn reset(&mut self) {}
 }
@@ -482,22 +507,24 @@ impl Debug {
         let vram = ppu.vram.borrow();
 
         // Extract tile data, maps
-        let tdat: [_; 0x180] = vram[..0x1800]
+        let tdat: [_; 0x180] = (0..0x1800)
+            .map(|addr| vram.read(addr))
+            .collect_vec()
             .chunks_exact(16) // 16-bytes per tile
             .map(|tile| Tile::from(<[_; 16]>::try_from(tile).unwrap()))
-            .collect::<Vec<_>>()
+            .collect_vec()
             .try_into()
             .unwrap();
-        let map1: [_; 0x400] = vram[0x1800..0x1c00]
-            .iter()
-            .map(|&tnum| tdat[Self::tidx(tnum, bgwin)].clone())
-            .collect::<Vec<_>>()
+        let map1: [_; 0x400] = (0x1800..0x1c00)
+            .map(|addr| vram.read(addr))
+            .map(|tnum| tdat[Self::tidx(tnum, bgwin)].clone())
+            .collect_vec()
             .try_into()
             .unwrap();
-        let map2: [_; 0x400] = vram[0x1c00..0x2000]
-            .iter()
-            .map(|&tnum| tdat[Self::tidx(tnum, bgwin)].clone())
-            .collect::<Vec<_>>()
+        let map2: [_; 0x400] = (0x1c00..0x2000)
+            .map(|addr| vram.read(addr))
+            .map(|tnum| tdat[Self::tidx(tnum, bgwin)].clone())
+            .collect_vec()
             .try_into()
             .unwrap();
 

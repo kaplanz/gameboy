@@ -1,6 +1,6 @@
 use log::warn;
-use remus::dev::Null;
-use remus::{Address, Block, Device};
+use remus::dev::{Device, Null};
+use remus::{Address, Block};
 
 /// Unmapped device.
 ///
@@ -35,7 +35,7 @@ impl<const N: usize> Address<u8> for Unmapped<N> {
 
 impl<const N: usize> Block for Unmapped<N> {
     fn reset(&mut self) {
-        self.0.reset();
+        std::mem::take(self);
     }
 }
 

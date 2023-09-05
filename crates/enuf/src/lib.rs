@@ -11,7 +11,7 @@
 //! // Define `Flags` enum
 //! #[derive(Copy, Clone)]
 //! enum Flag {
-//!     A = 0b001, // NOTE: each of the fields should have descrimenant
+//!     A = 0b001, // NOTE: Each of the fields should have descrimenant
 //!     B = 0b010, //       values that are mutually exclusive, to ensure
 //!     C = 0b100, //       that there is no collision when using flags.
 //! }

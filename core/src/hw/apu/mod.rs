@@ -10,8 +10,6 @@ pub type Wave = Ram<0x0010>;
 /// APU model.
 #[derive(Debug, Default)]
 pub struct Apu {
-    /// State
-    /// Connections
     /// Control
     // ┌──────┬──────────┬─────┐
     // │ Size │   Name   │ Dev │
@@ -19,7 +17,7 @@ pub struct Apu {
     // │ 23 B │ Control  │ Reg │
     // └──────┴──────────┴─────┘
     file: File,
-    /// Devices
+    /// Memory
     // ┌──────┬──────────┬─────┬───────┐
     // │ Size │   Name   │ Dev │ Alias │
     // ├──────┼──────────┼─────┼───────┤
@@ -38,10 +36,9 @@ impl Apu {
 
 impl Block for Apu {
     fn reset(&mut self) {
-        // Reset control
+        // Control
         self.file.reset();
-
-        // Reset memory
+        // Memory
         self.wave.reset();
     }
 }
@@ -52,7 +49,7 @@ impl Board for Apu {
         // Connect boards
         self.file.connect(bus);
 
-        // Extract memory
+        // Extract devices
         let wave = self.wave().to_dynamic();
 
         // Map devices on bus  // ┌──────┬──────┬──────────┬─────┐
@@ -131,7 +128,9 @@ struct File {
 }
 
 impl Block for File {
-    fn reset(&mut self) {}
+    fn reset(&mut self) {
+        std::mem::take(self);
+    }
 }
 
 impl Board for File {

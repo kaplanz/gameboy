@@ -1,13 +1,14 @@
 use remus::bus::adapt::{Bank, View};
 use remus::bus::Bus;
-use remus::dev::Null;
-use remus::{Address, Block, Device, Dynamic, Shared};
+use remus::dev::{Device, Dynamic, Null};
+use remus::{Address, Block, Shared};
 
 use super::Mbc;
 
 /// MBC1 cartridge type.
 #[derive(Debug)]
 pub struct Mbc1 {
+    // Memory
     rom: Shared<Rom>,
     ram: Shared<Ram>,
 }
@@ -32,7 +33,7 @@ impl Mbc1 {
             }
 
             // Return RAM bank object
-            Shared::new(banks.into())
+            Shared::new(Bank::from(&banks[..]))
         };
         // Prepare ROM
         let rom = {
@@ -47,17 +48,18 @@ impl Mbc1 {
             }
             // Create the ROM bank object
             let rom0 = banks.remove(0);
-            let bank = Bank::from(banks);
-            let rom = Shared::new(bank);
+            let bank = Bank::from(&banks[..]);
+            let bank = Shared::new(bank);
             // Use a bus to join ROM banks together
-            let mut bus = Bus::new();
-            bus.map(0x0000, rom0);
-            bus.map(0x4000, rom.clone().to_dynamic());
-            let bus = Shared::new(bus);
-            // Clone the RAM bank object
-            let ram = ram.clone();
+            let mut rom = Bus::new();
+            rom.map(0x0000, rom0);
+            rom.map(0x4000, bank.clone().to_dynamic());
 
-            Rom { bus, rom, ram }
+            Rom {
+                bank,
+                rom: rom.into(),
+                ram: ram.clone(),
+            }
         };
 
         Self {
@@ -69,9 +71,8 @@ impl Mbc1 {
 
 impl Block for Mbc1 {
     fn reset(&mut self) {
-        // Reset ROM
+        // Memory
         self.rom.reset();
-        // Reset RAM
         self.ram.reset();
     }
 }
@@ -89,14 +90,16 @@ impl Mbc for Mbc1 {
 /// MBC1 ROM.
 #[derive(Debug)]
 struct Rom {
-    bus: Shared<Bus>,
-    rom: Shared<Bank>,
+    // State
+    bank: Shared<Bank>,
+    // Memory
+    rom: Shared<Bus>,
     ram: Shared<Bank>,
 }
 
 impl Address<u8> for Rom {
     fn read(&self, index: usize) -> u8 {
-        self.bus.read(index)
+        self.rom.read(index)
     }
 
     #[allow(clippy::match_same_arms)]
@@ -109,7 +112,7 @@ impl Address<u8> for Rom {
             // ROM Bank Number
             0x2000..=0x3fff => {
                 // FIXME: Mask depending on ROM size
-                self.rom.borrow_mut().set(match value & 0x1f {
+                self.bank.borrow_mut().set(match value & 0x1f {
                     0x00 => 0x00,
                     bank => bank - 1,
                 } as usize);
@@ -127,22 +130,19 @@ impl Address<u8> for Rom {
 
 impl Block for Rom {
     fn reset(&mut self) {
-        // Reset bus
-        self.bus.reset();
-        // Reset ROM
+        // Memory
         self.rom.reset();
-        // Reset RAM
         self.ram.reset();
     }
 }
 
 impl Device for Rom {
     fn contains(&self, index: usize) -> bool {
-        self.bus.contains(index)
+        self.rom.contains(index)
     }
 
     fn len(&self) -> usize {
-        self.bus.len()
+        self.rom.len()
     }
 }
 

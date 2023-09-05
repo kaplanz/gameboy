@@ -2,8 +2,9 @@
 
 use remus::bus::adapt::View;
 use remus::bus::Bus;
+use remus::dev::Device;
 use remus::mem::Ram;
-use remus::{Block, Board, Device, Shared};
+use remus::{Block, Board, Shared};
 
 use super::Boot;
 
@@ -16,6 +17,7 @@ pub type Hram = Ram<0x007f>;
 /// [`GameBoy`](super::GameBoy).
 #[derive(Debug, Default)]
 pub struct Memory {
+    // Memory
     // ┌────────┬──────┬─────┬───────┐
     // │  Size  │ Name │ Dev │ Alias │
     // ├────────┼──────┼─────┼───────┤
@@ -61,6 +63,7 @@ impl Memory {
 
 impl Block for Memory {
     fn reset(&mut self) {
+        // Memory
         self.boot.reset();
         self.wram.reset();
         self.hram.reset();
@@ -71,7 +74,7 @@ impl Board for Memory {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
         // Connect boards
-        self.boot.borrow().connect(bus);
+        self.boot.connect(bus);
 
         // Extract devices
         let wram = self.wram().to_dynamic();

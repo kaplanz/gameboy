@@ -86,7 +86,7 @@ impl App {
 
         // Enable doctor when used
         #[cfg(feature = "doctor")]
-        emu.set_doc(dbg.doc.is_some());
+        emu.doctor(dbg.doc.is_some());
 
         // Prepare debugger when used
         #[cfg(feature = "gbd")]
