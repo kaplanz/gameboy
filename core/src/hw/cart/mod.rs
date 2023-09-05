@@ -15,9 +15,9 @@ use std::iter;
 
 use log::{debug, info, trace, warn};
 use remus::bus::Bus;
-use remus::dev::Null;
+use remus::dev::{Device, Dynamic, Null};
 use remus::mem::{Ram, Rom};
-use remus::{Block, Board, Device, Dynamic};
+use remus::{Block, Board};
 use thiserror::Error;
 
 use self::header::Kind;
@@ -35,7 +35,9 @@ pub use self::header::{Error as HeaderError, Header};
 /// controller ([`mbc`]).
 #[derive(Debug)]
 pub struct Cartridge {
+    // Metadata
     header: Header,
+    // Memory
     mbc: Box<dyn Mbc>,
 }
 
@@ -229,7 +231,7 @@ impl Cartridge {
 
 impl Block for Cartridge {
     fn reset(&mut self) {
-        // Reset MBC
+        // Memory
         self.mbc.reset();
     }
 }

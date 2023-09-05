@@ -2,11 +2,9 @@
 //!
 //! [Game Boy]: https://en.wikipedia.org/wiki/Game_Boy
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use remus::bus::Bus;
-use remus::{Address, Block, Board, Device, Location, Machine, Shared};
+use remus::dev::Device;
+use remus::{Address, Block, Board, Location, Machine, Shared};
 
 use self::cpu::Cpu;
 use self::dbg::Doctor;
@@ -41,10 +39,8 @@ pub const SCREEN: Dimensions = Dimensions {
 };
 
 /// DMG-01 Game Boy emulator.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct GameBoy {
-    // Debug
-    doc: Option<Doctor>,
     // State
     clock: usize,
     // Processors
@@ -58,9 +54,34 @@ pub struct GameBoy {
     // Memory
     cart: Option<Cartridge>,
     mem: Memory,
-    // Connections
+    // Shared
     bus: Shared<Bus>,
-    pic: Rc<RefCell<Pic>>,
+    pic: Shared<Pic>,
+    // Debug
+    doc: Option<Doctor>,
+}
+
+impl Default for GameBoy {
+    fn default() -> Self {
+        // Construct shared blocks
+        let bus = Shared::from(Bus::default());
+        let pic = Shared::from(Pic::default());
+        // Construct self
+        Self {
+            clock: usize::default(),
+            apu: Apu::default(),
+            cpu: Cpu::new(bus.clone(), pic.clone()),
+            ppu: Ppu::new(bus.clone(), pic.clone()),
+            joypad: Joypad::new(pic.clone()),
+            serial: Serial,
+            timer: Timer::new(pic.clone()),
+            cart: Option::default(),
+            mem: Memory::default(),
+            bus: bus.clone(),
+            pic,
+            doc: Option::default(),
+        }
+    }
 }
 
 impl GameBoy {
@@ -83,9 +104,8 @@ impl GameBoy {
     /// Note that [`Cartridge`]s must be manually loaded with [`Self::load`].
     #[must_use]
     pub fn with(boot: Boot) -> Self {
-        let mem = Memory::with(boot);
         Self {
-            mem,
+            mem: Memory::with(boot),
             ..Default::default()
         }
         .setup()
@@ -106,6 +126,41 @@ impl GameBoy {
         self.cart = Some(cart);
     }
 
+    /// Sets up the `GameBoy`, such that is it ready to be run.
+    #[must_use]
+    fn setup(self) -> Self {
+        // Connect devices to bus
+        self.connect(&mut self.bus.borrow_mut());
+
+        self
+    }
+
+    /// Simulate booting for `GameBoy`s with no [`Cartridge`].
+    #[must_use]
+    fn boot(mut self) -> Self {
+        type Register = <Cpu as Location<u16>>::Register;
+
+        // Execute setup code
+        self.cpu.exec(0xfb); // ei ; enable interrupts
+
+        // Initialize registers
+        self.cpu.store(Register::AF, 0x01b0u16);
+        self.cpu.store(Register::BC, 0x0013u16);
+        self.cpu.store(Register::DE, 0x00d8u16);
+        self.cpu.store(Register::HL, 0x014du16);
+        self.cpu.store(Register::SP, 0xfffeu16);
+
+        // Move the PC to the ROM's start
+        self.cpu.goto(0x0100);
+
+        // Enable the LCD
+        self.bus.write(0xff40, 0x91);
+        // Disable the boot ROM
+        self.bus.write(0xff50, 0x01);
+
+        self
+    }
+
     /// Returns debug information about the model.
     #[must_use]
     pub fn debug(&mut self) -> dbg::Debug {
@@ -119,7 +174,7 @@ impl GameBoy {
     /// Any uncollected logs will be lost.
     ///
     /// [gbdoc]: https://robertheaton.com/gameboy-doctor
-    pub fn set_doc(&mut self, enable: bool) {
+    pub fn doctor(&mut self, enable: bool) {
         self.doc = enable.then(Doctor::default);
     }
 
@@ -155,101 +210,33 @@ impl GameBoy {
     pub fn timer_mut(&mut self) -> &mut Timer {
         &mut self.timer
     }
-
-    /// Set up the `GameBoy`.
-    fn setup(mut self) -> Self {
-        // Connect bus
-        self.cpu.set_bus(self.bus.clone());
-        self.ppu.set_bus(self.bus.clone());
-
-        // Connect PIC
-        self.cpu.set_pic(self.pic.clone());
-        self.joypad.set_pic(self.pic.clone());
-        self.ppu.set_pic(self.pic.clone());
-        self.timer.set_pic(self.pic.clone());
-
-        // Reset all devices
-        self.reset();
-
-        // Make connections
-        self.connect(&mut self.bus.borrow_mut());
-
-        self
-    }
-
-    /// Simulate booting for `GameBoy`s with no [`Cartridge`].
-    fn boot(mut self) -> Self {
-        type Register = <Cpu as Location<u16>>::Register;
-
-        // Execute setup code
-        self.cpu.exec(0xfb); // ei ; enable interrupts
-
-        // Initialize registers
-        self.cpu.store(Register::AF, 0x01b0u16);
-        self.cpu.store(Register::BC, 0x0013u16);
-        self.cpu.store(Register::DE, 0x00d8u16);
-        self.cpu.store(Register::HL, 0x014du16);
-        self.cpu.store(Register::SP, 0xfffeu16);
-
-        // Move the PC to the ROM's start
-        self.cpu.goto(0x0100);
-
-        // Enable the LCD
-        self.bus.write(0xff40, 0x91);
-        // Disable the boot ROM
-        self.bus.write(0xff50, 0x01);
-
-        self
-    }
 }
 
 impl Block for GameBoy {
     #[rustfmt::skip]
     fn reset(&mut self) {
-        // Reset processors
+        // Processors
+        self.apu.reset();
         self.cpu.reset();
         self.ppu.reset();
-
-        // Reset peripherals
-        self.apu.reset();
+        // Peripherals
         self.joypad.reset();
         self.serial.reset();
         self.timer.reset();
-
-        // Reset memory
+        // Memory
         if let Some(cart) = &mut self.cart {
             cart.reset();
         }
         self.mem.reset();
-
-        // Reset connections
+        // Shared
         self.bus.reset();
-        self.pic.borrow_mut().reset();
+        self.pic.reset();
     }
 }
 
 impl Board for GameBoy {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
-        // Connect processors
-        self.cpu.connect(bus);
-        self.ppu.connect(bus);
-
-        // Connect peripherals
-        self.apu.connect(bus);
-        self.joypad.connect(bus);
-        self.serial.connect(bus);
-        self.timer.connect(bus);
-
-        // Connect memory
-        if let Some(cart) = &self.cart {
-            cart.connect(bus);
-        }
-        self.mem.connect(bus);
-
-        // Connect connections
-        self.pic.borrow().connect(bus);
-
         // Map devices on bus  // ┌──────┬────────┬────────────┬─────┐
                                // │ Addr │  Size  │    Name    │ Dev │
                                // ├──────┼────────┼────────────┼─────┤
@@ -278,7 +265,20 @@ impl Board for GameBoy {
         // mapped by `pic`     // │ ffff │    1 B │ Interrupt  │ Reg │
                                // └──────┴────────┴────────────┴─────┘
 
-        // NOTE: use fallback to report invalid reads as `0xff`
+        // Processors
+        self.apu.connect(bus);
+        self.cpu.connect(bus);
+        self.ppu.connect(bus);
+        // Peripherals
+        self.joypad.connect(bus);
+        self.serial.connect(bus);
+        self.timer.connect(bus);
+        // Memory
+        self.mem.connect(bus);
+        // Shared
+        self.pic.connect(bus);
+
+        // NOTE: Use fallback to report invalid reads as `0xff`
         let unmap = Unmapped::<0x10000>::new().to_dynamic();
         bus.map(0x0000, unmap);
     }
@@ -478,8 +478,8 @@ mod tests {
         // Boot ROM Disable
         (0xff50..=0xff50).for_each(|addr| emu.bus.write(addr, 0x0d));
         (0x0000..=0x0000)
-            .map(|addr| emu.mem.boot().borrow().disable().read(addr))
-            .for_each(|byte| assert_eq!(byte, 0x0d));
+            .map(|addr| emu.mem.boot().borrow().ctrl().read(addr))
+            .for_each(|byte| assert_eq!(byte, 0xff));
         // High RAM
         (0xff80..=0xfffe).for_each(|addr| emu.bus.write(addr, 0x0e));
         (0x0000..=0x007e)

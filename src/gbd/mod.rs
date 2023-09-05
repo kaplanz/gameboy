@@ -88,7 +88,7 @@ pub struct Debugger {
 }
 
 impl Debugger {
-    /// Creates a new `Debugger` instance.
+    /// Constructs a new `Debugger` instance.
     pub fn new() -> Self {
         Self::default()
     }
@@ -300,7 +300,7 @@ impl Debugger {
 
 impl Block for Debugger {
     fn reset(&mut self) {
-        *self = Self::default();
+        std::mem::take(self);
     }
 }
 

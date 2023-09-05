@@ -10,6 +10,7 @@ use gameboy::core::dmg::Dimensions;
 use gameboy::dmg::cart::Cartridge;
 use gameboy::dmg::{Boot, GameBoy, SCREEN};
 use log::{info, warn};
+use remus::mem::Rom;
 #[cfg(feature = "gbd")]
 use tracing_subscriber::fmt::Layer;
 #[cfg(feature = "gbd")]
@@ -157,8 +158,7 @@ fn boot(path: Option<PathBuf>) -> Result<Option<Boot>> {
             // Open boot ROM file
             let mut f = File::open(&boot)
                 .with_context(|| format!("failed to open boot ROM: `{}`", boot.display()))?;
-            // Read boot ROM into a buffer
-            // NOTE: Boot ROM is exactly 256 bytes.
+            // Read boot ROM into a buffer (must be exactly 256 bytes)
             let mut buf = [0u8; 0x0100];
             f.read_exact(&mut buf)
                 .with_context(|| format!("failed to read full boot ROM: `{}`", boot.display()))?;
@@ -172,7 +172,7 @@ fn boot(path: Option<PathBuf>) -> Result<Option<Boot>> {
         })
         .transpose()?;
     // Initialize the boot rom
-    let boot = boot.as_ref().map(Boot::from);
+    let boot = boot.as_ref().map(Rom::from).map(Boot::new);
 
     Ok(boot)
 }

@@ -1,11 +1,9 @@
 //! Joypad controller.
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use log::{debug, trace};
 use remus::bus::Bus;
-use remus::{reg, Address, Block, Board, Cell, Device, Shared};
+use remus::dev::Device;
+use remus::{reg, Address, Block, Board, Cell, Linked, Shared};
 
 use super::pic::{Interrupt, Pic};
 
@@ -24,30 +22,32 @@ pub enum Button {
 }
 
 /// Joypad model.
-#[rustfmt::skip]
 #[derive(Debug, Default)]
 pub struct Joypad {
-    // Connections
-    pic: Rc<RefCell<Pic>>,
-    // Devices
+    // Control
     // ┌──────┬────────┬─────┬───────┐
     // │ Size │  Name  │ Dev │ Alias │
     // ├──────┼────────┼─────┼───────┤
     // │  1 B │ Joypad │ Reg │ CON   │
     // └──────┴────────┴─────┴───────┘
     con: Shared<Control>,
+    // Shared
+    pic: Shared<Pic>,
 }
 
 impl Joypad {
+    /// Constructs a new `Joypad`.
+    pub fn new(pic: Shared<Pic>) -> Self {
+        Self {
+            pic,
+            ..Default::default()
+        }
+    }
+
     /// Gets a reference to the joypad's control register.
     #[must_use]
     pub fn con(&self) -> Shared<Control> {
         self.con.clone()
-    }
-
-    /// Sets the joypad's interrupt controller.
-    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
-        self.pic = pic;
     }
 
     /// Handle pressed button inputs.
@@ -81,6 +81,7 @@ impl Joypad {
 
 impl Block for Joypad {
     fn reset(&mut self) {
+        // Control
         self.con.reset();
     }
 }
@@ -96,6 +97,16 @@ impl Board for Joypad {
                               // ├──────┼──────┼────────┼─────┤
         bus.map(0xff00, con); // │ ff00 │  1 B │ Joypad │ Reg │
                               // └──────┴──────┴────────┴─────┘
+    }
+}
+
+impl Linked<Pic> for Joypad {
+    fn mine(&self) -> Shared<Pic> {
+        self.pic.clone()
+    }
+
+    fn link(&mut self, it: Shared<Pic>) {
+        self.pic = it;
     }
 }
 

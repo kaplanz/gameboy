@@ -1,12 +1,10 @@
 //! Hardware timer.
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use log::{debug, trace};
 use remus::bus::Bus;
+use remus::dev::Device;
 use remus::reg::Register;
-use remus::{Address, Block, Board, Cell, Device, Location, Machine, Shared};
+use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
 
 use super::pic::{Interrupt, Pic};
 
@@ -32,9 +30,7 @@ pub enum Control {
 #[derive(Debug, Default)]
 pub struct Timer {
     // State
-    andres: bool,
-    // Connections
-    pic: Rc<RefCell<Pic>>,
+    last: bool,
     // Control
     // ┌──────┬──────────┬─────┐
     // │ Size │   Name   │ Dev │
@@ -42,12 +38,18 @@ pub struct Timer {
     // │  4 B │ Control  │ Reg │
     // └──────┴──────────┴─────┘
     file: File,
+    // Shared
+    pic: Shared<Pic>,
 }
 
 impl Timer {
-    /// Sets the timer's programmable interrupt controller.
-    pub fn set_pic(&mut self, pic: Rc<RefCell<Pic>>) {
-        self.pic = pic;
+    /// Constructs a new `Timer`.
+    #[must_use]
+    pub fn new(pic: Shared<Pic>) -> Self {
+        Self {
+            pic,
+            ..Default::default()
+        }
     }
 
     /// Gets a reference to the timer's divider register.
@@ -91,13 +93,27 @@ impl Timer {
 
 impl Block for Timer {
     fn reset(&mut self) {
+        // State
+        std::mem::take(&mut self.last);
+        // Control
         self.file.reset();
     }
 }
 
 impl Board for Timer {
     fn connect(&self, bus: &mut Bus) {
+        // Control
         self.file.connect(bus);
+    }
+}
+
+impl Linked<Pic> for Timer {
+    fn mine(&self) -> Shared<Pic> {
+        self.pic.clone()
+    }
+
+    fn link(&mut self, it: Shared<Pic>) {
+        self.pic = it;
     }
 }
 
@@ -138,9 +154,9 @@ impl Machine for Timer {
         let tma = self.file.tma.load();
 
         // Check if TIMA should be incremented
-        let and = self.and();           // calculate AND result
-        let fell = self.andres && !and; // check if falling
-        self.andres = and;              // store for next cycle
+        let and = self.and();         // calculate AND result
+        let fell = self.last && !and; // check if falling
+        self.last = and;              // store for next cycle
 
         // Calculate next TIMA
         if fell {
@@ -244,7 +260,7 @@ impl Address<u8> for Div {
 
 impl Block for Div {
     fn reset(&mut self) {
-        self.0.reset();
+        std::mem::take(self);
     }
 }
 
@@ -288,7 +304,7 @@ impl Address<u8> for Tima {
 
 impl Block for Tima {
     fn reset(&mut self) {
-        self.reg.reset();
+        std::mem::take(self);
     }
 }
 
@@ -352,7 +368,7 @@ impl Address<u8> for Tac {
 
 impl Block for Tac {
     fn reset(&mut self) {
-        self.0.reset();
+        std::mem::take(self);
     }
 }
 
