@@ -71,13 +71,13 @@ impl Display for Mode {
 
 #[derive(Debug, Default)]
 pub struct Debugger {
-    // Application state
+    // Application
     cycle: usize,
     log: Option<Handle>,
-    // Console state
+    // Console
     pc: u16,
     state: Stage,
-    // Internal state
+    // Internal
     play: bool,
     freq: Mode,
     step: Option<usize>,
@@ -274,7 +274,7 @@ impl Debugger {
             Quit                    => exec::quit(),
             Read(addr)              => exec::read(emu, addr),
             ReadRange(range)        => exec::read_range(emu, range),
-            Reset                   => exec::reset(emu),
+            Reset                   => exec::reset(self, emu),
             Step(many)              => exec::step(self, many),
             Store(loc, value)       => exec::store(emu, loc, value),
             Write(addr, byte)       => exec::write(emu, addr, byte),
@@ -300,7 +300,8 @@ impl Debugger {
 
 impl Block for Debugger {
     fn reset(&mut self) {
-        std::mem::take(self);
+        // Application
+        std::mem::take(&mut self.cycle);
     }
 }
 
