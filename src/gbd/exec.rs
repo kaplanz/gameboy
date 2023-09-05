@@ -238,9 +238,12 @@ pub fn read_range(emu: &mut GameBoy, range: Range<u16>) -> Result<()> {
     Ok(())
 }
 
-pub fn reset(emu: &mut GameBoy) -> Result<()> {
+pub fn reset(gbd: &mut Debugger, emu: &mut GameBoy) -> Result<()> {
     // Reset the console
     emu.reset();
+    // Reset and sync the debugger
+    gbd.reset();
+    gbd.sync(emu);
 
     Ok(())
 }
