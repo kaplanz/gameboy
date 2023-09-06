@@ -267,7 +267,7 @@ impl Block for Div {
 impl Cell<u8> for Div {
     /// Loads the value of DIV (upper 8-bits).
     fn load(&self) -> u8 {
-        (self.0.load() & 0xff00 >> 8) as u8
+        ((self.0.load() & 0xff00) >> 8) as u8
     }
 
     fn store(&mut self, _: u8) {
