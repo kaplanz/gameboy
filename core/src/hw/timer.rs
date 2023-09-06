@@ -238,7 +238,7 @@ impl Div {
     /// Gets the internal clock (lower 8-bits).
     #[must_use]
     pub fn clk(&self) -> u8 {
-        (self.0.load() & 0x00ff) as u8
+        self.0.load().to_le_bytes()[0]
     }
 
     /// Gets the full internal register value.
@@ -267,7 +267,7 @@ impl Block for Div {
 impl Cell<u8> for Div {
     /// Loads the value of DIV (upper 8-bits).
     fn load(&self) -> u8 {
-        ((self.0.load() & 0xff00) >> 8) as u8
+        self.0.load().to_le_bytes()[1]
     }
 
     fn store(&mut self, _: u8) {
