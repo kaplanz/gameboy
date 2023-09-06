@@ -474,7 +474,7 @@ mod tests {
     use super::*;
 
     /// Sample ROM header.
-    const HEAD: &[u8; 0x150] = include_bytes!("../../../../roms/test/header.gb");
+    const HEAD: &[u8; 0x150] = include_bytes!("../../../../roms/test/header/basic.gb");
 
     #[test]
     fn parse_works() {
