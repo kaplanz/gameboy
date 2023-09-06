@@ -169,7 +169,9 @@ impl Machine for Timer {
                 self.file.tima.borrow_mut().reload = Some(div.wrapping_add(4));
                 debug!("scheduled timer reload");
             }
-        } else if Some(div) == reload {
+        }
+        // Reload TIMA from TMA
+        if Some(div) == reload {
             // Reload from TMA
             self.file.tima.store(tma);
             // Schedule Timer interrupt
