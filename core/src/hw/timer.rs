@@ -274,6 +274,7 @@ impl Cell<u8> for Div {
     }
 
     fn store(&mut self, _: u8) {
+        trace!("resetting divider");
         self.0.store(0);
     }
 }
