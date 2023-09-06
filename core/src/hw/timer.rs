@@ -86,7 +86,7 @@ impl Timer {
         let ena = self.file.tac.borrow().ena();
         let sel = self.file.tac.borrow().sel();
         let div = self.file.div.borrow().div();
-        let bit = sel & div == 0;
+        let bit = sel & div != 0;
         ena & bit
     }
 }
