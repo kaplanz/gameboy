@@ -333,7 +333,7 @@ impl Device for Tima {
 pub type Tma = Register<u8>;
 
 /// Timer control.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Tac(Register<u8>);
 
 impl Tac {
@@ -379,6 +379,12 @@ impl Cell<u8> for Tac {
 
     fn store(&mut self, value: u8) {
         self.0.store(value & 0b111);
+    }
+}
+
+impl Default for Tac {
+    fn default() -> Self {
+        Self(Register::from(0b1111_1000))
     }
 }
 
