@@ -59,83 +59,84 @@ enum Error {
 }
 
 macro_rules! test {
-    ($test:ident, $path:tt) => {
-        #[test]
-        fn $test() -> Result<()> {
-            emulate(include_bytes!(concat!(
-                "../roms/test/mooneye/",
-                $path,
-            )))
-        }
+    ($($test:ident = $path:tt;)*) => {
+        $(
+            #[test]
+            fn $test() -> Result<()> {
+                emulate(include_bytes!($path))
+            }
+        )*
     };
 }
 
-test!(acceptance_add_sp_e_timing, "acceptance/add_sp_e_timing.gb");
-test!(acceptance_bits_mem_oam, "acceptance/bits/mem_oam.gb");
-test!(acceptance_bits_reg_f, "acceptance/bits/reg_f.gb");
-test!(acceptance_bits_unused_hwio_GS, "acceptance/bits/unused_hwio-GS.gb");
-test!(acceptance_boot_div_dmg0, "acceptance/boot_div-dmg0.gb");
-test!(acceptance_boot_div_dmgABCmgb, "acceptance/boot_div-dmgABCmgb.gb");
-test!(acceptance_boot_hwio_dmg0, "acceptance/boot_hwio-dmg0.gb");
-test!(acceptance_boot_hwio_dmgABCmgb, "acceptance/boot_hwio-dmgABCmgb.gb");
-test!(acceptance_boot_regs_dmg0, "acceptance/boot_regs-dmg0.gb");
-test!(acceptance_boot_regs_dmgABC, "acceptance/boot_regs-dmgABC.gb");
-test!(acceptance_call_cc_timing, "acceptance/call_cc_timing.gb");
-test!(acceptance_call_cc_timing2, "acceptance/call_cc_timing2.gb");
-test!(acceptance_call_timing, "acceptance/call_timing.gb");
-test!(acceptance_call_timing2, "acceptance/call_timing2.gb");
-test!(acceptance_di_timing_GS, "acceptance/di_timing-GS.gb");
-test!(acceptance_div_timing, "acceptance/div_timing.gb");
-test!(acceptance_ei_sequence, "acceptance/ei_sequence.gb");
-test!(acceptance_ei_timing, "acceptance/ei_timing.gb");
-test!(acceptance_halt_ime0_ei, "acceptance/halt_ime0_ei.gb");
-test!(acceptance_halt_ime0_nointr_timing, "acceptance/halt_ime0_nointr_timing.gb");
-test!(acceptance_halt_ime1_timing, "acceptance/halt_ime1_timing.gb");
-test!(acceptance_halt_ime1_timing2_GS, "acceptance/halt_ime1_timing2-GS.gb");
-test!(acceptance_if_ie_registers, "acceptance/if_ie_registers.gb");
-test!(acceptance_instr_daa, "acceptance/instr/daa.gb");
-test!(acceptance_interrupts_ie_push, "acceptance/interrupts/ie_push.gb");
-test!(acceptance_intr_timing, "acceptance/intr_timing.gb");
-test!(acceptance_jp_cc_timing, "acceptance/jp_cc_timing.gb");
-test!(acceptance_jp_timing, "acceptance/jp_timing.gb");
-test!(acceptance_ld_hl_sp_e_timing, "acceptance/ld_hl_sp_e_timing.gb");
-test!(acceptance_oam_dma_basic, "acceptance/oam_dma/basic.gb");
-test!(acceptance_oam_dma_reg_read, "acceptance/oam_dma/reg_read.gb");
-test!(acceptance_oam_dma_restart, "acceptance/oam_dma_restart.gb");
-test!(acceptance_oam_dma_sources_GS, "acceptance/oam_dma/sources-GS.gb");
-test!(acceptance_oam_dma_start, "acceptance/oam_dma_start.gb");
-test!(acceptance_oam_dma_timing, "acceptance/oam_dma_timing.gb");
-test!(acceptance_pop_timing, "acceptance/pop_timing.gb");
-test!(acceptance_ppu_hblank_ly_scx_timing_GS, "acceptance/ppu/hblank_ly_scx_timing-GS.gb");
-test!(acceptance_ppu_intr_1_2_timing_GS, "acceptance/ppu/intr_1_2_timing-GS.gb");
-test!(acceptance_ppu_intr_2_0_timing, "acceptance/ppu/intr_2_0_timing.gb");
-test!(acceptance_ppu_intr_2_mode0_timing, "acceptance/ppu/intr_2_mode0_timing.gb");
-test!(acceptance_ppu_intr_2_mode0_timing_sprites, "acceptance/ppu/intr_2_mode0_timing_sprites.gb");
-test!(acceptance_ppu_intr_2_mode3_timing, "acceptance/ppu/intr_2_mode3_timing.gb");
-test!(acceptance_ppu_intr_2_oam_ok_timing, "acceptance/ppu/intr_2_oam_ok_timing.gb");
-test!(acceptance_ppu_lcdon_timing_GS, "acceptance/ppu/lcdon_timing-GS.gb");
-test!(acceptance_ppu_lcdon_write_timing_GS, "acceptance/ppu/lcdon_write_timing-GS.gb");
-test!(acceptance_ppu_stat_irq_blocking, "acceptance/ppu/stat_irq_blocking.gb");
-test!(acceptance_ppu_stat_lyc_onoff, "acceptance/ppu/stat_lyc_onoff.gb");
-test!(acceptance_ppu_vblank_stat_intr_GS, "acceptance/ppu/vblank_stat_intr-GS.gb");
-test!(acceptance_push_timing, "acceptance/push_timing.gb");
-test!(acceptance_rapid_di_ei, "acceptance/rapid_di_ei.gb");
-test!(acceptance_ret_cc_timing, "acceptance/ret_cc_timing.gb");
-test!(acceptance_ret_timing, "acceptance/ret_timing.gb");
-test!(acceptance_reti_intr_timing, "acceptance/reti_intr_timing.gb");
-test!(acceptance_reti_timing, "acceptance/reti_timing.gb");
-test!(acceptance_rst_timing, "acceptance/rst_timing.gb");
-test!(acceptance_serial_boot_sclk_align_dmgABCmgb, "acceptance/serial/boot_sclk_align-dmgABCmgb.gb");
-test!(acceptance_timer_div_write, "acceptance/timer/div_write.gb");
-test!(acceptance_timer_rapid_toggle, "acceptance/timer/rapid_toggle.gb");
-test!(acceptance_timer_tim00, "acceptance/timer/tim00.gb");
-test!(acceptance_timer_tim00_div_trigger, "acceptance/timer/tim00_div_trigger.gb");
-test!(acceptance_timer_tim01, "acceptance/timer/tim01.gb");
-test!(acceptance_timer_tim01_div_trigger, "acceptance/timer/tim01_div_trigger.gb");
-test!(acceptance_timer_tim10, "acceptance/timer/tim10.gb");
-test!(acceptance_timer_tim10_div_trigger, "acceptance/timer/tim10_div_trigger.gb");
-test!(acceptance_timer_tim11, "acceptance/timer/tim11.gb");
-test!(acceptance_timer_tim11_div_trigger, "acceptance/timer/tim11_div_trigger.gb");
-test!(acceptance_timer_tima_reload, "acceptance/timer/tima_reload.gb");
-test!(acceptance_timer_tima_write_reloading, "acceptance/timer/tima_write_reloading.gb");
-test!(acceptance_timer_tma_write_reloading, "acceptance/timer/tma_write_reloading.gb");
+test! {
+    mooneye_acceptance_add_sp_e_timing                  = "../roms/test/mooneye/acceptance/add_sp_e_timing.gb";
+    mooneye_acceptance_bits_mem_oam                     = "../roms/test/mooneye/acceptance/bits/mem_oam.gb";
+    mooneye_acceptance_bits_reg_f                       = "../roms/test/mooneye/acceptance/bits/reg_f.gb";
+    mooneye_acceptance_bits_unused_hwio_GS              = "../roms/test/mooneye/acceptance/bits/unused_hwio-GS.gb";
+    mooneye_acceptance_boot_div_dmg0                    = "../roms/test/mooneye/acceptance/boot_div-dmg0.gb";
+    mooneye_acceptance_boot_div_dmgABCmgb               = "../roms/test/mooneye/acceptance/boot_div-dmgABCmgb.gb";
+    mooneye_acceptance_boot_hwio_dmg0                   = "../roms/test/mooneye/acceptance/boot_hwio-dmg0.gb";
+    mooneye_acceptance_boot_hwio_dmgABCmgb              = "../roms/test/mooneye/acceptance/boot_hwio-dmgABCmgb.gb";
+    mooneye_acceptance_boot_regs_dmg0                   = "../roms/test/mooneye/acceptance/boot_regs-dmg0.gb";
+    mooneye_acceptance_boot_regs_dmgABC                 = "../roms/test/mooneye/acceptance/boot_regs-dmgABC.gb";
+    mooneye_acceptance_call_cc_timing                   = "../roms/test/mooneye/acceptance/call_cc_timing.gb";
+    mooneye_acceptance_call_cc_timing2                  = "../roms/test/mooneye/acceptance/call_cc_timing2.gb";
+    mooneye_acceptance_call_timing                      = "../roms/test/mooneye/acceptance/call_timing.gb";
+    mooneye_acceptance_call_timing2                     = "../roms/test/mooneye/acceptance/call_timing2.gb";
+    mooneye_acceptance_di_timing_GS                     = "../roms/test/mooneye/acceptance/di_timing-GS.gb";
+    mooneye_acceptance_div_timing                       = "../roms/test/mooneye/acceptance/div_timing.gb";
+    mooneye_acceptance_ei_sequence                      = "../roms/test/mooneye/acceptance/ei_sequence.gb";
+    mooneye_acceptance_ei_timing                        = "../roms/test/mooneye/acceptance/ei_timing.gb";
+    mooneye_acceptance_halt_ime0_ei                     = "../roms/test/mooneye/acceptance/halt_ime0_ei.gb";
+    mooneye_acceptance_halt_ime0_nointr_timing          = "../roms/test/mooneye/acceptance/halt_ime0_nointr_timing.gb";
+    mooneye_acceptance_halt_ime1_timing                 = "../roms/test/mooneye/acceptance/halt_ime1_timing.gb";
+    mooneye_acceptance_halt_ime1_timing2_GS             = "../roms/test/mooneye/acceptance/halt_ime1_timing2-GS.gb";
+    mooneye_acceptance_if_ie_registers                  = "../roms/test/mooneye/acceptance/if_ie_registers.gb";
+    mooneye_acceptance_instr_daa                        = "../roms/test/mooneye/acceptance/instr/daa.gb";
+    mooneye_acceptance_interrupts_ie_push               = "../roms/test/mooneye/acceptance/interrupts/ie_push.gb";
+    mooneye_acceptance_intr_timing                      = "../roms/test/mooneye/acceptance/intr_timing.gb";
+    mooneye_acceptance_jp_cc_timing                     = "../roms/test/mooneye/acceptance/jp_cc_timing.gb";
+    mooneye_acceptance_jp_timing                        = "../roms/test/mooneye/acceptance/jp_timing.gb";
+    mooneye_acceptance_ld_hl_sp_e_timing                = "../roms/test/mooneye/acceptance/ld_hl_sp_e_timing.gb";
+    mooneye_acceptance_oam_dma_basic                    = "../roms/test/mooneye/acceptance/oam_dma/basic.gb";
+    mooneye_acceptance_oam_dma_reg_read                 = "../roms/test/mooneye/acceptance/oam_dma/reg_read.gb";
+    mooneye_acceptance_oam_dma_restart                  = "../roms/test/mooneye/acceptance/oam_dma_restart.gb";
+    mooneye_acceptance_oam_dma_sources_GS               = "../roms/test/mooneye/acceptance/oam_dma/sources-GS.gb";
+    mooneye_acceptance_oam_dma_start                    = "../roms/test/mooneye/acceptance/oam_dma_start.gb";
+    mooneye_acceptance_oam_dma_timing                   = "../roms/test/mooneye/acceptance/oam_dma_timing.gb";
+    mooneye_acceptance_pop_timing                       = "../roms/test/mooneye/acceptance/pop_timing.gb";
+    mooneye_acceptance_ppu_hblank_ly_scx_timing_GS      = "../roms/test/mooneye/acceptance/ppu/hblank_ly_scx_timing-GS.gb";
+    mooneye_acceptance_ppu_intr_1_2_timing_GS           = "../roms/test/mooneye/acceptance/ppu/intr_1_2_timing-GS.gb";
+    mooneye_acceptance_ppu_intr_2_0_timing              = "../roms/test/mooneye/acceptance/ppu/intr_2_0_timing.gb";
+    mooneye_acceptance_ppu_intr_2_mode0_timing          = "../roms/test/mooneye/acceptance/ppu/intr_2_mode0_timing.gb";
+    mooneye_acceptance_ppu_intr_2_mode0_timing_sprites  = "../roms/test/mooneye/acceptance/ppu/intr_2_mode0_timing_sprites.gb";
+    mooneye_acceptance_ppu_intr_2_mode3_timing          = "../roms/test/mooneye/acceptance/ppu/intr_2_mode3_timing.gb";
+    mooneye_acceptance_ppu_intr_2_oam_ok_timing         = "../roms/test/mooneye/acceptance/ppu/intr_2_oam_ok_timing.gb";
+    mooneye_acceptance_ppu_lcdon_timing_GS              = "../roms/test/mooneye/acceptance/ppu/lcdon_timing-GS.gb";
+    mooneye_acceptance_ppu_lcdon_write_timing_GS        = "../roms/test/mooneye/acceptance/ppu/lcdon_write_timing-GS.gb";
+    mooneye_acceptance_ppu_stat_irq_blocking            = "../roms/test/mooneye/acceptance/ppu/stat_irq_blocking.gb";
+    mooneye_acceptance_ppu_stat_lyc_onoff               = "../roms/test/mooneye/acceptance/ppu/stat_lyc_onoff.gb";
+    mooneye_acceptance_ppu_vblank_stat_intr_GS          = "../roms/test/mooneye/acceptance/ppu/vblank_stat_intr-GS.gb";
+    mooneye_acceptance_push_timing                      = "../roms/test/mooneye/acceptance/push_timing.gb";
+    mooneye_acceptance_rapid_di_ei                      = "../roms/test/mooneye/acceptance/rapid_di_ei.gb";
+    mooneye_acceptance_ret_cc_timing                    = "../roms/test/mooneye/acceptance/ret_cc_timing.gb";
+    mooneye_acceptance_ret_timing                       = "../roms/test/mooneye/acceptance/ret_timing.gb";
+    mooneye_acceptance_reti_intr_timing                 = "../roms/test/mooneye/acceptance/reti_intr_timing.gb";
+    mooneye_acceptance_reti_timing                      = "../roms/test/mooneye/acceptance/reti_timing.gb";
+    mooneye_acceptance_rst_timing                       = "../roms/test/mooneye/acceptance/rst_timing.gb";
+    mooneye_acceptance_serial_boot_sclk_align_dmgABCmgb = "../roms/test/mooneye/acceptance/serial/boot_sclk_align-dmgABCmgb.gb";
+    mooneye_acceptance_timer_div_write                  = "../roms/test/mooneye/acceptance/timer/div_write.gb";
+    mooneye_acceptance_timer_rapid_toggle               = "../roms/test/mooneye/acceptance/timer/rapid_toggle.gb";
+    mooneye_acceptance_timer_tim00                      = "../roms/test/mooneye/acceptance/timer/tim00.gb";
+    mooneye_acceptance_timer_tim00_div_trigger          = "../roms/test/mooneye/acceptance/timer/tim00_div_trigger.gb";
+    mooneye_acceptance_timer_tim01                      = "../roms/test/mooneye/acceptance/timer/tim01.gb";
+    mooneye_acceptance_timer_tim01_div_trigger          = "../roms/test/mooneye/acceptance/timer/tim01_div_trigger.gb";
+    mooneye_acceptance_timer_tim10                      = "../roms/test/mooneye/acceptance/timer/tim10.gb";
+    mooneye_acceptance_timer_tim10_div_trigger          = "../roms/test/mooneye/acceptance/timer/tim10_div_trigger.gb";
+    mooneye_acceptance_timer_tim11                      = "../roms/test/mooneye/acceptance/timer/tim11.gb";
+    mooneye_acceptance_timer_tim11_div_trigger          = "../roms/test/mooneye/acceptance/timer/tim11_div_trigger.gb";
+    mooneye_acceptance_timer_tima_reload                = "../roms/test/mooneye/acceptance/timer/tima_reload.gb";
+    mooneye_acceptance_timer_tima_write_reloading       = "../roms/test/mooneye/acceptance/timer/tima_write_reloading.gb";
+    mooneye_acceptance_timer_tma_write_reloading        = "../roms/test/mooneye/acceptance/timer/tma_write_reloading.gb";
+}
