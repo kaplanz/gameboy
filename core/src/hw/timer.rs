@@ -166,6 +166,7 @@ impl Machine for Timer {
             trace!("timer: {tima}");
             // Store a pending reload on overflow
             if carry {
+                // Schedule reload 4 cycles later
                 self.file.tima.borrow_mut().reload = Some(div.wrapping_add(4));
                 debug!("scheduled timer reload");
             }
