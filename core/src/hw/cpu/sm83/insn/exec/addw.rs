@@ -12,8 +12,8 @@ pub enum Addw {
     #[default]
     Fetch,
     Execute(u16, u16),
-    DelayA0xE8(u8),
-    DelayB0xE8(u8),
+    Fetch0xE8,
+    Delay0xE8(u8),
     Execute0xE8(u8),
 }
 
@@ -22,9 +22,9 @@ impl Execute for Addw {
         match self {
             Self::Fetch => fetch(code, cpu),
             Self::Execute(op1, op2) => execute(code, cpu, op1, op2),
-            Self::DelayA0xE8(r8) => delay_a_0xe8(code, cpu, r8),
-            Self::DelayB0xE8(r8) => delay_b_0xe8(code, cpu, r8),
-            Self::Execute0xE8(r8) => execute_0xe8(code, cpu, r8),
+            Self::Fetch0xE8 => fetch_0xe8(code, cpu),
+            Self::Delay0xE8(e8) => delay_0xe8(code, cpu, e8),
+            Self::Execute0xE8(e8) => execute_0xe8(code, cpu, e8),
         }
     }
 }
@@ -63,10 +63,8 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
             Ok(Some(Addw::Execute(op1, op2).into()))
         }
         0xe8 => {
-            // Fetch r8
-            let e8 = cpu.fetchbyte();
             // Proceed
-            Ok(Some(Addw::DelayA0xE8(e8).into()))
+            Ok(Some(Addw::Fetch0xE8.into()))
         }
         code => Err(Error::Opcode(code)),
     }
@@ -88,14 +86,15 @@ fn execute(_: u8, cpu: &mut Cpu, op1: u16, op2: u16) -> Return {
     Ok(None)
 }
 
-fn delay_a_0xe8(_: u8, _: &mut Cpu, e8: u8) -> Return {
-    // Delay by 1 cycle
+fn fetch_0xe8(_: u8, cpu: &mut Cpu) -> Return {
+    // Fetch e8
+    let e8 = cpu.fetchbyte();
 
     // Proceed
-    Ok(Some(Addw::DelayB0xE8(e8).into()))
+    Ok(Some(Addw::Delay0xE8(e8).into()))
 }
 
-fn delay_b_0xe8(_: u8, _: &mut Cpu, e8: u8) -> Return {
+fn delay_0xe8(_: u8, _: &mut Cpu, e8: u8) -> Return {
     // Delay by 1 cycle
 
     // Proceed
