@@ -76,12 +76,6 @@ impl Serial {
 
             // Perform a cycle
             self.cycle();
-
-            // When complete...
-            if self.file.sb.borrow().mask == 0 {
-                // ...trigger an interrupt
-                self.pic.borrow_mut().req(Interrupt::Serial);
-            }
         }
     }
 }
@@ -154,6 +148,8 @@ impl Machine for Serial {
             // Mark as complete
             sc.ena = false;
             debug!("finished tx: {tx:#04x}");
+            // Request an interrupt
+            self.pic.borrow_mut().req(Interrupt::Serial);
         }
     }
 }
