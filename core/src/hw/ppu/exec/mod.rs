@@ -47,6 +47,7 @@ impl Mode {
                 int |= u8::from(matches!(self, Mode::HBlank(_))) << 3;
                 // Check for interrupts
                 if int & (stat & 0x78) != 0 {
+                    // Request an interrupt
                     ppu.pic.borrow_mut().req(Interrupt::LcdStat);
                 }
             }
