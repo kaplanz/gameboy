@@ -66,8 +66,9 @@ impl Joypad {
             // Fold matching pressed buttons' corresponding bits into a byte
             .fold(prev & 0xf0, |acc, btn| acc | ((btn as u8) & 0x0f));
 
-        // Schedule interrupt on updated value
+        // Check if value has updated
         if (prev & 0x0f) != (next & 0x0f) {
+            // Request an interrupt
             self.pic.borrow_mut().req(Interrupt::Joypad);
             debug!("input {next:#010b}: {keys:?}"); // log updates with `debug`
         } else if !is_empty {

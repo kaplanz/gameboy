@@ -175,7 +175,7 @@ impl Machine for Timer {
         if Some(div) == reload {
             // Reload from TMA
             self.file.tima.store(tma);
-            // Schedule Timer interrupt
+            // Request an interrupt
             self.pic.borrow_mut().req(Interrupt::Timer);
             debug!("interrupt requested");
         }

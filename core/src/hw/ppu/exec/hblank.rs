@@ -24,7 +24,7 @@ impl HBlank {
             // Reset dot-clock
             ppu.dot = 0;
 
-            // Schedule VBlank interrupt
+            // Request an interrupt
             ppu.pic.borrow_mut().req(Interrupt::VBlank);
 
             // Determine next mode
