@@ -195,6 +195,10 @@ pub fn load(emu: &GameBoy, loc: Location) -> Result<()> {
             let byte: u8 = emu.ppu().load(reg);
             tell::info!("{reg:?}: {byte:#04x}");
         }
+        Location::Serial(reg) => {
+            let byte: u8 = emu.serial().load(reg);
+            tell::info!("{reg:?}: {byte:#04x}");
+        }
         Location::Timer(reg) => {
             let byte: u8 = emu.timer().load(reg);
             tell::info!("{reg:?}: {byte:#04x}");
@@ -298,6 +302,14 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
             };
             // Perform the store
             emu.ppu_mut().store(reg, byte);
+        }
+        Location::Serial(reg) => {
+            // Extract the byte
+            let Value::Byte(byte) = value else {
+                return Err(Error::ValueMismatch);
+            };
+            // Perform the store
+            emu.serial_mut().store(reg, byte);
         }
         Location::Timer(reg) => {
             // Extract the byte
