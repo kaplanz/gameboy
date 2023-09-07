@@ -1,6 +1,7 @@
 #![allow(clippy::unnecessary_wraps)]
 
 use std::cmp::Ordering;
+use std::io::Read;
 use std::ops::Range;
 
 use gameboy::dmg::cpu::Processor;
@@ -244,6 +245,22 @@ pub fn reset(gbd: &mut Debugger, emu: &mut GameBoy) -> Result<()> {
     // Reset and sync the debugger
     gbd.reset();
     gbd.sync(emu);
+
+    Ok(())
+}
+
+pub fn serial(emu: &mut GameBoy) -> Result<()> {
+    // Receive serial data
+    let mut tx = Vec::new();
+    let nbytes = emu.serial_mut().read_to_end(&mut tx)?;
+    // Get string representation of data
+    let repr = String::from_utf8_lossy(&tx);
+    // Display results
+    tell::info!("received {nbytes} bytes");
+    if nbytes > 0 {
+        tell::debug!("raw: {tx:?}");
+        tell::debug!("repr: {repr:?}");
+    }
 
     Ok(())
 }

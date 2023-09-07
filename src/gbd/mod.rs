@@ -275,6 +275,7 @@ impl Debugger {
             Read(addr)              => exec::read(emu, addr),
             ReadRange(range)        => exec::read_range(emu, range),
             Reset                   => exec::reset(self, emu),
+            Serial                  => exec::serial(emu),
             Step(many)              => exec::step(self, many),
             Store(loc, value)       => exec::store(emu, loc, value),
             Write(addr, byte)       => exec::write(emu, addr, byte),
@@ -362,4 +363,6 @@ pub enum Error {
     Tracing(#[from] reload::Error),
     #[error("unsupported keyword")]
     Unsupported,
+    #[error("serial I/O failed")]
+    Serial(#[from] std::io::Error),
 }

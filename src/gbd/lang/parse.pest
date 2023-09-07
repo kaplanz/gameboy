@@ -35,7 +35,8 @@ Filter        = @{ Directive ~ ("," ~ Filter)? }
 Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
   Keyword     = _{ KBreak | KContinue | KDelete | KDisable | KEnable | KFreq |
                    KGoto | KHelp | KIgnore | KInfo | KJump | KLoad | KLog |
-                   KList | KQuit | KReset | KRead | KStore | KStep | KWrite }
+                   KList | KQuit | KReset | KRead | KSerial | KStore | KStep |
+                   KWrite }
     KBreak    =  { ^"break"     | ^"br"   | ^"b" }
     KContinue =  { ^"continue"  | ^"cont" | ^"c" }
     KDelete   =  { ^"delete"    | ^"del"         }
@@ -55,6 +56,7 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
     KQuit     =  { ^"quit"                | ^"q" }
     KRead     =  { ^"read"      | ^"rd"   | ^"r" }
     KReset    =  { ^"reset"     | ^"res"         }
+    KSerial   =  { ^"serial"    | ^"sx"          }
     KStep     =  { ^"step"                | ^"s" }
     KStore    =  { ^"store"     | ^"sr"          }
       KStoreB =  { ^"sb" }
@@ -100,7 +102,7 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
         PC    =  { ^"pc" }
   Command     = _{ Break | Continue | Delete | Disable | Enable | Freq | Goto |
                    Help | Ignore | Info | Jump | Load | Log | List | Quit |
-                   Reset | Read | Store | Step | Write }
+                   Reset | Read | Serial | Store | Step | Write }
     Break     =  { KBreak ~ UInt }
     Continue  =  { KContinue }
     Delete    =  { KDelete ~ UInt }
@@ -125,6 +127,7 @@ Program       = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOL? ~ EOI }
     Quit      =  { KQuit }
     Read      =  { KRead ~ (RangeBounds | UInt) }
     Reset     =  { KReset }
+    Serial    =  { KSerial }
     Step      =  { KStep ~ UInt? }
     Store     =  { StoreB | StoreW | (KStore ~ Location ~ Int) }
       StoreB  = _{ KStoreB ~ BLocation ~ Int }
