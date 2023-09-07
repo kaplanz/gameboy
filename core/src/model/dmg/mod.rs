@@ -30,7 +30,7 @@ pub use crate::emu::Screen as Dimensions;
 pub use crate::hw::cpu::sm83 as cpu;
 pub use crate::hw::joypad::Button;
 pub use crate::hw::ppu::Screen;
-pub use crate::hw::{cart, ppu, timer};
+pub use crate::hw::{cart, ppu, serial, timer};
 
 /// DMG-01 screen specification.
 pub const SCREEN: Dimensions = Dimensions {

@@ -7,9 +7,35 @@ use log::{debug, trace, warn};
 use remus::bus::Bus;
 use remus::dev::Device;
 use remus::reg::Register;
-use remus::{Address, Block, Board, Cell, Machine, Shared};
+use remus::{Address, Block, Board, Cell, Location, Machine, Shared};
 
 use super::pic::{Interrupt, Pic};
+
+/// 8-bit serial control register set.
+///
+/// For more info about serial interface operation, see [here][serial].
+///
+/// [serial]: https://gbdev.io/pandocs/Serial_Data_Transfer_(Link_Cable).html
+#[derive(Clone, Copy, Debug)]
+pub enum Control {
+    /// `0xFF01`: Serial transfer data.
+    ///
+    /// Holds the transfer data.
+    ///
+    /// Before a transfer, it holds the data to be transferred out. During the
+    /// transfer bits are shifted leftwards. The bit shifted out is transferred
+    /// serially over the wire, and the received bit is shifting in to the least
+    /// significant position.
+    Sb,
+    /// `0xFF02`: Serial transfer control.
+    ///
+    /// | Bit | Name                |
+    /// |-----|---------------------|
+    /// |  7  | Transfer start flag |
+    /// | 6-1 | Unmapped            |
+    /// |  0  | Shift clock         |
+    Sc,
+}
 
 /// Serial interface model.
 #[derive(Debug, Default)]
@@ -31,6 +57,7 @@ pub struct Serial {
 
 impl Serial {
     /// Constructs a new `Serial`.
+    #[must_use]
     pub fn new(pic: Shared<Pic>) -> Self {
         Self {
             pic,
@@ -70,6 +97,24 @@ impl Board for Serial {
     fn connect(&self, bus: &mut Bus) {
         // Connect boards
         self.file.connect(bus);
+    }
+}
+
+impl Location<u8> for Serial {
+    type Register = Control;
+
+    fn load(&self, reg: Self::Register) -> u8 {
+        match reg {
+            Control::Sb => self.file.sb.load(),
+            Control::Sc => self.file.sc.load(),
+        }
+    }
+
+    fn store(&mut self, reg: Self::Register, value: u8) {
+        match reg {
+            Control::Sb => self.file.sb.store(value),
+            Control::Sc => self.file.sc.store(value),
+        }
     }
 }
 
@@ -128,8 +173,8 @@ struct File {
     // │  1 B │ Data     │ Reg │ SB    │
     // │  1 B │ Control  │ Reg │ SC    │
     // └──────┴──────────┴─────┴───────┘
-    sb: Shared<Data>,
-    sc: Shared<Control>,
+    sb: Shared<Sb>,
+    sc: Shared<Sc>,
 }
 
 impl Block for File {
@@ -157,12 +202,12 @@ impl Board for File {
 
 /// Serial data.
 #[derive(Debug, Default)]
-pub struct Data {
+pub struct Sb {
     data: Register<u8>,
     mask: u8,
 }
 
-impl Data {
+impl Sb {
     /// Shift-exchange, simultaneously shifting a bit out and in.
     fn tex(&mut self, rx: bool) -> bool {
         // Load data
@@ -180,7 +225,7 @@ impl Data {
     }
 }
 
-impl Address<u8> for Data {
+impl Address<u8> for Sb {
     fn read(&self, _: usize) -> u8 {
         self.load()
     }
@@ -190,13 +235,13 @@ impl Address<u8> for Data {
     }
 }
 
-impl Block for Data {
+impl Block for Sb {
     fn reset(&mut self) {
         std::mem::take(self);
     }
 }
 
-impl Cell<u8> for Data {
+impl Cell<u8> for Sb {
     fn load(&self) -> u8 {
         self.data.load()
     }
@@ -213,7 +258,7 @@ impl Cell<u8> for Data {
     }
 }
 
-impl Device for Data {
+impl Device for Sb {
     fn contains(&self, index: usize) -> bool {
         self.data.contains(index)
     }
@@ -225,12 +270,12 @@ impl Device for Data {
 
 /// Serial control.
 #[derive(Debug, Default)]
-pub struct Control {
+pub struct Sc {
     ena: bool,
     clk: bool,
 }
 
-impl Address<u8> for Control {
+impl Address<u8> for Sc {
     fn read(&self, _: usize) -> u8 {
         self.load()
     }
@@ -240,13 +285,13 @@ impl Address<u8> for Control {
     }
 }
 
-impl Block for Control {
+impl Block for Sc {
     fn reset(&mut self) {
         std::mem::take(self);
     }
 }
 
-impl Cell<u8> for Control {
+impl Cell<u8> for Sc {
     fn load(&self) -> u8 {
         (self.ena as u8) << 7 | 0x7e | (self.clk as u8)
     }
@@ -257,7 +302,7 @@ impl Cell<u8> for Control {
     }
 }
 
-impl Device for Control {
+impl Device for Sc {
     fn contains(&self, index: usize) -> bool {
         index < 1
     }
