@@ -78,6 +78,25 @@ impl Serial {
             self.cycle();
         }
     }
+
+    /// Shift-exchange, simultaneously shifting a bit out and in.
+    fn tex(&mut self, rx: bool) -> bool {
+        // Extract control registers
+        let mut sb = self.file.sb.borrow_mut();
+        let mut sc = self.file.sc.borrow_mut();
+        // Load data
+        let mut data = sb.load();
+        // Perform transfer
+        let tx = data & 0x80 != 0;
+        data = (data << 1) | (rx as u8);
+        trace!("tx: {}, rx: {}", tx as u8, rx as u8);
+        // Update bitmask
+        sc.bit >>= 1;
+        // Store data
+        sb.store(data);
+        // Return output
+        tx
+    }
 }
 
 impl Block for Serial {
@@ -121,16 +140,13 @@ impl Machine for Serial {
     }
 
     fn cycle(&mut self) {
-        // Extract control registers
-        let mut sc = self.file.sc.borrow_mut();
-        let mut sb = self.file.sb.borrow_mut();
-        let mask = sb.mask;
-
+        // Extract bitmask
+        let bit = self.file.sc.borrow().bit;
         // Determine receiving bit
-        let rx = self.rx.front().map_or(true, |rx| rx & mask != 0);
+        let rx = self.rx.front().map_or(true, |rx| rx & bit != 0);
 
         // Perform transfer-exchange
-        let tx = sb.tex(rx);
+        let tx = self.tex(rx);
 
         // Store transferred bit
         #[allow(clippy::match_bool)]
@@ -138,10 +154,11 @@ impl Machine for Serial {
             true => 0xff,
             false => 0x00,
         };
-        self.ip |= tx & mask;
+        self.ip |= tx & bit;
 
         // Clean-up after transfer is complete
-        if sb.mask == 0 {
+        let mut sc = self.file.sc.borrow_mut();
+        if sc.bit == 0 {
             // Transfer out byte
             let tx = std::mem::take(&mut self.ip);
             self.tx.push_back(tx);
@@ -197,78 +214,14 @@ impl Board for File {
 }
 
 /// Serial data.
-#[derive(Debug, Default)]
-pub struct Sb {
-    data: Register<u8>,
-    mask: u8,
-}
-
-impl Sb {
-    /// Shift-exchange, simultaneously shifting a bit out and in.
-    fn tex(&mut self, rx: bool) -> bool {
-        // Load data
-        let mut data = self.data.load();
-        // Perform transfer
-        let tx = data & 0x80 != 0;
-        data = (data << 1) | (rx as u8);
-        trace!("tx: {}, rx: {}", tx as u8, rx as u8);
-        // Update bitmask
-        self.mask >>= 1;
-        // Store data
-        self.data.store(data);
-        // Return output
-        tx
-    }
-}
-
-impl Address<u8> for Sb {
-    fn read(&self, _: usize) -> u8 {
-        self.load()
-    }
-
-    fn write(&mut self, _: usize, value: u8) {
-        self.store(value);
-    }
-}
-
-impl Block for Sb {
-    fn reset(&mut self) {
-        std::mem::take(self);
-    }
-}
-
-impl Cell<u8> for Sb {
-    fn load(&self) -> u8 {
-        self.data.load()
-    }
-
-    fn store(&mut self, value: u8) {
-        debug!("started tx: {value:#04x}");
-        if self.mask != 0 {
-            warn!("interrupted serial transfer");
-        }
-        // Store byte to transfer
-        self.data.store(value);
-        // Reset transfer sequence bit
-        self.mask = 0b1000_0000;
-    }
-}
-
-impl Device for Sb {
-    fn contains(&self, index: usize) -> bool {
-        self.data.contains(index)
-    }
-
-    fn len(&self) -> usize {
-        self.data.len()
-    }
-}
+type Sb = Register<u8>;
 
 /// Serial control.
 #[derive(Debug, Default)]
 pub struct Sc {
     ena: bool,
     clk: bool,
+    bit: u8,
 }
 
 impl Address<u8> for Sc {
@@ -293,8 +246,15 @@ impl Cell<u8> for Sc {
     }
 
     fn store(&mut self, value: u8) {
+        if self.bit != 0 {
+            warn!("interrupted serial transfer");
+        }
+        // Store individual bits
         self.ena = value & 0x80 != 0;
         self.clk = value & 0x01 != 0;
+        // Reset transfer sequence bit
+        self.bit = 0b1000_0000;
+        debug!("started tx");
     }
 }
 
