@@ -123,6 +123,7 @@ impl Language {
                 }
             }
             Rule::Reset => Command::Reset,
+            Rule::Serial => Command::Serial,
             Rule::Step => {
                 let many = args.next().map(Self::int).transpose()?;
                 Command::Step(many)
@@ -259,6 +260,7 @@ impl Language {
             Rule::KQuit     => Keyword::Quit,
             Rule::KRead     => Keyword::Read,
             Rule::KReset    => Keyword::Reset,
+            Rule::KSerial   => Keyword::Serial,
             Rule::KStep     => Keyword::Step,
             Rule::KStore    => Keyword::Store,
             Rule::KWrite    => Keyword::Write,

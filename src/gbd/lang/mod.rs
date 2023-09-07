@@ -72,6 +72,7 @@ pub enum Command {
     Read(u16),
     ReadRange(Range<u16>),
     Reset,
+    Serial,
     Step(Option<usize>),
     Store(Location, Value),
     Write(u16, u8),
@@ -314,6 +315,14 @@ pub enum Keyword {
      * Aliases: `res`
      */
     Reset,
+    /**
+     * `serial`
+     *
+     * Receive data sent to the serial port and print.
+     *
+     * Aliases: `sx`
+     */
+    Serial,
     /**
      * `step [COUNT]`
      *
