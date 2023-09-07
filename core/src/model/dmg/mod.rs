@@ -73,7 +73,7 @@ impl Default for GameBoy {
             cpu: Cpu::new(bus.clone(), pic.clone()),
             ppu: Ppu::new(bus.clone(), pic.clone()),
             joypad: Joypad::new(pic.clone()),
-            serial: Serial,
+            serial: Serial::new(pic.clone()),
             timer: Timer::new(pic.clone()),
             cart: Option::default(),
             mem: Memory::default(),
@@ -198,6 +198,17 @@ impl GameBoy {
     /// Mutably gets the `GameBoy`'s PPU.
     pub fn ppu_mut(&mut self) -> &mut Ppu {
         &mut self.ppu
+    }
+
+    /// Gets the `GameBoy`'s serial.
+    #[must_use]
+    pub fn serial(&self) -> &Serial {
+        &self.serial
+    }
+
+    /// Mutably gets the `GameBoy`'s serial.
+    pub fn serial_mut(&mut self) -> &mut Serial {
+        &mut self.serial
     }
 
     /// Gets the `GameBoy`'s timer.
@@ -329,6 +340,11 @@ impl Machine for GameBoy {
         // PPU runs on a 4 MiHz clock
         if self.ppu.enabled() {
             self.ppu.cycle();
+        }
+
+        // Serial runs on a 8192 Hz clock
+        if self.clock % 0x200 == 0 && self.serial.enabled() {
+            self.serial.cycle();
         }
 
         // Timer runs on a 4 MiHz clock
