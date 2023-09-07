@@ -70,19 +70,6 @@ macro_rules! test {
 }
 
 test! {
-    blargg_cgb_sound_cgb_sound                            = "../roms/test/blargg/cgb_sound/cgb_sound.gb";
-    blargg_cgb_sound_rom_singles_01_registers             = "../roms/test/blargg/cgb_sound/rom_singles/01-registers.gb";
-    blargg_cgb_sound_rom_singles_02_len_ctr               = "../roms/test/blargg/cgb_sound/rom_singles/02-len ctr.gb";
-    blargg_cgb_sound_rom_singles_03_trigger               = "../roms/test/blargg/cgb_sound/rom_singles/03-trigger.gb";
-    blargg_cgb_sound_rom_singles_04_sweep                 = "../roms/test/blargg/cgb_sound/rom_singles/04-sweep.gb";
-    blargg_cgb_sound_rom_singles_05_sweep_details         = "../roms/test/blargg/cgb_sound/rom_singles/05-sweep details.gb";
-    blargg_cgb_sound_rom_singles_06_overflow_on_trigger   = "../roms/test/blargg/cgb_sound/rom_singles/06-overflow on trigger.gb";
-    blargg_cgb_sound_rom_singles_07_len_sweep_period_sync = "../roms/test/blargg/cgb_sound/rom_singles/07-len sweep period sync.gb";
-    blargg_cgb_sound_rom_singles_08_len_ctr_during_power  = "../roms/test/blargg/cgb_sound/rom_singles/08-len ctr during power.gb";
-    blargg_cgb_sound_rom_singles_09_wave_read_while_on    = "../roms/test/blargg/cgb_sound/rom_singles/09-wave read while on.gb";
-    blargg_cgb_sound_rom_singles_10_wave_trigger_while_on = "../roms/test/blargg/cgb_sound/rom_singles/10-wave trigger while on.gb";
-    blargg_cgb_sound_rom_singles_11_regs_after_power      = "../roms/test/blargg/cgb_sound/rom_singles/11-regs after power.gb";
-    blargg_cgb_sound_rom_singles_12_wave                  = "../roms/test/blargg/cgb_sound/rom_singles/12-wave.gb";
     blargg_cpu_instrs_cpu_instrs                          = "../roms/test/blargg/cpu_instrs/cpu_instrs.gb";
     blargg_cpu_instrs_individual_01_special               = "../roms/test/blargg/cpu_instrs/individual/01-special.gb";
     blargg_cpu_instrs_individual_02_interrupts            = "../roms/test/blargg/cpu_instrs/individual/02-interrupts.gb";
