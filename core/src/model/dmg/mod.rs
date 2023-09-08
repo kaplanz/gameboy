@@ -2,6 +2,8 @@
 //!
 //! [Game Boy]: https://en.wikipedia.org/wiki/Game_Boy
 
+use std::cell::{Ref, RefMut};
+
 use remus::bus::Bus;
 use remus::dev::Device;
 use remus::{Address, Block, Board, Location, Machine, Shared};
@@ -30,7 +32,7 @@ pub use crate::emu::Screen as Dimensions;
 pub use crate::hw::cpu::sm83 as cpu;
 pub use crate::hw::joypad::Button;
 pub use crate::hw::ppu::Screen;
-pub use crate::hw::{cart, ppu, serial, timer};
+pub use crate::hw::{cart, pic, ppu, serial, timer};
 
 /// DMG-01 screen specification.
 pub const SCREEN: Dimensions = Dimensions {
@@ -187,6 +189,17 @@ impl GameBoy {
     /// Mutably gets the `GameBoy`'s CPU.
     pub fn cpu_mut(&mut self) -> &mut Cpu {
         &mut self.cpu
+    }
+
+    /// Gets the `GameBoy`'s programmable interrupt controller.
+    #[must_use]
+    pub fn pic(&self) -> Ref<Pic> {
+        self.pic.borrow()
+    }
+
+    /// Mutably gets the `GameBoy`'s programmable interrupt controller.
+    pub fn pic_mut(&mut self) -> RefMut<Pic> {
+        self.pic.borrow_mut()
     }
 
     /// Gets the `GameBoy`'s PPU.
