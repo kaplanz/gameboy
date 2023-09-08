@@ -5,37 +5,46 @@ use std::fmt::Display;
 use enuf::Enuf;
 use log::trace;
 use remus::bus::Bus;
-use remus::reg::Register;
-use remus::{Block, Board, Cell, Shared};
+use remus::dev::Device;
+use remus::{reg, Address, Block, Board, Cell, Location, Shared};
 use thiserror::Error;
 
-/// PIC model.
+#[allow(clippy::doc_markdown)]
+/// 8-bit serial control register set.
+///
+/// | Bit | Name     |
+/// |-----|----------|
+/// |  0  | VBlank   |
+/// |  1  | LCD STAT |
+/// |  2  | Timer    |
+/// |  3  | Serial   |
+/// |  4  | Joypad   |
+#[derive(Clone, Copy, Debug)]
+pub enum Control {
+    /// `0xFF0F`: Interrupt flag.
+    If,
+    /// `0xFFFF`: Interrupt enable.
+    Ie,
+}
+
+/// Programmable interrupt controller model.
 #[derive(Debug, Default)]
 pub struct Pic {
-    /// Interrupt flag (IF) register.
-    active: Shared<Register<u8>>,
-    /// Interrupt enable (IE) register.
-    enable: Shared<Register<u8>>,
+    // Control
+    // ┌──────┬──────────┬─────┐
+    // │ Size │   Name   │ Dev │
+    // ├──────┼──────────┼─────┤
+    // │  2 B │ Control  │ Reg │
+    // └──────┴──────────┴─────┘
+    file: File,
 }
 
 impl Pic {
-    /// Gets a reference to the PIC's active register.
-    #[must_use]
-    pub fn active(&self) -> Shared<Register<u8>> {
-        self.active.clone()
-    }
-
-    /// Gets a reference to the PIC's enable register.
-    #[must_use]
-    pub fn enable(&self) -> Shared<Register<u8>> {
-        self.enable.clone()
-    }
-
     /// Fetches the first pending interrupt.
     pub fn int(&self) -> Option<Interrupt> {
-        let active = self.active.load();
-        let enable = self.enable.load();
-        let int = (active & enable & 0x1f).try_into().ok();
+        let fl = self.file.fl.load();
+        let en = self.file.en.load();
+        let int = (fl & en).try_into().ok();
         if let Some(int) = int {
             trace!("interrupt pending: {int:?}");
         }
@@ -44,39 +53,125 @@ impl Pic {
 
     /// Requests an interrupt.
     pub fn req(&mut self, int: Interrupt) {
-        let active = self.active.load() | 0xe0 | int as u8;
-        self.active.store(active);
+        let fl = self.file.fl.load() | (int as u8);
+        self.file.fl.store(fl);
         trace!("interrupt requested: {int:?}");
     }
 
     /// Acknowledges an interrupt.
     pub fn ack(&mut self, int: Interrupt) {
-        let active = self.active.load() & !(int as u8);
-        self.active.store(active);
+        let fl = self.file.fl.load() & !(int as u8);
+        self.file.fl.store(fl);
         trace!("interrupt acknowledged: {int:?}");
     }
 }
 
 impl Block for Pic {
     fn reset(&mut self) {
-        self.enable.reset();
-        self.active.reset();
+        // Control
+        self.file.reset();
     }
 }
 
 impl Board for Pic {
     #[rustfmt::skip]
     fn connect(&self, bus: &mut Bus) {
-        // Extract devices
-        let active = self.active().to_dynamic();
-        let enable = self.enable().to_dynamic();
+        // Connect boards
+        self.file.connect(bus);
+    }
+}
 
-        // Map devices on bus    // ┌──────┬──────┬────────┬─────┐
-                                 // │ Addr │ Size │  Name  │ Dev │
-                                 // ├──────┼──────┼────────┼─────┤
-        bus.map(0xff0f, active); // │ ff0f │  1 B │ Active │ Reg │
-        bus.map(0xffff, enable); // │ ffff │  1 B │ Enable │ Reg │
-                                 // └──────┴──────┴────────┴─────┘
+impl Location<u8> for Pic {
+    type Register = Control;
+
+    fn load(&self, reg: Self::Register) -> u8 {
+        match reg {
+            Control::If => self.file.fl.load(),
+            Control::Ie => self.file.en.load(),
+        }
+    }
+
+    fn store(&mut self, reg: Self::Register, value: u8) {
+        match reg {
+            Control::If => self.file.fl.store(value),
+            Control::Ie => self.file.en.store(value),
+        }
+    }
+}
+
+/// Control registers.
+#[derive(Debug, Default)]
+struct File {
+    // ┌──────┬────────┬─────┬───────┐
+    // │ Size │  Name  │ Dev │ Alias │
+    // ├──────┼────────┼─────┼───────┤
+    // │  1 B │ Flag   │ Reg │ IF    │
+    // │  1 B │ Enable │ Reg │ IE    │
+    // └──────┴────────┴─────┴───────┘
+    fl: Shared<Register>,
+    en: Shared<Register>,
+}
+
+impl Block for File {
+    fn reset(&mut self) {
+        self.fl.reset();
+        self.en.reset();
+    }
+}
+
+impl Board for File {
+    #[rustfmt::skip]
+    fn connect(&self, bus: &mut Bus) {
+        // Extract devices
+        let fl = self.fl.clone().to_dynamic();
+        let en = self.en.clone().to_dynamic();
+
+        // Map devices on bus // ┌──────┬──────┬────────┬─────┐
+                              // │ Addr │ Size │  Name  │ Dev │
+                              // ├──────┼──────┼────────┼─────┤
+        bus.map(0xff0f, fl);  // │ ff0f │  1 B │ Active │ Reg │
+        bus.map(0xffff, en);  // │ ffff │  1 B │ Enable │ Reg │
+                              // └──────┴──────┴────────┴─────┘
+    }
+}
+
+/// Interrupt register.
+#[derive(Debug, Default)]
+pub struct Register(reg::Register<u8>);
+
+impl Address<u8> for Register {
+    fn read(&self, _: usize) -> u8 {
+        self.load()
+    }
+
+    fn write(&mut self, _: usize, value: u8) {
+        self.store(value);
+    }
+}
+
+impl Block for Register {
+    fn reset(&mut self) {
+        std::mem::take(self);
+    }
+}
+
+impl Cell<u8> for Register {
+    fn load(&self) -> u8 {
+        self.0.load() | 0xe0
+    }
+
+    fn store(&mut self, value: u8) {
+        self.0.store(value & 0x1f);
+    }
+}
+
+impl Device for Register {
+    fn contains(&self, index: usize) -> bool {
+        self.0.contains(index)
+    }
+
+    fn len(&self) -> usize {
+        self.0.len()
     }
 }
 
