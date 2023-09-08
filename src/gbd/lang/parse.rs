@@ -1,6 +1,6 @@
 use std::num::ParseIntError;
 
-use gameboy::core::dmg::{cpu, ppu, serial, timer};
+use gameboy::core::dmg::{cpu, pic, ppu, serial, timer};
 use log::trace;
 use num::traits::WrappingAdd;
 use num::{Bounded, Integer};
@@ -132,7 +132,7 @@ impl Language {
                 let loc = Self::loc(args.next().ok_or(Error::ExpectedRule)?)?;
                 let value = args.next().ok_or(Error::ExpectedRule)?;
                 let value = match loc {
-                    Location::Byte(_) | Location::Ppu(_) | Location::Serial(_) | Location::Timer(_) => Value::Byte(
+                    Location::Byte(_) | Location::Pic(_) | Location::Ppu(_) | Location::Serial(_) | Location::Timer(_) => Value::Byte(
                         Self::int(value.clone()) // attempt both `u8` and `i8`
                             .or_else(|_| Self::int::<i8>(value).map(|int| int as u8))?,
                     ),
@@ -297,6 +297,14 @@ impl Language {
                     Rule::HL   => cpu::reg::Word::HL,
                     Rule::SP   => cpu::reg::Word::SP,
                     Rule::PC   => cpu::reg::Word::PC,
+                    rule => unreachable!("invalid rule: {rule:?}"),
+                })
+            }
+            Rule::Pic => {
+                let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
+                Location::Pic(match reg.as_rule() {
+                    Rule::If => pic::Control::If,
+                    Rule::Ie => pic::Control::Ie,
                     rule => unreachable!("invalid rule: {rule:?}"),
                 })
             }

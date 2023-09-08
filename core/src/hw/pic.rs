@@ -41,6 +41,7 @@ pub struct Pic {
 
 impl Pic {
     /// Fetches the first pending interrupt.
+    #[must_use]
     pub fn int(&self) -> Option<Interrupt> {
         let fl = self.file.fl.load();
         let en = self.file.en.load();
@@ -197,6 +198,7 @@ pub enum Interrupt {
 
 impl Interrupt {
     #[rustfmt::skip]
+    #[must_use]
     pub fn handler(self) -> u8 {
         match self {
             Self::VBlank  => 0x40,
@@ -208,6 +210,7 @@ impl Interrupt {
     }
 
     #[rustfmt::skip]
+    #[must_use]
     pub fn repr(self) -> &'static str {
         match self {
             Self::VBlank  => "INT 40H",

@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut, Range};
 use std::str::FromStr;
 
 use displaydoc::Display;
-use gameboy::dmg::{cpu, ppu, serial, timer};
+use gameboy::dmg::{cpu, pic, ppu, serial, timer};
 
 use super::Mode;
 
@@ -381,6 +381,7 @@ pub enum Keyword {
 pub enum Location {
     Byte(cpu::reg::Byte),
     Word(cpu::reg::Word),
+    Pic(pic::Control),
     Ppu(ppu::Control),
     Serial(serial::Control),
     Timer(timer::Control),
