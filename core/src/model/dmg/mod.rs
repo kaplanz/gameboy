@@ -457,11 +457,11 @@ mod tests {
             .map(|(_, reg)| emu.timer.load(reg))
             .zip([0x00, 0x08, 0x08, 0x00])
             .for_each(|(found, expected)| assert_eq!(found, expected));
-        // Interrupt Active
+        // Interrupt Flag
         (0xff0f..=0xff0f).for_each(|addr| emu.bus.write(addr, 0x09));
         (0x0000..=0x0000)
-            .map(|addr| emu.pic.borrow().active().read(addr))
-            .for_each(|byte| assert_eq!(byte, 0x09));
+            .map(|_| emu.pic.load(<Pic as Location<u8>>::Register::If))
+            .for_each(|byte| assert_eq!(byte, 0xe9));
         // Audio
         (0xff10..=0xff27).for_each(|addr| emu.bus.write(addr, 0x0a));
         (0x0000..=0x0017)
@@ -504,8 +504,8 @@ mod tests {
         // Interrupt Enable
         (0xffff..=0xffff).for_each(|addr| emu.bus.write(addr, 0x0f));
         (0x0000..=0x0000)
-            .map(|addr| emu.pic.borrow().enable().read(addr))
-            .for_each(|byte| assert_eq!(byte, 0x0f));
+            .map(|_| emu.pic.load(<Pic as Location<u8>>::Register::Ie))
+            .for_each(|byte| assert_eq!(byte, 0xef));
     }
 
     #[test]

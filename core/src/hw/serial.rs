@@ -68,9 +68,8 @@ impl Serial {
     /// Perform a tick of the external clock.
     #[allow(unused)]
     pub fn tick(&mut self) {
-        // Extract control register
-        let sc = self.file.sc.borrow();
         // Only tick if transferring on external clock
+        let sc = self.file.sc.borrow();
         if sc.ena && !sc.clk {
             drop(sc); // release borrow on `self`
 
