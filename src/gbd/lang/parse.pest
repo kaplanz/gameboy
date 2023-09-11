@@ -22,7 +22,7 @@ RangeBounds   =  { RangeInc | Range | RangeFrom | RangeToInc | RangeTo |
   RangeToInc  = ${        "..=" ~ UInt }
 
 Filter        = @{ Directive ~ ("," ~ Filter)? }
-  Directive   = @{ (Module ~ "=")? ~ Level }
+  Directive   = @{ (Module ~ "=" ~ Level) | Module | Level }
     Module    = @{ Identifier ~ ("::" ~ Module)? }
     Level     = @{ LTrace | LDebug | LInfo | LWarn | LError | LOff }
       LTrace  = _{ ^"trace" }
