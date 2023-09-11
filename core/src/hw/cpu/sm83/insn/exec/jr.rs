@@ -11,16 +11,17 @@ pub const fn default() -> Operation {
 pub enum Jr {
     #[default]
     Fetch,
-    Check(u8, bool),
+    Check(u8),
     Jump(u8),
 }
 
 impl Execute for Jr {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch => fetch(code, cpu),
-            Self::Check(e8, cond) => check(code, cpu, e8, cond),
-            Self::Jump(e8) => jump(code, cpu, e8),
+            Self::Fetch     => fetch(code, cpu),
+            Self::Check(e8) => check(code, cpu, e8),
+            Self::Jump(e8)  => jump(code, cpu, e8),
         }
     }
 }
@@ -37,31 +38,27 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
         0x18 | 0x20 | 0x28 | 0x30 | 0x38 => {
             // Fetch e8
             let e8 = cpu.fetchbyte();
-            // Continue
-            evaluate(code, cpu, e8)
+            // Proceed
+            Ok(Some(Jr::Check(e8).into()))
         }
         code => Err(Error::Opcode(code)),
     }
 }
 
-fn evaluate(code: u8, cpu: &mut Cpu, e8: u8) -> Return {
+fn check(code: u8, cpu: &mut Cpu, e8: u8) -> Return {
     // Evaluate condition
     let flags = &cpu.file.f.load();
+    #[rustfmt::skip]
     let cond = match code {
-        0x18 => true,
         0x20 => !Flag::Z.get(flags),
-        0x28 => Flag::Z.get(flags),
+        0x28 =>  Flag::Z.get(flags),
         0x30 => !Flag::C.get(flags),
-        0x38 => Flag::C.get(flags),
+        0x38 =>  Flag::C.get(flags),
+        0x18 => true,
         code => return Err(Error::Opcode(code)),
     };
 
-    // Proceed
-    Ok(Some(Jr::Check(e8, cond).into()))
-}
-
-fn check(_: u8, _: &mut Cpu, e8: u8, cond: bool) -> Return {
-    // Execute JR
+    // Check condition
     if cond {
         // Proceed
         Ok(Some(Jr::Jump(e8).into()))
@@ -73,10 +70,10 @@ fn check(_: u8, _: &mut Cpu, e8: u8, cond: bool) -> Return {
 
 fn jump(_: u8, cpu: &mut Cpu, e8: u8) -> Return {
     // Perform jump
-    let pc = cpu.file.pc.load() as i16;
     let e8 = e8 as i8 as i16;
-    let res = pc.wrapping_add(e8) as u16;
-    cpu.file.pc.store(res);
+    let pc = cpu.file.pc.load() as i16;
+    let pc = pc.wrapping_add(e8) as u16;
+    cpu.file.pc.store(pc);
 
     // Finish
     Ok(None)
