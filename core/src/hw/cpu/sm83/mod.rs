@@ -396,52 +396,56 @@ impl Default for File {
             f: Register::default(),
             af: Wide {
                 load: |file: &File| {
-                    let a = file.a.load() as u16;
-                    let f = file.f.load() as u16;
-                    (a << 8) | f
+                    let a = file.a.load();
+                    let f = file.f.load();
+                    u16::from_be_bytes([a, f])
                 },
                 store: |file: &mut File, af: u16| {
-                    file.a.store(((af & 0xff00) >> 8) as u8);
-                    file.f.store((af & 0x00ff) as u8);
+                    let af = af.to_le_bytes();
+                    file.a.store(af[1]);
+                    file.f.store(af[0]);
                 },
             },
             b: Register::default(),
             c: Register::default(),
             bc: Wide {
                 load: |file: &File| {
-                    let b = file.b.load() as u16;
-                    let c = file.c.load() as u16;
-                    (b << 8) | c
+                    let b = file.b.load();
+                    let c = file.c.load();
+                    u16::from_be_bytes([b, c])
                 },
                 store: |file: &mut File, bc: u16| {
-                    file.b.store(((bc & 0xff00) >> 8) as u8);
-                    file.c.store((bc & 0x00ff) as u8);
+                    let bc = bc.to_le_bytes();
+                    file.b.store(bc[1]);
+                    file.c.store(bc[0]);
                 },
             },
             d: Register::default(),
             e: Register::default(),
             de: Wide {
                 load: |file: &File| {
-                    let d = file.d.load() as u16;
-                    let e = file.e.load() as u16;
-                    (d << 8) | e
+                    let d = file.d.load();
+                    let e = file.e.load();
+                    u16::from_be_bytes([d, e])
                 },
                 store: |file: &mut File, de: u16| {
-                    file.d.store(((de & 0xff00) >> 8) as u8);
-                    file.e.store((de & 0x00ff) as u8);
+                    let de = de.to_le_bytes();
+                    file.d.store(de[1]);
+                    file.e.store(de[0]);
                 },
             },
             h: Register::default(),
             l: Register::default(),
             hl: Wide {
                 load: |file: &File| {
-                    let h = file.h.load() as u16;
-                    let l = file.l.load() as u16;
-                    (h << 8) | l
+                    let h = file.h.load();
+                    let l = file.l.load();
+                    u16::from_be_bytes([h, l])
                 },
                 store: |file: &mut File, hl: u16| {
-                    file.h.store(((hl & 0xff00) >> 8) as u8);
-                    file.l.store((hl & 0x00ff) as u8);
+                    let hl = hl.to_le_bytes();
+                    file.h.store(hl[1]);
+                    file.l.store(hl[0]);
                 },
             },
             sp: Register::default(),
