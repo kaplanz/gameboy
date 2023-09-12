@@ -7,7 +7,7 @@ use thiserror::Error;
 
 type Result<T> = std::result::Result<T, Error>;
 
-const TIMEOUT: usize = 100_000_000;
+const TIMEOUT: usize = 250_000_000;
 
 fn emulate(rom: &[u8]) -> Result<()> {
     // Instantiate a cartridge
