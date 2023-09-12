@@ -43,7 +43,7 @@ impl Color {
     /// Constructs a new `Color` with the provided RGB values.
     #[must_use]
     pub fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Self(u32::from(r) << 16 | u32::from(g) << 8 | u32::from(b))
+        Self(u32::from_be_bytes([0x00, r, g, b]))
     }
 }
 
