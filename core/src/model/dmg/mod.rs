@@ -4,6 +4,7 @@
 
 use std::cell::{Ref, RefMut};
 
+use log::debug;
 use remus::bus::Bus;
 use remus::dev::Device;
 use remus::{Address, Block, Board, Location, Machine, Shared};
@@ -330,48 +331,50 @@ impl Machine for GameBoy {
     }
 
     fn cycle(&mut self) {
-        // CPU runs on a 1 MiHz clock
+        // CPU: 1 MiHz
         if self.clock % 4 == 0 {
-            // Wake disabled CPU if interrupts pending
+            // Wake disabled CPU on pending interrupt
             if !self.cpu.enabled() && self.pic.borrow().int().is_some() {
                 self.cpu.wake();
             }
-
-            // Collect doctor entries (if enabled)
+            // Collect doctor entries
             if let Some(doc) = &mut self.doc {
                 if let Some(entry) = self.cpu.doctor() {
                     doc.0.push(entry);
                 }
             }
-
-            // Cycle CPU if enabled
+            // Cycle CPU
             if self.cpu.enabled() {
                 self.cpu.cycle();
             }
         }
 
-        // DMA runs on a 1 MiHz clock
+        // DMA: 1 MiHz
         if self.clock % 4 == 0 && self.ppu.dma().enabled() {
             self.ppu.dma().cycle();
         }
 
-        // PPU runs on a 4 MiHz clock
+        // PPU: 4 MiHz
         if self.ppu.enabled() {
             self.ppu.cycle();
         }
 
-        // Serial runs on a 8192 Hz clock
+        // Serial: 8192 Hz
         if self.clock % 0x200 == 0 && self.serial.enabled() {
             self.serial.cycle();
         }
 
-        // Timer runs on a 4 MiHz clock
+        // Timer: 4 MiHz
         if self.timer.enabled() {
             self.timer.cycle();
         }
 
-        // Keep track of cycles executed
-        self.clock = self.clock.wrapping_add(1);
+        // Update executed cycle count
+        let carry;
+        (self.clock, carry) = self.clock.overflowing_add(1);
+        if carry {
+            debug!("internal clock overflow; resetting");
+        }
     }
 }
 
