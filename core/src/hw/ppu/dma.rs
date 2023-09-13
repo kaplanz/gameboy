@@ -1,16 +1,18 @@
-use log::{debug, trace};
+use log::{debug, trace, warn};
 use remus::bus::Bus;
 use remus::dev::Device;
 use remus::{Address, Block, Cell, Linked, Machine, Shared};
 
-use super::{Oam, SCREEN};
+use super::Oam;
+
+const OAM: u8 = 160;
 
 /// Direct memory access.
 #[derive(Debug, Default)]
 pub struct Dma {
     // State
     page: u8,
-    idx: Option<u8>,
+    state: State,
     // Shared
     bus: Shared<Bus>,
     oam: Shared<Oam>,
@@ -41,7 +43,7 @@ impl Block for Dma {
     fn reset(&mut self) {
         // State
         std::mem::take(&mut self.page);
-        std::mem::take(&mut self.idx);
+        std::mem::take(&mut self.state);
     }
 }
 
@@ -51,9 +53,18 @@ impl Cell<u8> for Dma {
     }
 
     fn store(&mut self, value: u8) {
-        debug!("starting DMA @ {value:#04x}00");
+        match self.state {
+            State::Off => {
+                // Request a new transfer
+                self.state = State::Req(value);
+                debug!("request: 0xfe00 <- {:#04x}00", value);
+            }
+            State::Req(_) | State::On { .. } => {
+                warn!("ignored request; already in progress");
+            }
+        }
+        // Always update stored value
         self.page = value;
-        self.idx = Some(0);
     }
 }
 
@@ -89,20 +100,45 @@ impl Linked<Oam> for Dma {
 
 impl Machine for Dma {
     fn enabled(&self) -> bool {
-        self.idx.is_some()
+        !matches!(self.state, State::Off)
     }
 
     fn cycle(&mut self) {
-        // Calculate the address to read from
-        let idx = self.idx.as_mut().unwrap();
-        let addr = u16::from_be_bytes([self.page, *idx]);
-        // Read this byte
-        let data = self.bus.read(addr as usize);
-        trace!("transferring OAM[{idx:#04x}] <- *{addr:#06x} = {data:#04x}");
-        // Write this byte
-        self.oam.write(*idx as usize, data);
-        // Increment the address
-        let idx = *idx + 1;
-        self.idx = ((idx as usize) < SCREEN.width).then_some(idx);
+        self.state = match self.state {
+            State::Off => {
+                panic!("OAM cycled while disabled");
+            }
+            State::Req(src) => {
+                // Initiate transfer
+                trace!("started: 0xfe00 <- {:#04x}00", self.page);
+                State::On { src, idx: 0 }
+            }
+            State::On { src, idx } => {
+                // Transfer single byte
+                let addr = u16::from_be_bytes([src, idx]);
+                let data = self.bus.read(addr as usize);
+                self.oam.write(idx as usize, data);
+                trace!("copied: 0xfe{idx:02x} <- {addr:#06x}, data: {data:#04x}");
+                // Increment transfer index
+                let idx = idx.saturating_add(1);
+                if idx < OAM {
+                    State::On { src, idx }
+                } else {
+                    State::Off
+                }
+            }
+        }
     }
+}
+
+/// DMA Transfer State.
+#[derive(Debug, Default)]
+enum State {
+    #[default]
+    Off,
+    Req(u8),
+    On {
+        src: u8,
+        idx: u8,
+    },
 }
