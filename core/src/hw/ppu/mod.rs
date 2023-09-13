@@ -371,14 +371,7 @@ impl Machine for Ppu {
     }
 
     fn cycle(&mut self) {
-        // Execute a single PPU cycle
         self.mode = std::mem::take(&mut self.mode).exec(self);
-
-        // Cycle the DMA every machine cycle
-        let mut dma = self.file.dma.borrow_mut();
-        if dma.enabled() && self.dot % 4 == 0 {
-            dma.cycle();
-        }
     }
 }
 

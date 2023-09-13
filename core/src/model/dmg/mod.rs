@@ -350,6 +350,11 @@ impl Machine for GameBoy {
             }
         }
 
+        // DMA runs on a 1 MiHz clock
+        if self.clock % 4 == 0 && self.ppu.dma().enabled() {
+            self.ppu.dma().cycle();
+        }
+
         // PPU runs on a 4 MiHz clock
         if self.ppu.enabled() {
             self.ppu.cycle();
