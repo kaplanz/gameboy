@@ -25,8 +25,8 @@ trait Execute {
 #[derive(Clone, Debug)]
 pub struct Instruction {
     code: u8,
-    oper: Operation,
     fmt: &'static str,
+    oper: Operation,
 }
 
 impl Instruction {
