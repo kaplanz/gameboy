@@ -2,6 +2,7 @@
 
 use itertools::Itertools;
 use remus::bus::Bus;
+use remus::dev::Device;
 use remus::mem::Ram;
 use remus::reg::Register;
 use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
@@ -30,13 +31,13 @@ pub use self::screen::Screen;
 ///
 /// [tdata]: https://gbdev.io/pandocs/Tile_Data.html
 /// [tmaps]: https://gbdev.io/pandocs/Tile_Maps.html
-pub type Vram = Ram<0x2000>;
+pub type Vram = Ram<u8, 0x2000>;
 /// Object Attribute Memory ([OAM][oam]).
 ///
 /// 160 B of RAM used to store up to 40 sprites.
 ///
 /// [oam]: https://gbdev.io/pandocs/OAM.html
-pub type Oam = Ram<0x00a0>;
+pub type Oam = Ram<u8, 0x00a0>;
 
 /// 8-bit LCD control register set.
 #[derive(Clone, Copy, Debug)]
@@ -132,14 +133,14 @@ pub struct Ppu {
     vram: Shared<Vram>,
     oam: Shared<Oam>,
     // Shared
-    bus: Shared<Bus>,
+    bus: Shared<Bus<u16, u8>>,
     pic: Shared<Pic>,
 }
 
 impl Ppu {
     /// Constructs a new `Ppu`.
     #[must_use]
-    pub fn new(bus: Shared<Bus>, pic: Shared<Pic>) -> Self {
+    pub fn new(bus: Shared<Bus<u16, u8>>, pic: Shared<Pic>) -> Self {
         // Construct shared blocks
         let oam = Shared::from(Oam::default());
         // Construct self
@@ -287,9 +288,9 @@ impl Block for Ppu {
     }
 }
 
-impl Board for Ppu {
+impl Board<u16, u8> for Ppu {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Connect boards
         self.file.connect(bus);
 
@@ -297,21 +298,21 @@ impl Board for Ppu {
         let vram = self.vram().to_dynamic();
         let oam  = self.oam().to_dynamic();
 
-        // Map devices on bus  // ┌──────┬────────┬────────┬─────┐
-                               // │ Addr │  Size  │  Name  │ Dev │
-                               // ├──────┼────────┼────────┼─────┤
-        bus.map(0x8000, vram); // │ 8000 │  8 KiB │ Video  │ RAM │
-        bus.map(0xfe00, oam);  // │ fe00 │  160 B │ Object │ RAM │
-                               // └──────┴────────┴────────┴─────┘
+        // Map devices on bus           // ┌──────┬────────┬────────┬─────┐
+                                        // │ Addr │  Size  │  Name  │ Dev │
+                                        // ├──────┼────────┼────────┼─────┤
+        bus.map(0x8000..=0x9fff, vram); // │ 8000 │  8 KiB │ Video  │ RAM │
+        bus.map(0xfe00..=0xfe9f, oam);  // │ fe00 │  160 B │ Object │ RAM │
+                                        // └──────┴────────┴────────┴─────┘
     }
 }
 
-impl Linked<Bus> for Ppu {
-    fn mine(&self) -> Shared<Bus> {
+impl Linked<Bus<u16, u8>> for Ppu {
+    fn mine(&self) -> Shared<Bus<u16, u8>> {
         self.bus.clone()
     }
 
-    fn link(&mut self, it: Shared<Bus>) {
+    fn link(&mut self, it: Shared<Bus<u16, u8>>) {
         self.bus = it;
     }
 }
@@ -411,7 +412,7 @@ struct File {
 
 impl File {
     /// Constructs a new `File`.
-    pub fn new(bus: Shared<Bus>, oam: Shared<Oam>) -> Self {
+    pub fn new(bus: Shared<Bus<u16, u8>>, oam: Shared<Oam>) -> Self {
         Self {
             dma: Dma::new(bus, oam).into(),
             ..Default::default()
@@ -423,9 +424,9 @@ impl Block for File {
     fn reset(&mut self) {}
 }
 
-impl Board for File {
+impl Board<u16, u8> for File {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Extract devices
         let lcdc = self.lcdc.clone().to_dynamic();
         let stat = self.stat.clone().to_dynamic();
@@ -440,22 +441,22 @@ impl Board for File {
         let wy   = self.wy.clone().to_dynamic();
         let wx   = self.wx.clone().to_dynamic();
 
-        // Map devices on bus   // ┌──────┬──────┬────────────────┬─────┐
-                                // │ Addr │ Size │      Name      │ Dev │
-                                // ├──────┼──────┼────────────────┼─────┤
-        bus.map(0xff40, lcdc);  // │ ff40 │  1 B │ LCD Control    │ Reg │
-        bus.map(0xff41, stat);  // │ ff41 │  1 B │ LCD Status     │ Reg │
-        bus.map(0xff42, scy);   // │ ff42 │  1 B │ Scroll Y       │ Reg │
-        bus.map(0xff43, scx);   // │ ff43 │  1 B │ Scroll X       │ Reg │
-        bus.map(0xff44, ly);    // │ ff44 │  1 B │ LCD Y          │ Reg │
-        bus.map(0xff45, lyc);   // │ ff45 │  1 B │ LY Compare     │ Reg │
-        bus.map(0xff46, dma);   // │ ff46 │  1 B │ DMA Start      │ DMA │
-        bus.map(0xff47, bgp);   // │ ff47 │  1 B │ BG Palette     │ Reg │
-        bus.map(0xff48, obp0);  // │ ff48 │  1 B │ OBJ Palette 0  │ Reg │
-        bus.map(0xff49, obp1);  // │ ff49 │  1 B │ OBJ Palette 1  │ Reg │
-        bus.map(0xff4a, wy);    // │ ff4a │  1 B │ Window Y       │ Reg │
-        bus.map(0xff4b, wx);    // │ ff4b │  1 B │ Window X       │ Reg │
-                                // └──────┴──────┴────────────────┴─────┘
+        // Map devices on bus           // ┌──────┬──────┬────────────────┬─────┐
+                                        // │ Addr │ Size │      Name      │ Dev │
+                                        // ├──────┼──────┼────────────────┼─────┤
+        bus.map(0xff40..=0xff40, lcdc); // │ ff40 │  1 B │ LCD Control    │ Reg │
+        bus.map(0xff41..=0xff41, stat); // │ ff41 │  1 B │ LCD Status     │ Reg │
+        bus.map(0xff42..=0xff42, scy);  // │ ff42 │  1 B │ Scroll Y       │ Reg │
+        bus.map(0xff43..=0xff43, scx);  // │ ff43 │  1 B │ Scroll X       │ Reg │
+        bus.map(0xff44..=0xff44, ly);   // │ ff44 │  1 B │ LCD Y          │ Reg │
+        bus.map(0xff45..=0xff45, lyc);  // │ ff45 │  1 B │ LY Compare     │ Reg │
+        bus.map(0xff46..=0xff46, dma);  // │ ff46 │  1 B │ DMA Start      │ DMA │
+        bus.map(0xff47..=0xff47, bgp);  // │ ff47 │  1 B │ BG Palette     │ Reg │
+        bus.map(0xff48..=0xff48, obp0); // │ ff48 │  1 B │ OBJ Palette 0  │ Reg │
+        bus.map(0xff49..=0xff49, obp1); // │ ff49 │  1 B │ OBJ Palette 1  │ Reg │
+        bus.map(0xff4a..=0xff4a, wy);   // │ ff4a │  1 B │ Window Y       │ Reg │
+        bus.map(0xff4b..=0xff4b, wx);   // │ ff4b │  1 B │ Window X       │ Reg │
+                                        // └──────┴──────┴────────────────┴─────┘
     }
 }
 
@@ -501,7 +502,7 @@ impl Debug {
 
         // Extract tile data, maps
         let tdat: [_; 0x180] = (0..0x1800)
-            .map(|addr| vram.read(addr))
+            .map(|addr: u16| vram.read(addr))
             .collect_vec()
             .chunks_exact(16) // 16-bytes per tile
             .map(|tile| Tile::from(<[_; 16]>::try_from(tile).unwrap()))
@@ -509,13 +510,13 @@ impl Debug {
             .try_into()
             .unwrap();
         let map1: [_; 0x400] = (0x1800..0x1c00)
-            .map(|addr| vram.read(addr))
+            .map(|addr: u16| vram.read(addr))
             .map(|tnum| tdat[Self::tidx(tnum, bgwin)].clone())
             .collect_vec()
             .try_into()
             .unwrap();
         let map2: [_; 0x400] = (0x1c00..0x2000)
-            .map(|addr| vram.read(addr))
+            .map(|addr: u16| vram.read(addr))
             .map(|tnum| tdat[Self::tidx(tnum, bgwin)].clone())
             .collect_vec()
             .try_into()

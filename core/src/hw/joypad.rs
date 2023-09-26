@@ -87,17 +87,17 @@ impl Block for Joypad {
     }
 }
 
-impl Board for Joypad {
+impl Board<u16, u8> for Joypad {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Extract devices
         let con = self.con().to_dynamic();
 
-        // Map devices on bus // ┌──────┬──────┬────────┬─────┐
-                              // │ Addr │ Size │  Name  │ Dev │
-                              // ├──────┼──────┼────────┼─────┤
-        bus.map(0xff00, con); // │ ff00 │  1 B │ Joypad │ Reg │
-                              // └──────┴──────┴────────┴─────┘
+        // Map devices on bus          // ┌──────┬──────┬────────┬─────┐
+                                       // │ Addr │ Size │  Name  │ Dev │
+                                       // ├──────┼──────┼────────┼─────┤
+        bus.map(0xff00..=0xff00, con); // │ ff00 │  1 B │ Joypad │ Reg │
+                                       // └──────┴──────┴────────┴─────┘
     }
 }
 
@@ -115,12 +115,12 @@ impl Linked<Pic> for Joypad {
 #[derive(Debug)]
 pub struct Control(reg::Register<u8>);
 
-impl Address<u8> for Control {
-    fn read(&self, _: usize) -> u8 {
+impl Address<u16, u8> for Control {
+    fn read(&self, _: u16) -> u8 {
         self.load()
     }
 
-    fn write(&mut self, _: usize, value: u8) {
+    fn write(&mut self, _: u16, value: u8) {
         self.store(value);
     }
 }
@@ -150,12 +150,4 @@ impl Default for Control {
     }
 }
 
-impl Device for Control {
-    fn contains(&self, index: usize) -> bool {
-        self.0.contains(index)
-    }
-
-    fn len(&self) -> usize {
-        self.0.len()
-    }
-}
+impl Device<u16, u8> for Control {}

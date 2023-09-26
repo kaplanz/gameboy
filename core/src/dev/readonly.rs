@@ -9,36 +9,31 @@ use remus::{Address, Block};
 /// `ReadOnly` provides a read-only view of the internal device, and ignoring
 /// all writes which are logged as a warning.
 #[derive(Debug)]
-pub struct ReadOnly<D: Device>(D);
+pub struct ReadOnly<T: Device<u16, u8>>(T);
 
-impl<D: Device> Address<u8> for ReadOnly<D> {
-    fn read(&self, index: usize) -> u8 {
+impl<T> Address<u16, u8> for ReadOnly<T>
+where
+    T: Device<u16, u8>,
+{
+    fn read(&self, index: u16) -> u8 {
         self.0.read(index)
     }
 
-    fn write(&mut self, index: usize, value: u8) {
+    fn write(&mut self, index: u16, value: u8) {
         warn!("called `Device::write({index:#06x}, {value:#04x})` on a `ReadOnly`");
     }
 }
 
-impl<D: Device> Block for ReadOnly<D> {
+impl<T: Device<u16, u8>> Block for ReadOnly<T> {
     fn reset(&mut self) {
         self.0.reset();
     }
 }
 
-impl<D: Device> Device for ReadOnly<D> {
-    fn contains(&self, index: usize) -> bool {
-        self.0.contains(index)
-    }
+impl<T: Device<u16, u8>> Device<u16, u8> for ReadOnly<T> {}
 
-    fn len(&self) -> usize {
-        self.0.len()
-    }
-}
-
-impl<D: Device> From<D> for ReadOnly<D> {
-    fn from(dev: D) -> Self {
+impl<T: Device<u16, u8>> From<T> for ReadOnly<T> {
+    fn from(dev: T) -> Self {
         Self(dev)
     }
 }
@@ -49,8 +44,8 @@ mod tests {
 
     use super::*;
 
-    fn setup() -> ReadOnly<Dynamic> {
-        let rom = Null::<0x100>::with(0x55).to_dynamic();
+    fn setup() -> ReadOnly<Dynamic<u16, u8>> {
+        let rom = Null::<u8, 0x100>::with(0x55).to_dynamic();
         ReadOnly::from(rom)
     }
 
@@ -60,18 +55,6 @@ mod tests {
         assert!((0x000..0x100)
             .map(|addr| ronly.read(addr))
             .all(|byte| byte == 0x55));
-    }
-
-    #[test]
-    fn device_contains_works() {
-        let ronly = setup();
-        assert!((0x000..0x100).all(|addr| ronly.contains(addr)));
-    }
-
-    #[test]
-    fn device_len_works() {
-        let ronly = setup();
-        assert_eq!(ronly.len(), 0x100);
     }
 
     #[test]

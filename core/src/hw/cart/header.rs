@@ -203,7 +203,7 @@ impl TryFrom<&[u8]> for Header {
             0x03 => Ok(true),
             byte => Err(Error::SgbFlag(byte)),
         }?;
-        // Parse cartridge type
+        // Parse cartridge kind
         let cart = header[0x47].try_into()?;
         // Parse ROM size
         let romsz = match header[0x48] {
@@ -264,7 +264,7 @@ impl TryFrom<&[u8]> for Header {
 }
 
 /// Cartridge information.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Kind {
     NoMbc {
         ram: bool,
@@ -298,7 +298,7 @@ pub enum Kind {
         ram: bool,
         battery: bool,
     },
-    PocketCamera,
+    Camera,
     HuC3,
     HuC1 {
         ram: bool,
@@ -307,19 +307,20 @@ pub enum Kind {
 }
 
 impl Display for Kind {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NoMbc { .. } => "ROM",
-            Self::Mbc1 { .. } => "MBC1",
-            Self::Mbc2 { .. } => "MBC2",
-            Self::Mmm01 { .. } => "MMM01",
-            Self::Mbc3 { .. } => "MBC3",
-            Self::Mbc5 { .. } => "MBC5",
-            Self::Mbc6 { .. } => "MBC6",
-            Self::Mbc7 { .. } => "MBC7",
-            Self::PocketCamera { .. } => "Pkt Camera",
-            Self::HuC3 { .. } => "HuC3",
-            Self::HuC1 { .. } => "HuC1",
+            Self::NoMbc { .. }  => "ROM",
+            Self::Mbc1 { .. }   => "MBC1",
+            Self::Mbc2 { .. }   => "MBC2",
+            Self::Mmm01 { .. }  => "MMM01",
+            Self::Mbc3 { .. }   => "MBC3",
+            Self::Mbc5 { .. }   => "MBC5",
+            Self::Mbc6 { .. }   => "MBC6",
+            Self::Mbc7 { .. }   => "MBC7",
+            Self::Camera { .. } => "Camera",
+            Self::HuC3 { .. }   => "HuC3",
+            Self::HuC1 { .. }   => "HuC1",
         }
         .fmt(f)
     }
@@ -431,13 +432,13 @@ impl TryFrom<u8> for Kind {
                 ram: true,
                 battery: true,
             }),
-            0xfc => Ok(Kind::PocketCamera),
+            0xfc => Ok(Kind::Camera),
             0xfe => Ok(Kind::HuC3),
             0xff => Ok(Kind::HuC1 {
                 ram: true,
                 battery: true,
             }),
-            value => Err(Error::CartridgeType(value)),
+            value => Err(Error::Kind(value)),
         }
     }
 }
@@ -455,8 +456,8 @@ pub enum Error {
     CgbFlag(u8),
     #[error("invalid SGB flag: {0}")]
     SgbFlag(u8),
-    #[error("unknown cartridge type: {0:#04x}")]
-    CartridgeType(u8),
+    #[error("unknown cartridge kind: {0:#04x}")]
+    Kind(u8),
     #[error("invalid ROM size: {0}")]
     RomSize(u8),
     #[error("invalid RAM size: {0}")]

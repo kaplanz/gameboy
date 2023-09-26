@@ -22,6 +22,7 @@ use thiserror::Error;
 
 use self::header::Kind;
 use self::mbc::{Mbc, Mbc1, NoMbc};
+use crate::dev::Unmapped;
 
 mod header;
 
@@ -65,7 +66,7 @@ impl Cartridge {
     /// Returns an error when the cartridge header contained an error.
     pub fn checked(rom: &[u8]) -> Result<Self, Error> {
         // Check then parse cartridge header
-        let header = Header::check(rom).and_then(|_| Header::try_from(rom))?;
+        let header = Header::check(rom).and_then(|()| Header::try_from(rom))?;
         debug!("header:\n{header}");
 
         // Construct memory bank controller
@@ -97,8 +98,8 @@ impl Cartridge {
         let header = Header::blank();
 
         // Use null devices for the ROM, RAM
-        let rom = Null::<0x8000>::with(0xff).to_dynamic();
-        let eram = Null::<0x0>::new().to_dynamic();
+        let rom = Null::<u8, 0x8000>::with(0xff).to_dynamic();
+        let eram = Null::<u8, 0>::new().to_dynamic();
 
         // Construct a membory bank controller
         let mbc = Box::new(NoMbc::with(rom, eram));
@@ -114,20 +115,20 @@ impl Cartridge {
 
     /// Gets a shared reference to the cartridge's ROM.
     #[must_use]
-    pub fn rom(&self) -> Dynamic {
+    pub fn rom(&self) -> Dynamic<u16, u8> {
         self.mbc.rom()
     }
 
     /// Gets a shared reference to the cartridge's RAM.
     #[must_use]
-    pub fn ram(&self) -> Dynamic {
+    pub fn ram(&self) -> Dynamic<u16, u8> {
         self.mbc.ram()
     }
 
     /// Constructs a memory bank controller from a parsed ROM and header.
     fn mbc(header: &Header, rom: &[u8]) -> Result<Box<dyn Mbc>, Error> {
         // Construct null device (for reuse where needed)
-        let null = Null::<0>::new().to_dynamic();
+        let null = Unmapped::<0x2000>::new().to_dynamic();
 
         // Prepare external ROM
         let rom = {
@@ -162,40 +163,40 @@ impl Cartridge {
         // Construct external ROM
         let rom = {
             match header.romsz {
-                0x0000_8000 => Rom::<0x0000_8000>::from(
-                    &*Box::<[_; 0x0000_8000]>::try_from(rom).map_err(Error::Missing)?,
+                0x0000_8000 => Rom::<u8, 0x0000_8000>::from(
+                    &*Box::<[_; 0x0000_8000]>::try_from(rom).map_err(Error::Mismatch)?,
                 )
                 .to_dynamic(),
-                0x0001_0000 => Rom::<0x0001_0000>::from(
-                    &*Box::<[_; 0x0001_0000]>::try_from(rom).map_err(Error::Missing)?,
+                0x0001_0000 => Rom::<u8, 0x0001_0000>::from(
+                    &*Box::<[_; 0x0001_0000]>::try_from(rom).map_err(Error::Mismatch)?,
                 )
                 .to_dynamic(),
-                0x0002_0000 => Rom::<0x0002_0000>::from(
-                    &*Box::<[_; 0x0002_0000]>::try_from(rom).map_err(Error::Missing)?,
+                0x0002_0000 => Rom::<u8, 0x0002_0000>::from(
+                    &*Box::<[_; 0x0002_0000]>::try_from(rom).map_err(Error::Mismatch)?,
                 )
                 .to_dynamic(),
-                0x0004_0000 => Rom::<0x0004_0000>::from(
-                    &*Box::<[_; 0x0004_0000]>::try_from(rom).map_err(Error::Missing)?,
+                0x0004_0000 => Rom::<u8, 0x0004_0000>::from(
+                    &*Box::<[_; 0x0004_0000]>::try_from(rom).map_err(Error::Mismatch)?,
                 )
                 .to_dynamic(),
-                0x0008_0000 => Rom::<0x0008_0000>::from(
-                    &*Box::<[_; 0x0008_0000]>::try_from(rom).map_err(Error::Missing)?,
+                0x0008_0000 => Rom::<u8, 0x0008_0000>::from(
+                    &*Box::<[_; 0x0008_0000]>::try_from(rom).map_err(Error::Mismatch)?,
                 )
                 .to_dynamic(),
-                0x0010_0000 => Rom::<0x0010_0000>::from(
-                    &*Box::<[_; 0x0010_0000]>::try_from(rom).map_err(Error::Missing)?,
+                0x0010_0000 => Rom::<u8, 0x0010_0000>::from(
+                    &*Box::<[_; 0x0010_0000]>::try_from(rom).map_err(Error::Mismatch)?,
                 )
                 .to_dynamic(),
-                0x0020_0000 => Rom::<0x0020_0000>::from(
-                    &*Box::<[_; 0x0020_0000]>::try_from(rom).map_err(Error::Missing)?,
+                0x0020_0000 => Rom::<u8, 0x0020_0000>::from(
+                    &*Box::<[_; 0x0020_0000]>::try_from(rom).map_err(Error::Mismatch)?,
                 )
                 .to_dynamic(),
-                0x0040_0000 => Rom::<0x0040_0000>::from(
-                    &*Box::<[_; 0x0040_0000]>::try_from(rom).map_err(Error::Missing)?,
+                0x0040_0000 => Rom::<u8, 0x0040_0000>::from(
+                    &*Box::<[_; 0x0040_0000]>::try_from(rom).map_err(Error::Mismatch)?,
                 )
                 .to_dynamic(),
-                0x0080_0000 => Rom::<0x0080_0000>::from(
-                    &*Box::<[_; 0x0080_0000]>::try_from(rom).map_err(Error::Missing)?,
+                0x0080_0000 => Rom::<u8, 0x0080_0000>::from(
+                    &*Box::<[_; 0x0080_0000]>::try_from(rom).map_err(Error::Mismatch)?,
                 )
                 .to_dynamic(),
                 _ => unreachable!(),
@@ -203,26 +204,29 @@ impl Cartridge {
         };
 
         // Construct external RAM
+        #[rustfmt::skip]
         let eram = match header.ramsz {
-            0x0 => null.clone().to_dynamic(),
-            0x2000 => Ram::<0x2000>::new().to_dynamic(),
-            0x8000 => Ram::<0x8000>::new().to_dynamic(),
-            0x20000 => Ram::<0x20000>::new().to_dynamic(),
-            0x10000 => Ram::<0x10000>::new().to_dynamic(),
+            0x0     => null.clone().to_dynamic(),
+            0x2000  => Ram::<u8, 0x2000>::new().to_dynamic(),
+            0x8000  => Ram::<u8, 0x8000>::new().to_dynamic(),
+            0x20000 => Ram::<u8, 0x20000>::new().to_dynamic(),
+            0x10000 => Ram::<u8, 0x10000>::new().to_dynamic(),
             _ => unreachable!(),
         };
 
         // Construct a memory bank controller
         let mbc: Box<dyn Mbc> = match &header.cart {
-            &Kind::NoMbc { ram, .. } => {
-                let eram = [null, eram][ram as usize].clone();
-                Box::new(NoMbc::with(rom, eram))
+            &Kind::NoMbc { ram: has_ram, .. } => {
+                let ram = [null, eram][has_ram as usize].clone();
+                Box::new(NoMbc::with(rom, ram))
             }
-            &Kind::Mbc1 { ram, battery } => {
-                let eram = [null, eram][ram as usize].clone();
-                Box::new(Mbc1::with(rom, eram, battery))
+            &Kind::Mbc1 { ram: has_rom, .. } => {
+                let romsz = header.romsz;
+                let ram = [null, eram][has_rom as usize].clone();
+                let ramsz = usize::max(header.ramsz, 0x2000);
+                Box::new(Mbc1::with((romsz, rom), (ramsz, ram)))
             }
-            cart => unimplemented!("{cart:?}"),
+            cart => return Err(Error::Unimplemented(cart.clone())),
         };
 
         Ok(mbc)
@@ -236,29 +240,29 @@ impl Block for Cartridge {
     }
 }
 
-impl Board for Cartridge {
+impl Board<u16, u8> for Cartridge {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Extract devices
         let rom = self.rom();
         let ram = self.ram();
 
-        // Map devices on bus // ┌──────┬────────┬────────────┬─────┐
-                              // │ Addr │  Size  │    Name    │ Dev │
-                              // ├──────┼────────┼────────────┼─────┤
-        bus.map(0x0000, rom); // │ 0000 │ 32 KiB │ Cartridge  │ ROM │
-        bus.map(0xa000, ram); // │ a000 │  8 KiB │ External   │ RAM │
-                              // └──────┴────────┴────────────┴─────┘
+        // Map devices on bus          // ┌──────┬────────┬────────────┬─────┐
+                                       // │ Addr │  Size  │    Name    │ Dev │
+                                       // ├──────┼────────┼────────────┼─────┤
+        bus.map(0x0000..=0x7fff, rom); // │ 0000 │ 32 KiB │ Cartridge  │ ROM │
+        bus.map(0xa000..=0xbfff, ram); // │ a000 │  8 KiB │ External   │ RAM │
+                                       // └──────┴────────┴────────────┴─────┘
     }
 
-    fn disconnect(&self, bus: &mut Bus) {
+    fn disconnect(&self, bus: &mut Bus<u16, u8>) {
         // Extract devices
         let rom = self.rom();
         let ram = self.ram();
 
         // Unmap devices on bus
-        assert!(bus.unmap(0x0000, &rom).is_some());
-        assert!(bus.unmap(0xa000, &ram).is_some());
+        assert!(bus.unmap(&rom).is_some());
+        assert!(bus.unmap(&ram).is_some());
     }
 }
 
@@ -267,6 +271,8 @@ impl Board for Cartridge {
 pub enum Error {
     #[error("could not parse header")]
     Header(#[from] header::Error),
-    #[error("cartridge missing bytes")]
-    Missing(Box<[u8]>),
+    #[error("cartridge size mismatch")]
+    Mismatch(Box<[u8]>),
+    #[error("unimplemented cartridge kind: {0}")]
+    Unimplemented(Kind),
 }

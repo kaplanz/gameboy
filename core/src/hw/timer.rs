@@ -100,8 +100,8 @@ impl Block for Timer {
     }
 }
 
-impl Board for Timer {
-    fn connect(&self, bus: &mut Bus) {
+impl Board<u16, u8> for Timer {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Control
         self.file.connect(bus);
     }
@@ -213,23 +213,23 @@ impl Block for File {
     }
 }
 
-impl Board for File {
+impl Board<u16, u8> for File {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Extract devices
         let div  = self.div.clone().to_dynamic();
         let tima = self.tima.clone().to_dynamic();
         let tma  = self.tma.clone().to_dynamic();
         let tac  = self.tac.clone().to_dynamic();
 
-        // Map devices on bus  // ┌──────┬──────┬──────────┬─────┐
-                               // │ Addr │ Size │   Name   │ Dev │
-                               // ├──────┼──────┼──────────┼─────┤
-        bus.map(0xff04, div);  // │ ff04 │  1 B │ Divider  │ Reg │
-        bus.map(0xff05, tima); // │ ff05 │  1 B │ Counter  │ Reg │
-        bus.map(0xff06, tma);  // │ ff06 │  1 B │ Modulo   │ Reg │
-        bus.map(0xff07, tac);  // │ ff07 │  1 B │ Control  │ Reg │
-                               // └──────┴──────┴──────────┴─────┘
+        // Map devices on bus           // ┌──────┬──────┬──────────┬─────┐
+                                        // │ Addr │ Size │   Name   │ Dev │
+                                        // ├──────┼──────┼──────────┼─────┤
+        bus.map(0xff04..=0xff04, div);  // │ ff04 │  1 B │ Divider  │ Reg │
+        bus.map(0xff05..=0xff05, tima); // │ ff05 │  1 B │ Counter  │ Reg │
+        bus.map(0xff06..=0xff06, tma);  // │ ff06 │  1 B │ Modulo   │ Reg │
+        bus.map(0xff07..=0xff07, tac);  // │ ff07 │  1 B │ Control  │ Reg │
+                                        // └──────┴──────┴──────────┴─────┘
     }
 }
 
@@ -251,12 +251,12 @@ impl Div {
     }
 }
 
-impl Address<u8> for Div {
-    fn read(&self, _: usize) -> u8 {
+impl Address<u16, u8> for Div {
+    fn read(&self, _: u16) -> u8 {
         self.load()
     }
 
-    fn write(&mut self, _: usize, value: u8) {
+    fn write(&mut self, _: u16, value: u8) {
         self.store(value);
     }
 }
@@ -279,15 +279,7 @@ impl Cell<u8> for Div {
     }
 }
 
-impl Device for Div {
-    fn contains(&self, index: usize) -> bool {
-        (0..self.len()).contains(&index)
-    }
-
-    fn len(&self) -> usize {
-        std::mem::size_of::<u8>()
-    }
-}
+impl Device<u16, u8> for Div {}
 
 /// Timer counter.
 #[derive(Debug, Default)]
@@ -296,12 +288,12 @@ pub struct Tima {
     reload: Option<u16>,
 }
 
-impl Address<u8> for Tima {
-    fn read(&self, _: usize) -> u8 {
+impl Address<u16, u8> for Tima {
+    fn read(&self, _: u16) -> u8 {
         self.load()
     }
 
-    fn write(&mut self, _: usize, value: u8) {
+    fn write(&mut self, _: u16, value: u8) {
         self.store(value);
     }
 }
@@ -323,15 +315,7 @@ impl Cell<u8> for Tima {
     }
 }
 
-impl Device for Tima {
-    fn contains(&self, index: usize) -> bool {
-        self.reg.contains(index)
-    }
-
-    fn len(&self) -> usize {
-        self.reg.len()
-    }
-}
+impl Device<u16, u8> for Tima {}
 
 /// Timer modulo.
 pub type Tma = Register<u8>;
@@ -360,12 +344,12 @@ impl Tac {
     }
 }
 
-impl Address<u8> for Tac {
-    fn read(&self, _: usize) -> u8 {
+impl Address<u16, u8> for Tac {
+    fn read(&self, _: u16) -> u8 {
         self.load()
     }
 
-    fn write(&mut self, _: usize, value: u8) {
+    fn write(&mut self, _: u16, value: u8) {
         self.store(value);
     }
 }
@@ -392,12 +376,4 @@ impl Default for Tac {
     }
 }
 
-impl Device for Tac {
-    fn contains(&self, index: usize) -> bool {
-        (0..self.len()).contains(&index)
-    }
-
-    fn len(&self) -> usize {
-        std::mem::size_of::<u8>()
-    }
-}
+impl Device<u16, u8> for Tac {}
