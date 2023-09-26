@@ -26,13 +26,13 @@ pub struct Rom {
     // ├────────┼──────┼─────┤
     // │  8 KiB │ Boot │ ROM │
     // └────────┴──────┴─────┘
-    bank: Shared<Bank>,
+    bank: Shared<Bank<u16, u8>>,
 }
 
 impl Rom {
     /// Constructs a new `Rom`.
     #[must_use]
-    pub fn new(rom: mem::Rom<0x100>) -> Self {
+    pub fn new(rom: mem::Rom<u8, 0x100>) -> Self {
         // Construct shared blocks
         let bank = Shared::from(Bank::from([rom.to_dynamic()].as_slice()));
         let ctrl = Shared::from(Control::new(bank.clone()));
@@ -42,7 +42,7 @@ impl Rom {
 
     /// Gets a read-only reference to the boot ROM.
     #[must_use]
-    pub fn rom(&self) -> ReadOnly<impl Device> {
+    pub fn rom(&self) -> ReadOnly<impl Device<u16, u8>> {
         ReadOnly::from(self.bank.clone())
     }
 
@@ -53,12 +53,12 @@ impl Rom {
     }
 }
 
-impl Address<u8> for Rom {
-    fn read(&self, index: usize) -> u8 {
+impl Address<u16, u8> for Rom {
+    fn read(&self, index: u16) -> u8 {
         self.bank.read(index)
     }
 
-    fn write(&mut self, index: usize, value: u8) {
+    fn write(&mut self, index: u16, value: u8) {
         self.bank.write(index, value);
     }
 }
@@ -72,31 +72,23 @@ impl Block for Rom {
     }
 }
 
-impl Board for Rom {
+impl Board<u16, u8> for Rom {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Extract devices
         let boot = self.rom().to_dynamic();
         let ctrl = self.ctrl().to_dynamic();
 
-        // Map devices on bus  // ┌──────┬────────┬──────────┬─────┐
-                               // │ Addr │  Size  │   Name   │ Dev │
-                               // ├──────┼────────┼──────────┼─────┤
-        bus.map(0x0000, boot); // │ 0000 │  8 KiB │ Boot     │ ROM │
-        bus.map(0xff50, ctrl); // │ ff50 │    1 B │ Control  │ Reg │
-                               // └──────┴────────┴──────────┴─────┘
+        // Map devices on bus           // ┌──────┬────────┬──────────┬─────┐
+                                        // │ Addr │  Size  │   Name   │ Dev │
+                                        // ├──────┼────────┼──────────┼─────┤
+        bus.map(0x0000..=0x00ff, boot); // │ 0000 │  256 B │ Boot     │ ROM │
+        bus.map(0xff50..=0xff50, ctrl); // │ ff50 │    1 B │ Control  │ Reg │
+                                        // └──────┴────────┴──────────┴─────┘
     }
 }
 
-impl Device for Rom {
-    fn contains(&self, index: usize) -> bool {
-        self.bank.contains(index)
-    }
-
-    fn len(&self) -> usize {
-        self.bank.len()
-    }
-}
+impl Device<u16, u8> for Rom {}
 
 impl From<&[u8; 0x100]> for Rom {
     fn from(rom: &[u8; 0x100]) -> Self {
@@ -121,22 +113,22 @@ impl TryFrom<&[u8]> for Rom {
 #[derive(Debug, Default)]
 pub struct Control {
     // Shared
-    bank: Shared<Bank>,
+    bank: Shared<Bank<u16, u8>>,
 }
 
 impl Control {
     /// Constructs a new `Control`.
-    pub fn new(rom: Shared<Bank>) -> Self {
+    pub fn new(rom: Shared<Bank<u16, u8>>) -> Self {
         Self { bank: rom }
     }
 }
 
-impl Address<u8> for Control {
-    fn read(&self, _: usize) -> u8 {
+impl Address<u16, u8> for Control {
+    fn read(&self, _: u16) -> u8 {
         self.load()
     }
 
-    fn write(&mut self, _: usize, value: u8) {
+    fn write(&mut self, _: u16, value: u8) {
         self.store(value);
     }
 }
@@ -157,15 +149,7 @@ impl Cell<u8> for Control {
     }
 }
 
-impl Device for Control {
-    fn contains(&self, index: usize) -> bool {
-        index < 1
-    }
-
-    fn len(&self) -> usize {
-        1
-    }
-}
+impl Device<u16, u8> for Control {}
 
 /// A type specifying general categories of [`Rom`] error.
 #[derive(Debug, Error)]

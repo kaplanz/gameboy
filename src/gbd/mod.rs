@@ -116,7 +116,7 @@ impl Debugger {
                             self.prompt()
                         } {
                             // Program input; fetch next iteration
-                            Ok(_) => continue 'gbd,
+                            Ok(()) => continue 'gbd,
                             // No input; repeat previous command
                             Err(Error::NoInput) => self.prev().cloned(),
                             // Prompt error; handle upstream
@@ -138,7 +138,7 @@ impl Debugger {
                 self.exec(emu, cmd)
             };
             match res {
-                Ok(_) => (),
+                Ok(()) => (),
                 err @ Err(Error::Quit) => return err,
                 Err(err) => tell::error!("{err}"),
             }

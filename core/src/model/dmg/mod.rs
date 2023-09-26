@@ -58,7 +58,7 @@ pub struct GameBoy {
     cart: Option<Cartridge>,
     mem: Memory,
     // Shared
-    bus: Shared<Bus>,
+    bus: Shared<Bus<u16, u8>>,
     pic: Shared<Pic>,
     // Debug
     doc: Option<Doctor>,
@@ -259,9 +259,9 @@ impl Block for GameBoy {
     }
 }
 
-impl Board for GameBoy {
+impl Board<u16, u8> for GameBoy {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Map devices on bus  // ┌──────┬────────┬────────────┬─────┐
                                // │ Addr │  Size  │    Name    │ Dev │
                                // ├──────┼────────┼────────────┼─────┤
@@ -305,7 +305,7 @@ impl Board for GameBoy {
 
         // NOTE: Use fallback to report invalid reads as `0xff`
         let unmap = Unmapped::<0x10000>::new().to_dynamic();
-        bus.map(0x0000, unmap);
+        bus.map(0x0000..=0xffff, unmap);
     }
 }
 
@@ -425,12 +425,11 @@ mod tests {
 
     #[test]
     fn bus_all_works() {
-        // NOTE: Test reads (and writes) for each component separately
         let mut emu = setup();
 
         // Boot ROM
         (0x0000..=0x00ff)
-            .map(|addr| emu.mem.boot().borrow().rom().read(addr))
+            .map(|addr| emu.mem.boot().unwrap().borrow().rom().read(addr))
             .any(|byte| byte != 0x01);
         // Cartridge ROM
         if let Some(cart) = &emu.cart {
@@ -442,19 +441,19 @@ mod tests {
         // Video RAM
         (0x8000..=0x9fff).for_each(|addr| emu.bus.write(addr, 0x03));
         (0x0000..=0x1fff)
-            .map(|addr| emu.ppu.vram().read(addr))
+            .map(|addr: u16| emu.ppu.vram().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x03));
         // External RAM
         if let Some(cart) = &emu.cart {
             (0xa000..=0xbfff).for_each(|addr| emu.bus.write(addr, 0x04));
             (0x0000..=0x1fff) // NOTE: External RAM is disabled for this ROM
                 .map(|addr| cart.ram().read(addr))
-                .for_each(|byte| assert_eq!(byte, 0x00));
+                .for_each(|byte| assert_eq!(byte, 0xff));
         }
         // Object RAM
         (0xfe00..=0xfe9f).for_each(|addr| emu.bus.write(addr, 0x05));
         (0x0000..=0x009f)
-            .map(|addr| emu.ppu.oam().read(addr))
+            .map(|addr: u16| emu.ppu.oam().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x05));
         // Controller
         (0xff00..=0xff00).for_each(|addr| emu.bus.write(addr, 0x60));
@@ -515,12 +514,12 @@ mod tests {
         // Boot ROM Disable
         (0xff50..=0xff50).for_each(|addr| emu.bus.write(addr, 0x0d));
         (0x0000..=0x0000)
-            .map(|addr| emu.mem.boot().borrow().ctrl().read(addr))
+            .map(|addr| emu.mem.boot().unwrap().borrow().ctrl().read(addr))
             .for_each(|byte| assert_eq!(byte, 0xff));
         // High RAM
         (0xff80..=0xfffe).for_each(|addr| emu.bus.write(addr, 0x0e));
         (0x0000..=0x007e)
-            .map(|addr| emu.mem.hram().read(addr))
+            .map(|addr: u16| emu.mem.hram().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x0e));
         // Interrupt Enable
         (0xffff..=0xffff).for_each(|addr| emu.bus.write(addr, 0x0f));

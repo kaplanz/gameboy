@@ -74,9 +74,9 @@ impl Block for Pic {
     }
 }
 
-impl Board for Pic {
+impl Board<u16, u8> for Pic {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Connect boards
         self.file.connect(bus);
     }
@@ -120,19 +120,19 @@ impl Block for File {
     }
 }
 
-impl Board for File {
+impl Board<u16, u8> for File {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Extract devices
         let fl = self.fl.clone().to_dynamic();
         let en = self.en.clone().to_dynamic();
 
-        // Map devices on bus // ┌──────┬──────┬────────┬─────┐
-                              // │ Addr │ Size │  Name  │ Dev │
-                              // ├──────┼──────┼────────┼─────┤
-        bus.map(0xff0f, fl);  // │ ff0f │  1 B │ Active │ Reg │
-        bus.map(0xffff, en);  // │ ffff │  1 B │ Enable │ Reg │
-                              // └──────┴──────┴────────┴─────┘
+        // Map devices on bus         // ┌──────┬──────┬────────┬─────┐
+                                      // │ Addr │ Size │  Name  │ Dev │
+                                      // ├──────┼──────┼────────┼─────┤
+        bus.map(0xff0f..=0xff0f, fl); // │ ff0f │  1 B │ Active │ Reg │
+        bus.map(0xffff..=0xffff, en); // │ ffff │  1 B │ Enable │ Reg │
+                                      // └──────┴──────┴────────┴─────┘
     }
 }
 
@@ -140,12 +140,12 @@ impl Board for File {
 #[derive(Debug, Default)]
 pub struct Register(reg::Register<u8>);
 
-impl Address<u8> for Register {
-    fn read(&self, _: usize) -> u8 {
+impl Address<u16, u8> for Register {
+    fn read(&self, _: u16) -> u8 {
         self.load()
     }
 
-    fn write(&mut self, _: usize, value: u8) {
+    fn write(&mut self, _: u16, value: u8) {
         self.store(value);
     }
 }
@@ -166,15 +166,7 @@ impl Cell<u8> for Register {
     }
 }
 
-impl Device for Register {
-    fn contains(&self, index: usize) -> bool {
-        self.0.contains(index)
-    }
-
-    fn len(&self) -> usize {
-        self.0.len()
-    }
-}
+impl Device<u16, u8> for Register {}
 
 /// Interrupt type.
 #[rustfmt::skip]

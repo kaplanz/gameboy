@@ -14,13 +14,13 @@ pub struct Dma {
     page: u8,
     state: State,
     // Shared
-    bus: Shared<Bus>,
+    bus: Shared<Bus<u16, u8>>,
     oam: Shared<Oam>,
 }
 
 impl Dma {
     /// Constructs a new `Dma`
-    pub fn new(bus: Shared<Bus>, oam: Shared<Oam>) -> Self {
+    pub fn new(bus: Shared<Bus<u16, u8>>, oam: Shared<Oam>) -> Self {
         Self {
             bus,
             oam,
@@ -29,12 +29,12 @@ impl Dma {
     }
 }
 
-impl Address<u8> for Dma {
-    fn read(&self, _: usize) -> u8 {
+impl Address<u16, u8> for Dma {
+    fn read(&self, _: u16) -> u8 {
         self.load()
     }
 
-    fn write(&mut self, _: usize, value: u8) {
+    fn write(&mut self, _: u16, value: u8) {
         self.store(value);
     }
 }
@@ -68,22 +68,14 @@ impl Cell<u8> for Dma {
     }
 }
 
-impl Device for Dma {
-    fn contains(&self, index: usize) -> bool {
-        (0..self.len()).contains(&index)
-    }
+impl Device<u16, u8> for Dma {}
 
-    fn len(&self) -> usize {
-        std::mem::size_of::<Self>()
-    }
-}
-
-impl Linked<Bus> for Dma {
-    fn mine(&self) -> Shared<Bus> {
+impl Linked<Bus<u16, u8>> for Dma {
+    fn mine(&self) -> Shared<Bus<u16, u8>> {
         self.bus.clone()
     }
 
-    fn link(&mut self, it: Shared<Bus>) {
+    fn link(&mut self, it: Shared<Bus<u16, u8>>) {
         self.bus = it;
     }
 }
@@ -116,7 +108,7 @@ impl Machine for Dma {
             State::On { src, idx } => {
                 // Transfer single byte
                 let addr = u16::from_be_bytes([src, idx]);
-                let data = self.bus.read(addr as usize);
+                let data = self.bus.read(addr);
                 self.oam.write(idx as usize, data);
                 trace!("copied: 0xfe{idx:02x} <- {addr:#06x}, data: {data:#04x}");
                 // Increment transfer index

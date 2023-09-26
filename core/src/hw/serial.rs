@@ -105,8 +105,8 @@ impl Block for Serial {
     }
 }
 
-impl Board for Serial {
-    fn connect(&self, bus: &mut Bus) {
+impl Board<u16, u8> for Serial {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Connect boards
         self.file.connect(bus);
     }
@@ -196,19 +196,19 @@ impl Block for File {
     }
 }
 
-impl Board for File {
+impl Board<u16, u8> for File {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Extract devices
         let sb = self.sb.clone().to_dynamic();
         let sc = self.sc.clone().to_dynamic();
 
-        // Map devices on bus // ┌──────┬──────┬──────────┬─────┐
-                              // │ Addr │ Size │   Name   │ Dev │
-                              // ├──────┼──────┼──────────┼─────┤
-        bus.map(0xff01, sb);  // │ ff01 │  1 B │ Data     │ Reg │
-        bus.map(0xff02, sc);  // │ ff02 │  1 B │ Control  │ Reg │
-                              // └──────┴──────┴──────────┴─────┘
+        // Map devices on bus         // ┌──────┬──────┬──────────┬─────┐
+                                      // │ Addr │ Size │   Name   │ Dev │
+                                      // ├──────┼──────┼──────────┼─────┤
+        bus.map(0xff01..=0xff01, sb); // │ ff01 │  1 B │ Data     │ Reg │
+        bus.map(0xff02..=0xff02, sc); // │ ff02 │  1 B │ Control  │ Reg │
+                                      // └──────┴──────┴──────────┴─────┘
     }
 }
 
@@ -223,12 +223,12 @@ pub struct Sc {
     bit: u8,
 }
 
-impl Address<u8> for Sc {
-    fn read(&self, _: usize) -> u8 {
+impl Address<u16, u8> for Sc {
+    fn read(&self, _: u16) -> u8 {
         self.load()
     }
 
-    fn write(&mut self, _: usize, value: u8) {
+    fn write(&mut self, _: u16, value: u8) {
         self.store(value);
     }
 }
@@ -257,12 +257,4 @@ impl Cell<u8> for Sc {
     }
 }
 
-impl Device for Sc {
-    fn contains(&self, index: usize) -> bool {
-        index < 1
-    }
-
-    fn len(&self) -> usize {
-        1
-    }
-}
+impl Device<u16, u8> for Sc {}

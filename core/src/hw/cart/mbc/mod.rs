@@ -18,8 +18,8 @@ pub use self::nombc::NoMbc;
 /// Unified MBC interface.
 pub(super) trait Mbc: Block + Debug {
     /// Gets a shared reference to the MBC's ROM.
-    fn rom(&self) -> Dynamic;
+    fn rom(&self) -> Dynamic<u16, u8>;
 
     /// Gets a shared reference to the MBC's RAM.
-    fn ram(&self) -> Dynamic;
+    fn ram(&self) -> Dynamic<u16, u8>;
 }

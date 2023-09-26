@@ -56,14 +56,14 @@ pub struct Cpu {
     // Control
     file: File,
     // Shared
-    bus: Shared<Bus>,
+    bus: Shared<Bus<u16, u8>>,
     pic: Shared<Pic>,
 }
 
 impl Cpu {
     /// Constructs a new `Cpu`.
     #[must_use]
-    pub fn new(bus: Shared<Bus>, pic: Shared<Pic>) -> Self {
+    pub fn new(bus: Shared<Bus<u16, u8>>, pic: Shared<Pic>) -> Self {
         Self {
             bus,
             pic,
@@ -80,12 +80,12 @@ impl Cpu {
     /// Read the byte at the given address.
     #[must_use]
     pub fn read(&self, addr: u16) -> u8 {
-        self.bus.read(addr as usize)
+        self.bus.read(addr)
     }
 
     /// Write to the byte at the given address.
     pub fn write(&mut self, addr: u16, byte: u8) {
-        self.bus.write(addr as usize, byte);
+        self.bus.write(addr, byte);
     }
 
     /// Fetch the next byte after PC.
@@ -215,16 +215,16 @@ impl Block for Cpu {
     }
 }
 
-impl Board for Cpu {
-    fn connect(&self, _: &mut Bus) {}
+impl Board<u16, u8> for Cpu {
+    fn connect(&self, _: &mut Bus<u16, u8>) {}
 }
 
-impl Linked<Bus> for Cpu {
-    fn mine(&self) -> Shared<Bus> {
+impl Linked<Bus<u16, u8>> for Cpu {
+    fn mine(&self) -> Shared<Bus<u16, u8>> {
         self.bus.clone()
     }
 
-    fn link(&mut self, it: Shared<Bus>) {
+    fn link(&mut self, it: Shared<Bus<u16, u8>>) {
         self.bus = it;
     }
 }
@@ -577,7 +577,7 @@ impl Stage {
                 cpu.pic.borrow_mut().ack(int);
                 // Skip `Stage::Fetch`
                 let insn = Instruction::int(int);
-                debug!("{:06x}: {insn}", int.handler());
+                debug!("{:#06x}: {insn}", int.handler());
                 self = Stage::Execute(insn);
             }
             // ... or fetch next instruction
@@ -611,7 +611,7 @@ impl Stage {
                 "{pc:#06x}: {}",
                 if opcode == 0xcb {
                     let pc = cpu.file.pc.load();
-                    let opcode = cpu.bus.read(pc as usize);
+                    let opcode = cpu.bus.read(pc);
                     format!("{}", Instruction::prefix(opcode))
                 } else {
                     format!("{insn}")

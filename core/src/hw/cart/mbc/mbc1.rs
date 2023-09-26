@@ -15,21 +15,26 @@ pub struct Mbc1 {
 
 impl Mbc1 {
     /// Constructs a new `Mbc1` with the provided configuration.
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::missing_panics_doc)]
     #[allow(clippy::needless_pass_by_value)]
+    #[allow(clippy::range_minus_one)]
     #[must_use]
-    pub fn with(rom: Dynamic, ram: Dynamic, _battery: bool) -> Self {
+    pub fn with(
+        (romsz, rom): (usize, Dynamic<u16, u8>),
+        (ramsz, ram): (usize, Dynamic<u16, u8>),
+    ) -> Self {
         // Prepare RAM
-        #[allow(clippy::vec_init_then_push)]
         let ram = {
             // Determine how many banks to create
-            let ramsz = ram.len();
             let nbanks = ramsz / 0x4000;
             // Create banks as `View`s of the RAM
-            let mut banks: Vec<Dynamic> = Vec::default();
-            banks.push(Null::<0>::new().to_dynamic()); // disable RAM at index 0
+            let mut banks: Vec<Dynamic<u16, u8>> = Vec::with_capacity(nbanks);
+            banks.push(Null::<u8, 0>::new().to_dynamic()); // disable RAM at index 0
             for i in 0..nbanks {
-                let range = (0x4000 * i)..(0x4000 * (i + 1));
-                banks.push(View::new(ram.clone(), range).to_dynamic());
+                let start = u16::try_from(0x4000 * i).unwrap();
+                let end = u16::try_from(0x4000 * (i + 1) - 1).unwrap();
+                banks.push(View::new(start..=end, ram.clone()).to_dynamic());
             }
 
             // Return RAM bank object
@@ -38,13 +43,13 @@ impl Mbc1 {
         // Prepare ROM
         let rom = {
             // Determine how many banks to create
-            let romsz = rom.len();
             let nbanks = romsz / 0x4000;
             // Create banks as `View`s of the ROM
-            let mut banks: Vec<Dynamic> = Vec::default();
+            let mut banks: Vec<Dynamic<u16, u8>> = Vec::with_capacity(nbanks);
             for i in 0..nbanks {
-                let range = (0x4000 * i)..(0x4000 * (i + 1));
-                banks.push(View::new(rom.clone(), range).to_dynamic());
+                let start = u16::try_from(0x4000 * i).unwrap();
+                let end = u16::try_from(0x4000 * (i + 1) - 1).unwrap();
+                banks.push(View::new(start..=end, rom.clone()).to_dynamic());
             }
             // Create the ROM bank object
             let rom0 = banks.remove(0);
@@ -52,8 +57,8 @@ impl Mbc1 {
             let bank = Shared::new(bank);
             // Use a bus to join ROM banks together
             let mut rom = Bus::new();
-            rom.map(0x0000, rom0);
-            rom.map(0x4000, bank.clone().to_dynamic());
+            rom.map(0x0000..=0x3fff, rom0);
+            rom.map(0x4000..=0x7fff, bank.clone().to_dynamic());
 
             Rom {
                 bank,
@@ -78,11 +83,11 @@ impl Block for Mbc1 {
 }
 
 impl Mbc for Mbc1 {
-    fn rom(&self) -> Dynamic {
+    fn rom(&self) -> Dynamic<u16, u8> {
         self.rom.clone().to_dynamic()
     }
 
-    fn ram(&self) -> Dynamic {
+    fn ram(&self) -> Dynamic<u16, u8> {
         self.ram.clone().to_dynamic()
     }
 }
@@ -91,19 +96,19 @@ impl Mbc for Mbc1 {
 #[derive(Debug)]
 struct Rom {
     // State
-    bank: Shared<Bank>,
+    bank: Shared<Bank<u16, u8>>,
     // Memory
-    rom: Shared<Bus>,
-    ram: Shared<Bank>,
+    rom: Shared<Bus<u16, u8>>,
+    ram: Shared<Bank<u16, u8>>,
 }
 
-impl Address<u8> for Rom {
-    fn read(&self, index: usize) -> u8 {
+impl Address<u16, u8> for Rom {
+    fn read(&self, index: u16) -> u8 {
         self.rom.read(index)
     }
 
     #[allow(clippy::match_same_arms)]
-    fn write(&mut self, index: usize, value: u8) {
+    fn write(&mut self, index: u16, value: u8) {
         match index {
             // RAM Enable
             0x0000..=0x1fff => {
@@ -136,15 +141,7 @@ impl Block for Rom {
     }
 }
 
-impl Device for Rom {
-    fn contains(&self, index: usize) -> bool {
-        self.rom.contains(index)
-    }
-
-    fn len(&self) -> usize {
-        self.rom.len()
-    }
-}
+impl Device<u16, u8> for Rom {}
 
 /// MBC1 RAM.
-type Ram = Shared<Bank>;
+type Ram = Shared<Bank<u16, u8>>;

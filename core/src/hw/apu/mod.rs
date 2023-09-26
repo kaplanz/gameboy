@@ -1,11 +1,12 @@
 //! Audio processing unit.
 
 use remus::bus::Bus;
+use remus::dev::Device;
 use remus::mem::Ram;
 use remus::reg::Register;
 use remus::{Block, Board, Machine, Shared};
 
-pub type Wave = Ram<0x0010>;
+pub type Wave = Ram<u8, 0x0010>;
 
 /// APU model.
 #[derive(Debug, Default)]
@@ -43,20 +44,20 @@ impl Block for Apu {
     }
 }
 
-impl Board for Apu {
+impl Board<u16, u8> for Apu {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Connect boards
         self.file.connect(bus);
 
         // Extract devices
         let wave = self.wave().to_dynamic();
 
-        // Map devices on bus  // ┌──────┬──────┬──────────┬─────┐
-                               // │ Addr │ Size │   Name   │ Dev │
-                               // ├──────┼──────┼──────────┼─────┤
-        bus.map(0xff30, wave); // │ ff30 │ 16 B │ Waveform │ RAM │
-                               // └──────┴──────┴──────────┴─────┘
+        // Map devices on bus           // ┌──────┬──────┬──────────┬─────┐
+                                        // │ Addr │ Size │   Name   │ Dev │
+                                        // ├──────┼──────┼──────────┼─────┤
+        bus.map(0xff30..=0xff40, wave); // │ ff30 │ 16 B │ Waveform │ RAM │
+                                        // └──────┴──────┴──────────┴─────┘
     }
 }
 
@@ -133,9 +134,9 @@ impl Block for File {
     }
 }
 
-impl Board for File {
+impl Board<u16, u8> for File {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
+    fn connect(&self, bus: &mut Bus<u16, u8>) {
         // Extract devices
         let nr52 = self.nr52.clone().to_dynamic();
         let nr51 = self.nr51.clone().to_dynamic();
@@ -159,32 +160,32 @@ impl Board for File {
         let nr43 = self.nr43.clone().to_dynamic();
         let nr44 = self.nr44.clone().to_dynamic();
 
-        // Map devices on bus   // ┌──────┬──────┬────────────────────┬─────┐
-                                // │ Addr │ Size │        Name        │ Dev │
-                                // ├──────┼──────┼────────────────────┼─────┤
-        bus.map(0xff10, nr10);  // │ ff10 │  1 B │ CH1 Sweep          │ Reg │
-        bus.map(0xff11, nr11);  // │ ff11 │  1 B │ CH1 Length + Duty  │ Reg │
-        bus.map(0xff12, nr12);  // │ ff12 │  1 B │ CH1 Volume + Env.  │ Reg │
-        bus.map(0xff13, nr13);  // │ ff13 │  1 B │ CH1 Wavelength Low │ Reg │
-        bus.map(0xff14, nr14);  // │ ff14 │  1 B │ CH1 Wave Hi + Ctl. │ Reg │
-                                // │ ff15 │  1 B │ Unmapped           │ --- │
-        bus.map(0xff16, nr21);  // │ ff16 │  1 B │ CH2 Length + Duty  │ Reg │
-        bus.map(0xff17, nr22);  // │ ff17 │  1 B │ CH2 Volume + Env.  │ Reg │
-        bus.map(0xff18, nr23);  // │ ff18 │  1 B │ CH2 Wavelength Low │ Reg │
-        bus.map(0xff19, nr24);  // │ ff19 │  1 B │ CH2 Wave Hi + Ctl. │ Reg │
-        bus.map(0xff1a, nr30);  // │ ff1a │  1 B │ CH3 DAC Enable     │ Reg │
-        bus.map(0xff1b, nr31);  // │ ff1b │  1 B │ CH3 Length Timer   │ Reg │
-        bus.map(0xff1c, nr32);  // │ ff1c │  1 B │ CH3 Output Level   │ Reg │
-        bus.map(0xff1d, nr33);  // │ ff1d │  1 B │ CH3 Waveform Low   │ Reg │
-        bus.map(0xff1e, nr34);  // │ ff1e │  1 B │ CH3 Wave Hi + Ctl. │ Reg │
-                                // │ ff1f │  1 B │ Unmapped           │ --- │
-        bus.map(0xff20, nr41);  // │ ff20 │  1 B │ CH4 Length Timer   │ Reg │
-        bus.map(0xff21, nr42);  // │ ff21 │  1 B │ CH4 Volume + Env.  │ Reg │
-        bus.map(0xff22, nr43);  // │ ff22 │  1 B │ CH4 Freq. + Rand.  │ Reg │
-        bus.map(0xff23, nr44);  // │ ff23 │  1 B │ CH4 Control        │ Reg │
-        bus.map(0xff24, nr50);  // │ ff24 │  1 B │ Master Volume      │ Reg │
-        bus.map(0xff25, nr51);  // │ ff25 │  1 B │ Sound Panning      │ Reg │
-        bus.map(0xff26, nr52);  // │ ff26 │  1 B │ Audio Enable       │ Reg │
-                                // └──────┴──────┴────────────────────┴─────┘
+        // Map devices on bus           // ┌──────┬──────┬────────────────────┬─────┐
+                                        // │ Addr │ Size │        Name        │ Dev │
+                                        // ├──────┼──────┼────────────────────┼─────┤
+        bus.map(0xff10..=0xff10, nr10); // │ ff10 │  1 B │ CH1 Sweep          │ Reg │
+        bus.map(0xff11..=0xff11, nr11); // │ ff11 │  1 B │ CH1 Length + Duty  │ Reg │
+        bus.map(0xff12..=0xff12, nr12); // │ ff12 │  1 B │ CH1 Volume + Env.  │ Reg │
+        bus.map(0xff13..=0xff13, nr13); // │ ff13 │  1 B │ CH1 Wavelength Low │ Reg │
+        bus.map(0xff14..=0xff14, nr14); // │ ff14 │  1 B │ CH1 Wave Hi + Ctl. │ Reg │
+                                        // │ ff15 │  1 B │ Unmapped           │ --- │
+        bus.map(0xff16..=0xff16, nr21); // │ ff16 │  1 B │ CH2 Length + Duty  │ Reg │
+        bus.map(0xff17..=0xff17, nr22); // │ ff17 │  1 B │ CH2 Volume + Env.  │ Reg │
+        bus.map(0xff18..=0xff18, nr23); // │ ff18 │  1 B │ CH2 Wavelength Low │ Reg │
+        bus.map(0xff19..=0xff19, nr24); // │ ff19 │  1 B │ CH2 Wave Hi + Ctl. │ Reg │
+        bus.map(0xff1a..=0xff1a, nr30); // │ ff1a │  1 B │ CH3 DAC Enable     │ Reg │
+        bus.map(0xff1b..=0xff1b, nr31); // │ ff1b │  1 B │ CH3 Length Timer   │ Reg │
+        bus.map(0xff1c..=0xff1c, nr32); // │ ff1c │  1 B │ CH3 Output Level   │ Reg │
+        bus.map(0xff1d..=0xff1d, nr33); // │ ff1d │  1 B │ CH3 Waveform Low   │ Reg │
+        bus.map(0xff1e..=0xff1e, nr34); // │ ff1e │  1 B │ CH3 Wave Hi + Ctl. │ Reg │
+                                        // │ ff1f │  1 B │ Unmapped           │ --- │
+        bus.map(0xff20..=0xff20, nr41); // │ ff20 │  1 B │ CH4 Length Timer   │ Reg │
+        bus.map(0xff21..=0xff21, nr42); // │ ff21 │  1 B │ CH4 Volume + Env.  │ Reg │
+        bus.map(0xff22..=0xff22, nr43); // │ ff22 │  1 B │ CH4 Freq. + Rand.  │ Reg │
+        bus.map(0xff23..=0xff23, nr44); // │ ff23 │  1 B │ CH4 Control        │ Reg │
+        bus.map(0xff24..=0xff24, nr50); // │ ff24 │  1 B │ Master Volume      │ Reg │
+        bus.map(0xff25..=0xff25, nr51); // │ ff25 │  1 B │ Sound Panning      │ Reg │
+        bus.map(0xff26..=0xff26, nr52); // │ ff26 │  1 B │ Audio Enable       │ Reg │
+                                        // └──────┴──────┴────────────────────┴─────┘
     }
 }
