@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::num::ParseIntError;
 
 use gameboy::core::dmg::{cpu, pic, ppu, serial, timer};
@@ -24,7 +25,8 @@ struct Language;
 impl Language {
     fn prog(src: &str) -> Result<Vec<Command>, Error> {
         // Parse program string
-        let pairs = Language::parse(Rule::Program, src)?;
+        let pairs = Language::parse(Rule::Program, src)
+            .map_err(|err| err.renamed_rules(|rule| format!("{rule}")))?;
         // Extract individual commands
         pairs
             .filter(|pair| !matches!(pair.as_rule(), Rule::EOI))
@@ -346,6 +348,43 @@ impl Language {
             }
             rule => unreachable!("invalid rule: {rule:?}"),
         })
+    }
+}
+
+#[rustfmt::skip]
+#[allow(clippy::enum_glob_use)]
+#[allow(clippy::match_same_arms)]
+impl Display for Rule {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use Rule::*;
+
+        match self {
+            // Keywords
+            KBreak    => write!(f, "{Break}"),
+            KContinue => write!(f, "{Continue}"),
+            KDelete   => write!(f, "{Delete}"),
+            KDisable  => write!(f, "{Disable}"),
+            KEnable   => write!(f, "{Enable}"),
+            KFreq     => write!(f, "{Freq}"),
+            KGoto     => write!(f, "{Goto}"),
+            KHelp     => write!(f, "{Help}"),
+            KIgnore   => write!(f, "{Ignore}"),
+            KInfo     => write!(f, "{Info}"),
+            KJump     => write!(f, "{Jump}"),
+            KList     => write!(f, "{List}"),
+            KLoad     => write!(f, "{Load}"),
+            KLog      => write!(f, "{Log}"),
+            KQuit     => write!(f, "{Quit}"),
+            KRead     => write!(f, "{Read}"),
+            KReset    => write!(f, "{Reset}"),
+            KSerial   => write!(f, "{Serial}"),
+            KStep     => write!(f, "{Step}"),
+            KStore    => write!(f, "{Store}"),
+            KWrite    => write!(f, "{Write}"),
+            // Locations
+            SerialX   => write!(f, "{Serial}"),
+            _ => write!(f, "{self:?}"),
+        }
     }
 }
 
