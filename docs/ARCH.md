@@ -48,6 +48,9 @@ At a high level, the motherboard contains the following ASICs:
 [^gram]
 
 > [!NOTE]
+> See the [memory architecture][docs.mem] for a more precise diagram.
+
+> [!NOTE]
 > More research is needed to determine exactly how components are laid out
 > within the LR36902. For example, the DMA and OAM may not be embedded within
 > the PPU.
@@ -158,6 +161,9 @@ is complete.
 [^eram]: Echo RAM is simply a mirror of WRAM, accessible due to a quirk in how
          addresses are decoded. See [above](#echo-ram) for more details.
 [^dma]:  See the discussion at Gekkio/mooneye-gb#39.
+
+<!-- Reference-style files -->
+[docs.mem]:  ./docs/MEMORY.md
 
 <!-- Reference-style links -->
 [conflict]: https://en.wikipedia.org/wiki/Bus_contention
