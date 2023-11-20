@@ -1,9 +1,10 @@
 use remus::bus::adapt::{Bank, View};
-use remus::bus::Bus;
+use remus::bus::Mux;
 use remus::dev::{Device, Dynamic, Null};
 use remus::{Address, Block, Shared};
 
 use super::Mbc;
+use crate::arch::Bus;
 
 /// MBC1 cartridge type.
 #[derive(Debug)]
@@ -98,7 +99,7 @@ struct Rom {
     // State
     bank: Shared<Bank<u16, u8>>,
     // Memory
-    rom: Shared<Bus<u16, u8>>,
+    rom: Shared<Bus>,
     ram: Shared<Bank<u16, u8>>,
 }
 

@@ -5,17 +5,18 @@
 use std::cell::{Ref, RefMut};
 
 use log::debug;
-use remus::bus::Bus;
+use remus::bus::Mux;
 use remus::dev::Device;
-use remus::{Address, Block, Board, Location, Machine, Shared};
+use remus::mem::Ram;
+use remus::{Block, Board, Location, Machine, Shared};
 
 use self::cpu::Cpu;
 use self::dbg::Doctor;
-use self::mem::Memory;
-use crate::dev::Unmapped;
+use self::noc::NoC;
+use self::ppu::Vram;
+use self::soc::SoC;
 use crate::dmg::cpu::Processor;
 use crate::emu::Emulator;
-use crate::hw::apu::Apu;
 use crate::hw::cart::Cartridge;
 use crate::hw::joypad::Joypad;
 use crate::hw::pic::Pic;
@@ -24,16 +25,20 @@ use crate::hw::serial::Serial;
 use crate::hw::timer::Timer;
 
 mod boot;
-mod mem;
+mod noc;
+mod soc;
 
 pub mod dbg;
 
-pub use self::boot::Rom as Boot;
+pub use self::boot::Boot;
 pub use crate::emu::Screen as Dimensions;
 pub use crate::hw::cpu::sm83 as cpu;
 pub use crate::hw::joypad::Button;
 pub use crate::hw::ppu::Screen;
 pub use crate::hw::{cart, pic, ppu, serial, timer};
+
+pub type Wram = Ram<u8, 0x2000>;
+pub type Hram = Ram<u8, 0x007f>;
 
 /// DMG-01 screen specification.
 pub const SCREEN: Dimensions = Dimensions {
@@ -46,19 +51,18 @@ pub const SCREEN: Dimensions = Dimensions {
 pub struct GameBoy {
     // State
     clock: usize,
-    // Processors
-    apu: Apu,
-    cpu: Cpu,
-    ppu: Ppu,
+    // ASICs
+    soc: SoC,
+    wram: Shared<Wram>,
+    vram: Shared<Vram>,
     // Peripherals
     joypad: Joypad,
     serial: Serial,
     timer: Timer,
-    // Memory
+    // External
     cart: Option<Cartridge>,
-    mem: Memory,
     // Shared
-    bus: Shared<Bus<u16, u8>>,
+    noc: NoC,
     pic: Shared<Pic>,
     // Debug
     doc: Option<Doctor>,
@@ -67,21 +71,28 @@ pub struct GameBoy {
 impl Default for GameBoy {
     fn default() -> Self {
         // Construct shared blocks
-        let bus = Shared::from(Bus::default());
+        let vram = Shared::new(Vram::default());
+        let noc = NoC::default();
         let pic = Shared::from(Pic::default());
+
         // Construct self
         Self {
+            // State
             clock: usize::default(),
-            apu: Apu::default(),
-            cpu: Cpu::new(bus.clone(), pic.clone()),
-            ppu: Ppu::new(bus.clone(), pic.clone()),
+            // ASICs
+            soc: SoC::new(vram.clone(), &noc, pic.clone()),
+            wram: Shared::new(Wram::default()),
+            vram,
+            // Peripherals
             joypad: Joypad::new(pic.clone()),
             serial: Serial::new(pic.clone()),
             timer: Timer::new(pic.clone()),
+            // External
             cart: Option::default(),
-            mem: Memory::default(),
-            bus: bus.clone(),
+            // Shared
+            noc,
             pic,
+            // Debug
             doc: Option::default(),
         }
     }
@@ -107,35 +118,74 @@ impl GameBoy {
     /// Note that [`Cartridge`]s must be manually loaded with [`Self::load`].
     #[must_use]
     pub fn with(boot: Boot) -> Self {
-        Self {
-            mem: Memory::with(boot),
-            ..Default::default()
-        }
-        .setup()
-    }
-
-    /// Loads a game [`Cartridge`] into the `GameBoy`
-    ///
-    /// If a cartridge has already been loaded, it will be disconnected and
-    /// replaced.
-    pub fn load(&mut self, cart: Cartridge) {
-        // Disconnect any connected cartridge from the bus
-        let bus = &mut self.bus.borrow_mut();
-        if let Some(cart) = &self.cart {
-            cart.disconnect(bus);
-        }
-        // Store and connect the supplied cartridge
-        cart.connect(bus);
-        self.cart = Some(cart);
+        // Construct a default instance
+        let mut this = Self::default();
+        // Construct the managed boot ROM
+        let ibus = this.noc.int.clone();
+        let rom = boot::Rom::new(ibus, boot);
+        // Set the boot ROM
+        this.soc.boot = Some(rom);
+        // Set up and return the instance
+        this.setup()
     }
 
     /// Sets up the `GameBoy`, such that is it ready to be run.
     #[must_use]
-    fn setup(self) -> Self {
-        // Connect devices to bus
-        self.connect(&mut self.bus.borrow_mut());
+    fn setup(mut self) -> Self {
+        // Map devices onto internal buses
+        self.connect();
 
         self
+    }
+
+    #[rustfmt::skip]
+    fn connect(&mut self) {
+        // Extract buses
+        let ibus = &mut *self.noc.int.borrow_mut();
+        let ebus = &mut *self.noc.ext.borrow_mut();
+        let vbus = &mut *self.noc.vid.borrow_mut();
+
+        // Extract devices
+        let vram = self.vram.clone().to_dynamic();
+        let wram = self.wram.clone().to_dynamic();
+        let echo = self.wram.clone().to_dynamic();
+
+        // Map devices on bus            // ┌──────┬────────┬────────────┬─────┐
+                                         // │ Addr │  Size  │    Name    │ Dev │
+                                         // ├──────┼────────┼────────────┼─────┤
+        // mapped by `soc`               // │ 0000 │  256 B │ Boot       │ ROM │
+        // mapped by `cart`              // │ 0000 │ 32 KiB │ Cartridge  │ ROM │
+        vbus.map(0x8000..=0x9fff, vram); // │ 8000 │  8 KiB │ Video      │ RAM │
+        // mapped by `cart`              // │ a000 │  8 KiB │ External   │ RAM │
+        ebus.map(0xc000..=0xdfff, wram); // │ c000 │  8 KiB │ Work       │ RAM │
+        ebus.map(0xe000..=0xffff, echo); // │ e000 │ 7680 B │ Echo       │ RAM │
+        // mapped by `ppu`               // │ fe00 │  160 B │ Object     │ RAM │
+                                         // │ fea0 │   96 B │ Unmapped   │ --- │
+        // mapped by `joypad`            // │ ff00 │    1 B │ Controller │ Reg │
+        // mapped by `serial`            // │ ff01 │    2 B │ Serial     │ Reg │
+                                         // │ ff03 │    1 B │ Unmapped   │ --- │
+        // mapped by `timer`             // │ ff04 │    4 B │ Timer      │ Reg │
+                                         // │ ff08 │    7 B │ Unmapped   │ --- │
+        // mapped by `pic`               // │ ff0f │    1 B │ Interrupt  │ Reg │
+        // mapped by `apu`               // │ ff10 │   23 B │ Audio      │ APU │
+                                         // │ ff27 │    9 B │ Unmapped   │ --- │
+        // mapped by `apu`               // │ ff30 │   16 B │ Waveform   │ RAM │
+        // mapped by `ppu`               // │ ff40 │   12 B │ LCD        │ PPU │
+                                         // │ ff4c │    4 B │ Unmapped   │ --- │
+        // mapped by `soc`               // │ ff50 │    1 B │ Boot       │ Reg │
+                                         // │ ff51 │   47 B │ Unmapped   │ --- │
+        // mapped by `soc`               // │ ff80 │  127 B │ High       │ RAM │
+        // mapped by `pic`               // │ ffff │    1 B │ Interrupt  │ Reg │
+                                         // └──────┴────────┴────────────┴─────┘
+
+        // ASICs
+        self.soc.connect(ibus);
+        // Peripherals
+        self.joypad.connect(ibus);
+        self.serial.connect(ibus);
+        self.timer.connect(ibus);
+        // Shared
+        self.pic.connect(ibus);
     }
 
     /// Simulate booting for `GameBoy`s with no [`Cartridge`].
@@ -144,24 +194,39 @@ impl GameBoy {
         type Register = <Cpu as Location<u16>>::Register;
 
         // Execute setup code
-        self.cpu.exec(0xfb); // ei ; enable interrupts
+        self.soc.cpu.exec(0xfb); // EI ; enable interrupts
 
         // Initialize registers
-        self.cpu.store(Register::AF, 0x01b0u16);
-        self.cpu.store(Register::BC, 0x0013u16);
-        self.cpu.store(Register::DE, 0x00d8u16);
-        self.cpu.store(Register::HL, 0x014du16);
-        self.cpu.store(Register::SP, 0xfffeu16);
+        self.soc.cpu.store(Register::AF, 0x01b0_u16);
+        self.soc.cpu.store(Register::BC, 0x0013_u16);
+        self.soc.cpu.store(Register::DE, 0x00d8_u16);
+        self.soc.cpu.store(Register::HL, 0x014d_u16);
+        self.soc.cpu.store(Register::SP, 0xfffe_u16);
 
         // Move the PC to the ROM's start
-        self.cpu.goto(0x0100);
+        self.soc.cpu.goto(0x0100);
 
         // Enable the LCD
-        self.bus.write(0xff40, 0x91);
+        self.soc.cpu.write(0xff40, 0x91);
         // Disable the boot ROM
-        self.bus.write(0xff50, 0x01);
+        self.soc.cpu.write(0xff50, 0x01);
 
         self
+    }
+
+    /// Loads a game [`Cartridge`] into the `GameBoy`
+    ///
+    /// If a cartridge has already been loaded, it will be disconnected and
+    /// replaced.
+    pub fn load(&mut self, cart: Cartridge) {
+        // Disconnect cartridge from the bus
+        let ebus = &mut *self.noc.ext.borrow_mut();
+        if let Some(cart) = &self.cart {
+            cart.disconnect(ebus);
+        }
+        // Connect the supplied cartridge
+        cart.connect(ebus);
+        self.cart = Some(cart);
     }
 
     /// Returns debug information about the model.
@@ -184,12 +249,12 @@ impl GameBoy {
     /// Gets the `GameBoy`'s CPU.
     #[must_use]
     pub fn cpu(&self) -> &Cpu {
-        &self.cpu
+        &self.soc.cpu
     }
 
     /// Mutably gets the `GameBoy`'s CPU.
     pub fn cpu_mut(&mut self) -> &mut Cpu {
-        &mut self.cpu
+        &mut self.soc.cpu
     }
 
     /// Gets the `GameBoy`'s programmable interrupt controller.
@@ -206,12 +271,12 @@ impl GameBoy {
     /// Gets the `GameBoy`'s PPU.
     #[must_use]
     pub fn ppu(&self) -> &Ppu {
-        &self.ppu
+        &self.soc.ppu
     }
 
     /// Mutably gets the `GameBoy`'s PPU.
     pub fn ppu_mut(&mut self) -> &mut Ppu {
-        &mut self.ppu
+        &mut self.soc.ppu
     }
 
     /// Gets the `GameBoy`'s serial.
@@ -240,72 +305,23 @@ impl GameBoy {
 impl Block for GameBoy {
     #[rustfmt::skip]
     fn reset(&mut self) {
-        // Processors
-        self.apu.reset();
-        self.cpu.reset();
-        self.ppu.reset();
+        // ASICs
+        self.soc.reset();
+        self.wram.reset();
+        self.vram.reset();
         // Peripherals
         self.joypad.reset();
         self.serial.reset();
         self.timer.reset();
-        // Memory
+        // External
         if let Some(cart) = &mut self.cart {
             cart.reset();
         }
-        self.mem.reset();
         // Shared
-        self.bus.reset();
+        self.noc.int.reset();
+        self.noc.ext.reset();
+        self.noc.vid.reset();
         self.pic.reset();
-    }
-}
-
-impl Board<u16, u8> for GameBoy {
-    #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
-        // Map devices on bus  // ┌──────┬────────┬────────────┬─────┐
-                               // │ Addr │  Size  │    Name    │ Dev │
-                               // ├──────┼────────┼────────────┼─────┤
-        // mapped by `mem`     // │ 0000 │  256 B │ Boot       │ ROM │
-        // mapped by `cart`    // │ 0000 │ 32 KiB │ Cartridge  │ ROM │
-        // mapped by `ppu`     // │ 8000 │  8 KiB │ Video      │ RAM │
-        // mapped by `cart`    // │ a000 │  8 KiB │ External   │ RAM │
-        // mapped by `mem`     // │ c000 │  8 KiB │ Work       │ RAM │
-        // mapped by `mem`     // │ e000 │ 7680 B │ Echo       │ RAM │
-        // mapped by `ppu`     // │ fe00 │  160 B │ Object     │ RAM │
-                               // │ fea0 │   96 B │ Unmapped   │ --- │
-        // mapped by `joypad`  // │ ff00 │    1 B │ Controller │ Reg │
-        // mapped by `serial`  // │ ff01 │    2 B │ Serial     │ Reg │
-                               // │ ff03 │    1 B │ Unmapped   │ --- │
-        // mapped by `timer`   // │ ff04 │    4 B │ Timer      │ Reg │
-                               // │ ff08 │    7 B │ Unmapped   │ --- │
-        // mapped by `pic`     // │ ff0f │    1 B │ Interrupt  │ Reg │
-        // mapped by `apu`     // │ ff10 │   23 B │ Audio      │ APU │
-                               // │ ff27 │    9 B │ Unmapped   │ --- │
-        // mapped by `apu`     // │ ff30 │   16 B │ Waveform   │ RAM │
-        // mapped by `ppu`     // │ ff40 │   12 B │ LCD        │ PPU │
-                               // │ ff4c │    4 B │ Unmapped   │ --- │
-        // mapped by `mem`     // │ ff50 │    1 B │ Boot       │ Reg │
-                               // │ ff51 │   47 B │ Unmapped   │ --- │
-        // mapped by `mem`     // │ ff80 │  127 B │ High       │ RAM │
-        // mapped by `pic`     // │ ffff │    1 B │ Interrupt  │ Reg │
-                               // └──────┴────────┴────────────┴─────┘
-
-        // Processors
-        self.apu.connect(bus);
-        self.cpu.connect(bus);
-        self.ppu.connect(bus);
-        // Peripherals
-        self.joypad.connect(bus);
-        self.serial.connect(bus);
-        self.timer.connect(bus);
-        // Memory
-        self.mem.connect(bus);
-        // Shared
-        self.pic.connect(bus);
-
-        // NOTE: Use fallback to report invalid reads as `0xff`
-        let unmap = Unmapped::<0x10000>::new().to_dynamic();
-        bus.map(0x0000..=0xffff, unmap);
     }
 }
 
@@ -319,44 +335,44 @@ impl Emulator for GameBoy {
     }
 
     fn redraw(&self, mut callback: impl FnMut(&Screen)) {
-        if self.ppu.ready() {
-            callback(self.ppu.screen());
+        if self.soc.ppu.ready() {
+            callback(self.soc.ppu.screen());
         }
     }
 }
 
 impl Machine for GameBoy {
     fn enabled(&self) -> bool {
-        self.cpu.enabled()
+        self.soc.cpu.enabled()
     }
 
     fn cycle(&mut self) {
         // CPU: 1 MiHz
         if self.clock % 4 == 0 {
-            // Wake disabled CPU on pending interrupt
-            if !self.cpu.enabled() && self.pic.borrow().int().is_some() {
-                self.cpu.wake();
+            // Wake on pending interrupt
+            if !self.soc.cpu.enabled() && self.pic.borrow().int().is_some() {
+                self.soc.cpu.wake();
             }
             // Collect doctor entries
             if let Some(doc) = &mut self.doc {
-                if let Some(entry) = self.cpu.doctor() {
+                if let Some(entry) = self.soc.cpu.doctor() {
                     doc.0.push(entry);
                 }
             }
             // Cycle CPU
-            if self.cpu.enabled() {
-                self.cpu.cycle();
+            if self.soc.cpu.enabled() {
+                self.soc.cpu.cycle();
             }
         }
 
         // DMA: 1 MiHz
-        if self.clock % 4 == 0 && self.ppu.dma().enabled() {
-            self.ppu.dma().cycle();
+        if self.clock % 4 == 0 && self.soc.ppu.dma().enabled() {
+            self.soc.ppu.dma().cycle();
         }
 
         // PPU: 4 MiHz
-        if self.ppu.enabled() {
-            self.ppu.cycle();
+        if self.soc.ppu.enabled() {
+            self.soc.ppu.cycle();
         }
 
         // Serial: 8192 Hz
@@ -380,6 +396,8 @@ impl Machine for GameBoy {
 
 #[cfg(test)]
 mod tests {
+    use remus::Address;
+
     use super::*;
 
     /// Sample boot ROM.
@@ -404,21 +422,22 @@ mod tests {
     #[test]
     fn boot_disable_works() {
         let mut emu = setup();
+        let bus = &mut emu.soc.cpu;
 
         // Ensure boot ROM starts enabled:
         // - Perform comparison against boot ROM contents
         (0x0000..=0x0100)
-            .map(|addr| emu.bus.read(addr))
+            .map(|addr| bus.read(addr))
             .zip(BOOT)
             .for_each(|(read, &rom)| assert_eq!(read, rom));
 
         // Disable boot ROM
-        emu.bus.write(0xff50, 0x01);
+        bus.write(0xff50, 0x01);
 
         // Check if disable was successful:
         // - Perform comparison against cartridge ROM contents
         (0x0000..=0x0100)
-            .map(|addr| emu.bus.read(addr))
+            .map(|addr| bus.read(addr))
             .zip(GAME)
             .for_each(|(read, &rom)| assert_eq!(read, rom));
     }
@@ -426,47 +445,48 @@ mod tests {
     #[test]
     fn bus_all_works() {
         let mut emu = setup();
+        let bus = &mut emu.soc.cpu;
 
         // Boot ROM
         (0x0000..=0x00ff)
-            .map(|addr| emu.mem.boot().unwrap().borrow().rom().read(addr))
+            .map(|addr| emu.soc.boot.as_ref().unwrap().rom().read(addr))
             .any(|byte| byte != 0x01);
         // Cartridge ROM
         if let Some(cart) = &emu.cart {
-            (0x0100..=0x7fff).for_each(|addr| emu.bus.write(addr, 0x02));
+            (0x0100..=0x7fff).for_each(|addr| bus.write(addr, 0x02));
             assert!((0x0100..=0x7fff)
                 .map(|addr| cart.rom().read(addr))
                 .any(|byte| byte != 0x02));
         }
         // Video RAM
-        (0x8000..=0x9fff).for_each(|addr| emu.bus.write(addr, 0x03));
+        (0x8000..=0x9fff).for_each(|addr| bus.write(addr, 0x03));
         (0x0000..=0x1fff)
-            .map(|addr: u16| emu.ppu.vram().read(addr))
+            .map(|addr: u16| emu.soc.ppu.vram().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x03));
         // External RAM
         if let Some(cart) = &emu.cart {
-            (0xa000..=0xbfff).for_each(|addr| emu.bus.write(addr, 0x04));
+            (0xa000..=0xbfff).for_each(|addr| bus.write(addr, 0x04));
             (0x0000..=0x1fff) // NOTE: External RAM is disabled for this ROM
                 .map(|addr| cart.ram().read(addr))
                 .for_each(|byte| assert_eq!(byte, 0xff));
         }
         // Object RAM
-        (0xfe00..=0xfe9f).for_each(|addr| emu.bus.write(addr, 0x05));
+        (0xfe00..=0xfe9f).for_each(|addr| bus.write(addr, 0x05));
         (0x0000..=0x009f)
-            .map(|addr: u16| emu.ppu.oam().read(addr))
+            .map(|addr: u16| emu.soc.ppu.oam().read(addr))
             .for_each(|byte| assert_eq!(byte, 0x05));
         // Controller
-        (0xff00..=0xff00).for_each(|addr| emu.bus.write(addr, 0x60));
+        (0xff00..=0xff00).for_each(|addr| bus.write(addr, 0x60));
         (0x0000..=0x0000) // NOTE: Only bits 0x30 are writable
             .map(|addr| emu.joypad.con().read(addr))
             .for_each(|byte| assert_eq!(byte, 0xef));
         // Serial
-        (0xff01..=0xff03).for_each(|addr| emu.bus.write(addr, 0x07));
+        (0xff01..=0xff03).for_each(|addr| bus.write(addr, 0x07));
         (0x0000..=0x0002)
             .map(|_| 0x07) // FIXME
             .for_each(|byte| assert_eq!(byte, 0x07));
         // Timer
-        (0xff04..=0xff07).for_each(|addr| emu.bus.write(addr, 0x08));
+        (0xff04..=0xff07).for_each(|addr| bus.write(addr, 0x08));
         (0x0000..=0x0003)
             .zip([
                 <Timer as Location<u8>>::Register::Div,
@@ -478,22 +498,22 @@ mod tests {
             .zip([0x00, 0x08, 0x08, 0x00])
             .for_each(|(found, expected)| assert_eq!(found, expected));
         // Interrupt Flag
-        (0xff0f..=0xff0f).for_each(|addr| emu.bus.write(addr, 0x09));
+        (0xff0f..=0xff0f).for_each(|addr| bus.write(addr, 0x09));
         (0x0000..=0x0000)
             .map(|_| emu.pic.load(<Pic as Location<u8>>::Register::If))
             .for_each(|byte| assert_eq!(byte, 0xe9));
         // Audio
-        (0xff10..=0xff27).for_each(|addr| emu.bus.write(addr, 0x0a));
+        (0xff10..=0xff27).for_each(|addr| bus.write(addr, 0x0a));
         (0x0000..=0x0017)
             .map(|_| 0x0a) // FIXME
             .for_each(|byte| assert_eq!(byte, 0x0a));
         // Waveform RAM
-        (0xff30..=0xff3f).for_each(|addr| emu.bus.write(addr, 0x0b));
+        (0xff30..=0xff3f).for_each(|addr| bus.write(addr, 0x0b));
         (0x0000..=0x000f)
             .map(|_| 0x0b) // FIXME
             .for_each(|byte| assert_eq!(byte, 0x0b));
         // LCD
-        (0xff40..=0xff4b).for_each(|addr| emu.bus.write(addr, 0x0c));
+        (0xff40..=0xff4b).for_each(|addr| bus.write(addr, 0x0c));
         (0x0000..=0x000b)
             .zip([
                 <Ppu as Location<u8>>::Register::Lcdc,
@@ -509,20 +529,20 @@ mod tests {
                 <Ppu as Location<u8>>::Register::Wy,
                 <Ppu as Location<u8>>::Register::Wx,
             ])
-            .map(|(_, reg)| emu.ppu.load(reg))
+            .map(|(_, reg)| emu.soc.ppu.load(reg))
             .for_each(|byte| assert_eq!(byte, 0x0c));
         // Boot ROM Disable
-        (0xff50..=0xff50).for_each(|addr| emu.bus.write(addr, 0x0d));
+        (0xff50..=0xff50).for_each(|addr| bus.write(addr, 0x0d));
         (0x0000..=0x0000)
-            .map(|addr| emu.mem.boot().unwrap().borrow().ctrl().read(addr))
+            .map(|addr| emu.soc.boot.as_ref().unwrap().ctrl().read(addr))
             .for_each(|byte| assert_eq!(byte, 0xff));
         // High RAM
-        (0xff80..=0xfffe).for_each(|addr| emu.bus.write(addr, 0x0e));
+        (0xff80..=0xfffe).for_each(|addr| bus.write(addr, 0x0e));
         (0x0000..=0x007e)
-            .map(|addr: u16| emu.mem.hram().read(addr))
+            .map(|addr: u16| emu.soc.hram.read(addr))
             .for_each(|byte| assert_eq!(byte, 0x0e));
         // Interrupt Enable
-        (0xffff..=0xffff).for_each(|addr| emu.bus.write(addr, 0x0f));
+        (0xffff..=0xffff).for_each(|addr| bus.write(addr, 0x0f));
         (0x0000..=0x0000)
             .map(|_| emu.pic.load(<Pic as Location<u8>>::Register::Ie))
             .for_each(|byte| assert_eq!(byte, 0xef));
@@ -531,6 +551,7 @@ mod tests {
     #[test]
     fn bus_unmapped_works() {
         let mut emu = setup();
+        let bus = &mut emu.soc.cpu;
 
         // Define unmapped addresses
         let unmapped = [0xfea0..=0xfeff, 0xff03..=0xff03, 0xff27..=0xff2f];
@@ -539,9 +560,9 @@ mod tests {
         for gap in unmapped {
             for addr in gap {
                 // Write to every unmapped address
-                emu.bus.write(addr, 0xaa);
+                bus.write(addr, 0xaa);
                 // Check the write didn't work
-                assert_eq!(emu.bus.read(addr), 0xff, "{addr:#06x}");
+                assert_eq!(bus.read(addr), 0xff, "{addr:#06x}");
             }
         }
     }

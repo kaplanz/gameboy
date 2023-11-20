@@ -1,17 +1,18 @@
 //! Boot ROM.
 
-use std::array::TryFromSliceError;
+use std::fmt::Debug;
 
-use remus::bus::adapt::Bank;
-use remus::bus::Bus;
+use remus::bus::Mux;
 use remus::dev::Device;
 use remus::{mem, Address, Block, Board, Cell, Shared};
-use thiserror::Error;
 
+use crate::arch::Bus;
 use crate::dev::ReadOnly;
 
+pub type Boot = mem::Rom<u8, 0x100>;
+
 /// Boot ROM.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Rom {
     // Control
     // ┌──────┬──────────┬─────┐
@@ -26,24 +27,29 @@ pub struct Rom {
     // ├────────┼──────┼─────┤
     // │  8 KiB │ Boot │ ROM │
     // └────────┴──────┴─────┘
-    bank: Shared<Bank<u16, u8>>,
+    boot: Shared<Boot>,
 }
 
 impl Rom {
     /// Constructs a new `Rom`.
     #[must_use]
-    pub fn new(rom: mem::Rom<u8, 0x100>) -> Self {
+    pub fn new(mut bus: Shared<Bus>, rom: Boot) -> Self {
         // Construct shared blocks
-        let bank = Shared::from(Bank::from([rom.to_dynamic()].as_slice()));
-        let ctrl = Shared::from(Control::new(bank.clone()));
+        let boot = Shared::from(rom);
+        let ctrl = Shared::from(Control::new({
+            let boot = boot.clone().to_dynamic();
+            Box::new(move || {
+                bus.unmap(&boot);
+            })
+        }));
         // Construct self
-        Self { ctrl, bank }
+        Self { ctrl, boot }
     }
 
     /// Gets a read-only reference to the boot ROM.
     #[must_use]
     pub fn rom(&self) -> ReadOnly<impl Device<u16, u8>> {
-        ReadOnly::from(self.bank.clone())
+        ReadOnly::from(self.boot.clone())
     }
 
     /// Gets a reference to the boot ROM's control register.
@@ -55,11 +61,11 @@ impl Rom {
 
 impl Address<u16, u8> for Rom {
     fn read(&self, index: u16) -> u8 {
-        self.bank.read(index)
+        self.boot.read(index)
     }
 
     fn write(&mut self, index: u16, value: u8) {
-        self.bank.write(index, value);
+        self.boot.write(index, value);
     }
 }
 
@@ -68,13 +74,13 @@ impl Block for Rom {
         // Control
         self.ctrl.reset();
         // Memory
-        self.bank.reset();
+        self.boot.reset();
     }
 }
 
 impl Board<u16, u8> for Rom {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
+    fn connect(&self, bus: &mut Bus) {
         // Extract devices
         let boot = self.rom().to_dynamic();
         let ctrl = self.ctrl().to_dynamic();
@@ -90,36 +96,19 @@ impl Board<u16, u8> for Rom {
 
 impl Device<u16, u8> for Rom {}
 
-impl From<&[u8; 0x100]> for Rom {
-    fn from(rom: &[u8; 0x100]) -> Self {
-        Self::new(rom.into())
-    }
-}
-
-impl TryFrom<&[u8]> for Rom {
-    type Error = Error;
-
-    fn try_from(rom: &[u8]) -> Result<Self, Self::Error> {
-        let rom: Result<&[u8; 0x100], _> = rom
-            .get(0x000..0x100)
-            .ok_or(Error::Missing)?
-            .try_into()
-            .map_err(Error::TryFromSlice);
-        rom.map(Into::into).map(Self::new)
-    }
-}
-
 /// Boot ROM [`Control`].
-#[derive(Debug, Default)]
 pub struct Control {
-    // Shared
-    bank: Shared<Bank<u16, u8>>,
+    write: bool,
+    unmap: Box<dyn FnMut()>,
 }
 
 impl Control {
     /// Constructs a new `Control`.
-    pub fn new(rom: Shared<Bank<u16, u8>>) -> Self {
-        Self { bank: rom }
+    pub fn new(unmap: Box<dyn FnMut()>) -> Self {
+        Self {
+            write: false,
+            unmap,
+        }
     }
 }
 
@@ -133,31 +122,25 @@ impl Address<u16, u8> for Control {
     }
 }
 
-impl Block for Control {
-    fn reset(&mut self) {
-        self.bank.borrow_mut().set(0);
-    }
-}
+impl Block for Control {}
 
 impl Cell<u8> for Control {
     fn load(&self) -> u8 {
-        0xff
+        0xfe | u8::from(self.write)
     }
 
     fn store(&mut self, _: u8) {
-        self.bank.borrow_mut().set(1);
+        if !self.write {
+            (self.unmap)();
+        }
+        self.write |= true;
+    }
+}
+
+impl Debug for Control {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Control").finish()
     }
 }
 
 impl Device<u16, u8> for Control {}
-
-/// A type specifying general categories of [`Rom`] error.
-#[derive(Debug, Error)]
-pub enum Error {
-    /// Body is missing, caused by truncation when attempting to construct.
-    #[error("missing body")]
-    Missing,
-    /// Pass-through for [`TryFromSliceError`]s.
-    #[error(transparent)]
-    TryFromSlice(#[from] TryFromSliceError),
-}

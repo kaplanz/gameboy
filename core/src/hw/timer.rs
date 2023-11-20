@@ -1,12 +1,13 @@
 //! Hardware timer.
 
 use log::{debug, trace};
-use remus::bus::Bus;
+use remus::bus::Mux;
 use remus::dev::Device;
 use remus::reg::Register;
 use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
 
 use super::pic::{Interrupt, Pic};
+use crate::arch::Bus;
 
 /// 8-bit timer control register set.
 ///
@@ -101,7 +102,7 @@ impl Block for Timer {
 }
 
 impl Board<u16, u8> for Timer {
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
+    fn connect(&self, bus: &mut Bus) {
         // Control
         self.file.connect(bus);
     }
@@ -215,7 +216,7 @@ impl Block for File {
 
 impl Board<u16, u8> for File {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
+    fn connect(&self, bus: &mut Bus) {
         // Extract devices
         let div  = self.div.clone().to_dynamic();
         let tima = self.tima.clone().to_dynamic();

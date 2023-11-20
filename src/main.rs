@@ -10,7 +10,6 @@ use gameboy::core::dmg::Dimensions;
 use gameboy::dmg::cart::Cartridge;
 use gameboy::dmg::{Boot, GameBoy, SCREEN};
 use log::{info, warn};
-use remus::mem::Rom;
 #[cfg(feature = "gbd")]
 use tracing_subscriber::fmt::Layer;
 #[cfg(feature = "gbd")]
@@ -172,7 +171,7 @@ fn boot(path: Option<PathBuf>) -> Result<Option<Boot>> {
         })
         .transpose()?;
     // Initialize the boot rom
-    let boot = boot.as_ref().map(Rom::from).map(Boot::new);
+    let boot = boot.as_ref().map(Boot::from);
 
     Ok(boot)
 }

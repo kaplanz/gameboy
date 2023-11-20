@@ -20,7 +20,7 @@ pub fn doc(emu: &mut GameBoy) -> Doctor {
 
 /// Gather PPU debug info.
 pub fn ppu(emu: &mut GameBoy) -> ppu::Debug {
-    emu.ppu.debug()
+    emu.ppu().debug()
 }
 
 /// Debug information.

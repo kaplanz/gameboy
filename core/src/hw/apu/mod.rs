@@ -1,10 +1,12 @@
 //! Audio processing unit.
 
-use remus::bus::Bus;
+use remus::bus::Mux;
 use remus::dev::Device;
 use remus::mem::Ram;
 use remus::reg::Register;
 use remus::{Block, Board, Machine, Shared};
+
+use crate::arch::Bus;
 
 pub type Wave = Ram<u8, 0x0010>;
 
@@ -46,7 +48,7 @@ impl Block for Apu {
 
 impl Board<u16, u8> for Apu {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
+    fn connect(&self, bus: &mut Bus) {
         // Connect boards
         self.file.connect(bus);
 
@@ -136,7 +138,7 @@ impl Block for File {
 
 impl Board<u16, u8> for File {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
+    fn connect(&self, bus: &mut Bus) {
         // Extract devices
         let nr52 = self.nr52.clone().to_dynamic();
         let nr51 = self.nr51.clone().to_dynamic();

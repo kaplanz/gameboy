@@ -14,7 +14,7 @@ use std::cmp::Ordering;
 use std::iter;
 
 use log::{debug, info, trace, warn};
-use remus::bus::Bus;
+use remus::bus::Mux;
 use remus::dev::{Device, Dynamic, Null};
 use remus::mem::{Ram, Rom};
 use remus::{Block, Board};
@@ -22,6 +22,7 @@ use thiserror::Error;
 
 use self::header::Kind;
 use self::mbc::{Mbc, Mbc1, NoMbc};
+use crate::arch::Bus;
 use crate::dev::Unmapped;
 
 mod header;
@@ -242,7 +243,7 @@ impl Block for Cartridge {
 
 impl Board<u16, u8> for Cartridge {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
+    fn connect(&self, bus: &mut Bus) {
         // Extract devices
         let rom = self.rom();
         let ram = self.ram();
@@ -255,7 +256,7 @@ impl Board<u16, u8> for Cartridge {
                                        // └──────┴────────┴────────────┴─────┘
     }
 
-    fn disconnect(&self, bus: &mut Bus<u16, u8>) {
+    fn disconnect(&self, bus: &mut Bus) {
         // Extract devices
         let rom = self.rom();
         let ram = self.ram();
