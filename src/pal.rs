@@ -65,11 +65,12 @@ impl FromStr for Palette {
             .map(str::parse::<Color>)
             .collect::<Result<_, _>>()
             .map_err(Error::Parse)?;
-        let pal: [Color; 4] = pal.try_into().map_err(|err: Vec<_>| match err.len() {
-            len @ 0..=3 => Error::Missing(len),
-            len @ 5.. => Error::Extra(len),
-            _ => unreachable!(),
-        })?;
+        let pal: [Color; 4] =
+            pal.try_into().map_err(|err: Vec<_>| match err.len() {
+                len @ 0..=3 => Error::Missing(len),
+                len @ 5.. => Error::Extra(len),
+                _ => unreachable!(),
+            })?;
 
         Ok(Self(pal))
     }

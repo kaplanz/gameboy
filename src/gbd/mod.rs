@@ -102,30 +102,31 @@ impl Debugger {
         'gbd: while self.paused() {
             let res = 'res: {
                 // Attempt to fetch command
-                let cmd = {
-                    // Attempt to fetch the next command
-                    if let cmd @ Some(_) = self.fetch() {
-                        // It worked; use it
-                        cmd
-                    } else {
-                        // Couldn't fetch; get program from user
-                        match {
-                            // Pause clock while awaiting user input
-                            clk.as_mut().map(Clock::pause);
-                            // Present the prompt
-                            self.prompt()
-                        } {
-                            // Program input; fetch next iteration
-                            Ok(()) => continue 'gbd,
-                            // No input; repeat previous command
-                            Err(Error::NoInput) => self.prev().cloned(),
-                            // Prompt error; handle upstream
-                            err @ Err(_) => {
-                                break 'res err;
+                let cmd =
+                    {
+                        // Attempt to fetch the next command
+                        if let cmd @ Some(_) = self.fetch() {
+                            // It worked; use it
+                            cmd
+                        } else {
+                            // Couldn't fetch; get program from user
+                            match {
+                                // Pause clock while awaiting user input
+                                clk.as_mut().map(Clock::pause);
+                                // Present the prompt
+                                self.prompt()
+                            } {
+                                // Program input; fetch next iteration
+                                Ok(()) => continue 'gbd,
+                                // No input; repeat previous command
+                                Err(Error::NoInput) => self.prev().cloned(),
+                                // Prompt error; handle upstream
+                                err @ Err(_) => {
+                                    break 'res err;
+                                }
                             }
                         }
-                    }
-                };
+                    };
                 // Extract fetched command
                 let Some(cmd) = cmd else {
                     // Command still not found; this case should
@@ -216,11 +217,12 @@ impl Debugger {
 
         // Present the prompt; get input
         let fmt = format!("(#{} @ {:#06x})> ", self.cycle, self.pc);
-        let input = match line.readline(&fmt) {
-            Err(ReadlineError::Interrupted) => return Ok(()),
-            Err(ReadlineError::Eof) => return Err(Error::Quit),
-            res => res?,
-        };
+        let input =
+            match line.readline(&fmt) {
+                Err(ReadlineError::Interrupted) => return Ok(()),
+                Err(ReadlineError::Eof) => return Err(Error::Quit),
+                res => res?,
+            };
         line.history_mut().add(&input)?; // add input to history
 
         // Parse input

@@ -1,7 +1,7 @@
-use remus::Shared;
-use remus::bus::Mux;
 use remus::bus::adapt::Mask;
+use remus::bus::Mux;
 use remus::dev::Device;
+use remus::Shared;
 
 use crate::arch::Bus;
 
