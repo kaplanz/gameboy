@@ -1,9 +1,9 @@
 use log::{debug, trace, warn};
-use remus::bus::Bus;
 use remus::dev::Device;
 use remus::{Address, Block, Cell, Linked, Machine, Shared};
 
 use super::Oam;
+use crate::arch::Bus;
 
 const OAM: u8 = 160;
 
@@ -14,13 +14,14 @@ pub struct Dma {
     page: u8,
     state: State,
     // Shared
-    bus: Shared<Bus<u16, u8>>,
+    bus: Shared<Bus>,
     oam: Shared<Oam>,
 }
 
 impl Dma {
     /// Constructs a new `Dma`
-    pub fn new(bus: Shared<Bus<u16, u8>>, oam: Shared<Oam>) -> Self {
+    #[must_use]
+    pub fn new(bus: Shared<Bus>, oam: Shared<Oam>) -> Self {
         Self {
             bus,
             oam,
@@ -70,12 +71,12 @@ impl Cell<u8> for Dma {
 
 impl Device<u16, u8> for Dma {}
 
-impl Linked<Bus<u16, u8>> for Dma {
-    fn mine(&self) -> Shared<Bus<u16, u8>> {
+impl Linked<Bus> for Dma {
+    fn mine(&self) -> Shared<Bus> {
         self.bus.clone()
     }
 
-    fn link(&mut self, it: Shared<Bus<u16, u8>>) {
+    fn link(&mut self, it: Shared<Bus>) {
         self.bus = it;
     }
 }

@@ -4,10 +4,12 @@ use std::fmt::Display;
 
 use enuf::Enuf;
 use log::trace;
-use remus::bus::Bus;
+use remus::bus::Mux;
 use remus::dev::Device;
 use remus::{reg, Address, Block, Board, Cell, Location, Shared};
 use thiserror::Error;
+
+use crate::arch::Bus;
 
 #[allow(clippy::doc_markdown)]
 /// 8-bit serial control register set.
@@ -76,7 +78,7 @@ impl Block for Pic {
 
 impl Board<u16, u8> for Pic {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
+    fn connect(&self, bus: &mut Bus) {
         // Connect boards
         self.file.connect(bus);
     }
@@ -122,7 +124,7 @@ impl Block for File {
 
 impl Board<u16, u8> for File {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
+    fn connect(&self, bus: &mut Bus) {
         // Extract devices
         let fl = self.fl.clone().to_dynamic();
         let en = self.en.clone().to_dynamic();

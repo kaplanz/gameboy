@@ -1,11 +1,12 @@
 //! Joypad controller.
 
 use log::{debug, trace};
-use remus::bus::Bus;
+use remus::bus::Mux;
 use remus::dev::Device;
 use remus::{reg, Address, Block, Board, Cell, Linked, Shared};
 
 use super::pic::{Interrupt, Pic};
+use crate::arch::Bus;
 
 /// Joypad buttons.
 #[rustfmt::skip]
@@ -89,7 +90,7 @@ impl Block for Joypad {
 
 impl Board<u16, u8> for Joypad {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
+    fn connect(&self, bus: &mut Bus) {
         // Extract devices
         let con = self.con().to_dynamic();
 

@@ -1106,7 +1106,7 @@ checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 [[package]]
 name = "remus"
 version = "0.2.0"
-source = "git+https://github.com/kaplanz/remus.git#256d17c0a2c93a395e31a47f01ba02975709bbdd"
+source = "git+https://github.com/kaplanz/remus.git#e434b4d55cd8d5c3e3333bbd78308facb1e7ee16"
 dependencies = [
  "num",
  "rand",

@@ -6,11 +6,11 @@ use std::fmt::{Debug, Display, Write};
 
 use enuf::Enuf;
 use log::{debug, error, trace};
-use remus::bus::Bus;
 use remus::reg::Register;
 use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
 use thiserror::Error;
 
+use crate::arch::Bus;
 use crate::hw::pic::Pic;
 
 mod insn;
@@ -56,14 +56,14 @@ pub struct Cpu {
     // Control
     file: File,
     // Shared
-    bus: Shared<Bus<u16, u8>>,
+    bus: Shared<Bus>,
     pic: Shared<Pic>,
 }
 
 impl Cpu {
     /// Constructs a new `Cpu`.
     #[must_use]
-    pub fn new(bus: Shared<Bus<u16, u8>>, pic: Shared<Pic>) -> Self {
+    pub fn new(bus: Shared<Bus>, pic: Shared<Pic>) -> Self {
         Self {
             bus,
             pic,
@@ -216,15 +216,15 @@ impl Block for Cpu {
 }
 
 impl Board<u16, u8> for Cpu {
-    fn connect(&self, _: &mut Bus<u16, u8>) {}
+    fn connect(&self, _: &mut Bus) {}
 }
 
-impl Linked<Bus<u16, u8>> for Cpu {
-    fn mine(&self) -> Shared<Bus<u16, u8>> {
+impl Linked<Bus> for Cpu {
+    fn mine(&self) -> Shared<Bus> {
         self.bus.clone()
     }
 
-    fn link(&mut self, it: Shared<Bus<u16, u8>>) {
+    fn link(&mut self, it: Shared<Bus>) {
         self.bus = it;
     }
 }

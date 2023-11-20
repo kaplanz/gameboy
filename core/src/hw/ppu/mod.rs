@@ -1,17 +1,17 @@
 //! Picture processing unit.
 
 use itertools::Itertools;
-use remus::bus::Bus;
+use remus::bus::Mux;
 use remus::dev::Device;
 use remus::mem::Ram;
 use remus::reg::Register;
 use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
 
-use self::dma::Dma;
 use self::exec::Mode;
 use self::pixel::{Meta, Palette, Pixel};
 use self::tile::Tile;
 use super::pic::{Interrupt, Pic};
+use crate::arch::Bus;
 use crate::dmg::SCREEN;
 
 mod blk;
@@ -22,6 +22,7 @@ mod screen;
 mod sprite;
 mod tile;
 
+pub use self::dma::Dma;
 pub use self::pixel::Color;
 pub use self::screen::Screen;
 
@@ -32,6 +33,7 @@ pub use self::screen::Screen;
 /// [tdata]: https://gbdev.io/pandocs/Tile_Data.html
 /// [tmaps]: https://gbdev.io/pandocs/Tile_Maps.html
 pub type Vram = Ram<u8, 0x2000>;
+
 /// Object Attribute Memory ([OAM][oam]).
 ///
 /// 160 B of RAM used to store up to 40 sprites.
@@ -133,22 +135,30 @@ pub struct Ppu {
     vram: Shared<Vram>,
     oam: Shared<Oam>,
     // Shared
-    bus: Shared<Bus<u16, u8>>,
+    bus: Shared<Bus>,
     pic: Shared<Pic>,
 }
 
 impl Ppu {
     /// Constructs a new `Ppu`.
     #[must_use]
-    pub fn new(bus: Shared<Bus<u16, u8>>, pic: Shared<Pic>) -> Self {
-        // Construct shared blocks
-        let oam = Shared::from(Oam::default());
-        // Construct self
+    pub fn new(
+        vram: Shared<Vram>,
+        oam: Shared<Oam>,
+        bus: Shared<Bus>,
+        dma: Shared<Dma>,
+        pic: Shared<Pic>,
+    ) -> Self {
         Self {
-            file: File::new(bus.clone(), oam.clone()),
+            // Control
+            file: File::new(dma),
+            // Memory
+            vram,
             oam,
+            // Shared
             bus,
             pic,
+            // Defaults
             ..Default::default()
         }
     }
@@ -290,29 +300,27 @@ impl Block for Ppu {
 
 impl Board<u16, u8> for Ppu {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
+    fn connect(&self, bus: &mut Bus) {
         // Connect boards
         self.file.connect(bus);
 
         // Extract devices
-        let vram = self.vram().to_dynamic();
         let oam  = self.oam().to_dynamic();
 
         // Map devices on bus           // ┌──────┬────────┬────────┬─────┐
                                         // │ Addr │  Size  │  Name  │ Dev │
                                         // ├──────┼────────┼────────┼─────┤
-        bus.map(0x8000..=0x9fff, vram); // │ 8000 │  8 KiB │ Video  │ RAM │
         bus.map(0xfe00..=0xfe9f, oam);  // │ fe00 │  160 B │ Object │ RAM │
                                         // └──────┴────────┴────────┴─────┘
     }
 }
 
-impl Linked<Bus<u16, u8>> for Ppu {
-    fn mine(&self) -> Shared<Bus<u16, u8>> {
+impl Linked<Bus> for Ppu {
+    fn mine(&self) -> Shared<Bus> {
         self.bus.clone()
     }
 
-    fn link(&mut self, it: Shared<Bus<u16, u8>>) {
+    fn link(&mut self, it: Shared<Bus>) {
         self.bus = it;
     }
 }
@@ -412,9 +420,9 @@ struct File {
 
 impl File {
     /// Constructs a new `File`.
-    pub fn new(bus: Shared<Bus<u16, u8>>, oam: Shared<Oam>) -> Self {
+    pub fn new(dma: Shared<Dma>) -> Self {
         Self {
-            dma: Dma::new(bus, oam).into(),
+            dma,
             ..Default::default()
         }
     }
@@ -426,7 +434,7 @@ impl Block for File {
 
 impl Board<u16, u8> for File {
     #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus<u16, u8>) {
+    fn connect(&self, bus: &mut Bus) {
         // Extract devices
         let lcdc = self.lcdc.clone().to_dynamic();
         let stat = self.stat.clone().to_dynamic();
