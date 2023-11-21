@@ -1,4 +1,4 @@
-use log::warn;
+use log::{trace, warn};
 use remus::bus::adapt;
 use remus::dev::{Device, Dynamic};
 use remus::{Address, Block, Shared};
@@ -84,6 +84,7 @@ impl Address<u16, u8> for Rom {
 
     #[allow(clippy::match_same_arms)]
     fn write(&mut self, index: u16, value: u8) {
+        trace!("mbc5::Rom::write({index:#06x}, {value:#04x})");
         match index {
             // RAM Enable: value[3:0]: 0xA (enable) | 0x0 (disable)
             0x0000..=0x1fff => {
@@ -93,21 +94,24 @@ impl Address<u16, u8> for Rom {
             // ROM Bank Number: bank[7:0] <-- value[7:0]
             0x2000..=0x3fff => {
                 let bank = self.rom.borrow().get();
-                let bits = 0x00ff & (value as usize);
+                let size = self.rom.borrow().len();
+                let bits = 0x00ff & ((value as usize) % size);
                 let diff = 0x00ff & (bank ^ bits);
                 self.rom.borrow_mut().set(bank ^ diff);
             }
             // ROM Bank Number: bank[8] <-- value[0]
             0x4000..=0x5fff => {
                 let bank = self.rom.borrow().get();
-                let bits = 0x0100 & ((value as usize) << 8);
+                let size = self.rom.borrow().len();
+                let bits = 0x0100 & (((value as usize) << 8) % size);
                 let diff = 0x0100 & (bank ^ bits);
                 self.rom.borrow_mut().set(bank ^ diff);
             }
             // RAM Bank Number: bank[3:0] <-- value[3:0]
             0x6000..=0x7fff => {
                 let bank = self.rom.borrow().get();
-                let bits = 0x0f & (value as usize);
+                let size = self.rom.borrow().len();
+                let bits = 0x0f & ((value as usize) % size);
                 let diff = 0x0f & (bank ^ bits);
                 self.ram.borrow_mut().set(bank ^ diff);
             }
