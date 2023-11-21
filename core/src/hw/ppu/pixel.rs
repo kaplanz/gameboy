@@ -8,10 +8,12 @@ pub struct Pixel {
 }
 
 impl Pixel {
+    /// Constructs a new `Pixel`.
     pub fn new(col: Color, meta: Meta) -> Self {
         Self { col, meta }
     }
 
+    /// Blends a pair of window/background and sprite pixels together.
     #[allow(clippy::if_same_then_else)]
     pub fn blend(winbg: Self, sprite: Self) -> Self {
         // Pixels are blended as follows:

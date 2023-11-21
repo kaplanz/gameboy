@@ -6,6 +6,7 @@ use super::pixel::{Color, Pixel};
 use super::sprite::Sprite;
 use super::{Lcdc, Ppu};
 
+/// PPU's pixel pipeline.
 #[derive(Debug, Default)]
 pub struct Pipeline {
     ready: bool,
@@ -16,15 +17,18 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
+    /// Gets the pipeline's current x-position.
     #[must_use]
     pub fn xpos(&self) -> u8 {
         self.xpos
     }
 
+    /// Sets the number of pixels to be discarded by the pipeline.
     pub fn set_discard(&mut self, discard: u8) {
         self.discard = discard;
     }
 
+    /// Performs a fetch for the next pixels to the appropriate FIFO.
     pub fn fetch(&mut self, ppu: &mut Ppu, objs: &[Sprite]) {
         // Check if we're at an object
         if self.sprite.fifo.len() < 8 {
@@ -66,6 +70,7 @@ impl Pipeline {
         }
     }
 
+    /// Shift out a blended pixel from the FIFOs.
     pub fn shift(&mut self, ppu: &Ppu) -> Option<Pixel> {
         // A shift only occurs if there are pixels in the background FIFO
         let pixel = if let Some(mut bgwin) = self.bgwin.fifo.pop() {
@@ -103,6 +108,7 @@ impl Pipeline {
         }
     }
 
+    /// Checks if the current position is a window boundary.
     fn is_at_win(&self, ppu: &Ppu) -> bool {
         // Extract scanline info
         let lcdc = ppu.file.lcdc.load();
@@ -121,6 +127,7 @@ impl Pipeline {
         enabled && !above && !left
     }
 
+    /// Checks if the window has already been reached this scanline.
     pub fn was_at_win(&self) -> bool {
         self.bgwin.loc == Location::Window
     }

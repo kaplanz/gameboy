@@ -6,6 +6,7 @@ use super::sprite::Sprite;
 use super::tile::Row;
 use super::{Lcdc, Ppu};
 
+/// PPU's pixel fetcher.
 #[derive(Debug, Default)]
 pub struct Fetch {
     busy: bool,
@@ -14,11 +15,13 @@ pub struct Fetch {
 }
 
 impl Fetch {
+    /// Gets the fetcher's stage.
     #[must_use]
     pub fn stage(&self) -> &Stage {
         &self.stage
     }
 
+    /// Executes a stage of the fetcher.
     pub fn exec(&mut self, fifo: &mut Fifo, ppu: &mut Ppu, loc: Location, sprite: Option<Sprite>) {
         // NOTE: Some stages of the fetch take 2 dots to complete, so only
         //       execute when we're not already busy from the current stage.
@@ -29,6 +32,7 @@ impl Fetch {
         }
     }
 
+    /// Calculates the tile number for this fetcher.
     fn cpos(&self, ppu: &Ppu, loc: Location) -> u16 {
         use Location::{Background, Sprite, Window};
 
@@ -76,6 +80,7 @@ impl Fetch {
         base + offset
     }
 
+    /// Calculates the address for a given tile number and location.
     fn addr(ppu: &Ppu, loc: Location, tnum: u8) -> u16 {
         use Location::{Background, Sprite, Window};
 
