@@ -375,16 +375,16 @@ struct File {
     // └───────────────┘
     a: Register<u8>,
     f: Register<u8>,
-    af: Wide,
+    af: Alias,
     b: Register<u8>,
     c: Register<u8>,
-    bc: Wide,
+    bc: Alias,
     d: Register<u8>,
     e: Register<u8>,
-    de: Wide,
+    de: Alias,
     h: Register<u8>,
     l: Register<u8>,
-    hl: Wide,
+    hl: Alias,
     sp: Register<u16>,
     pc: Register<u16>,
 }
@@ -401,7 +401,7 @@ impl Default for File {
         Self {
             a: Register::default(),
             f: Register::default(),
-            af: Wide {
+            af: Alias {
                 load: |file: &File| {
                     let a = file.a.load();
                     let f = file.f.load();
@@ -415,7 +415,7 @@ impl Default for File {
             },
             b: Register::default(),
             c: Register::default(),
-            bc: Wide {
+            bc: Alias {
                 load: |file: &File| {
                     let b = file.b.load();
                     let c = file.c.load();
@@ -429,7 +429,7 @@ impl Default for File {
             },
             d: Register::default(),
             e: Register::default(),
-            de: Wide {
+            de: Alias {
                 load: |file: &File| {
                     let d = file.d.load();
                     let e = file.e.load();
@@ -443,7 +443,7 @@ impl Default for File {
             },
             h: Register::default(),
             l: Register::default(),
-            hl: Wide {
+            hl: Alias {
                 load: |file: &File| {
                     let h = file.h.load();
                     let l = file.l.load();
@@ -501,12 +501,12 @@ impl Display for File {
 
 /// 16-bit wide linked register.
 #[derive(Copy, Clone)]
-struct Wide {
+struct Alias {
     load: fn(&File) -> u16,
     store: fn(&mut File, u16),
 }
 
-impl Wide {
+impl Alias {
     pub fn load(&self, regs: &File) -> u16 {
         (self.load)(regs)
     }
@@ -516,9 +516,9 @@ impl Wide {
     }
 }
 
-impl Debug for Wide {
+impl Debug for Alias {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "PseudoRegister")
+        f.debug_struct("Alias").finish()
     }
 }
 
