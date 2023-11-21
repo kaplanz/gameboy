@@ -4,7 +4,7 @@
 
 use std::cell::{Ref, RefMut};
 
-use log::debug;
+use log::warn;
 use remus::bus::Mux;
 use remus::dev::Device;
 use remus::mem::Ram;
@@ -50,7 +50,7 @@ pub const SCREEN: Dimensions = Dimensions {
 #[derive(Debug)]
 pub struct GameBoy {
     // State
-    clock: usize,
+    clock: u128,
     // ASICs
     soc: SoC,
     wram: Shared<Wram>,
@@ -78,7 +78,7 @@ impl Default for GameBoy {
         // Construct self
         Self {
             // State
-            clock: usize::default(),
+            clock: u128::default(),
             // ASICs
             soc: SoC::new(vram.clone(), &noc, pic.clone()),
             wram: Shared::new(Wram::default()),
@@ -389,7 +389,7 @@ impl Machine for GameBoy {
         let carry;
         (self.clock, carry) = self.clock.overflowing_add(1);
         if carry {
-            debug!("internal clock overflow; resetting");
+            warn!("internal cycle counter overflowed; resetting");
         }
     }
 }
