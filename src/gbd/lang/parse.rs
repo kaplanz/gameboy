@@ -26,7 +26,7 @@ impl Language {
     fn prog(src: &str) -> Result<Vec<Command>, Error> {
         // Parse program string
         let pairs = Language::parse(Rule::Program, src)
-            .map_err(|err| err.renamed_rules(|rule| format!("{rule}")))?;
+            .map_err(|err| err.renamed_rules(ToString::to_string))?;
         // Extract individual commands
         pairs
             .filter(|pair| !matches!(pair.as_rule(), Rule::EOI))
