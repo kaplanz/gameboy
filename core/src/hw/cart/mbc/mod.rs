@@ -13,9 +13,11 @@ use remus::Block;
 use super::Memory;
 
 mod mbc1;
+mod mbc5;
 mod nombc;
 
 pub use self::mbc1::Mbc1;
+pub use self::mbc5::Mbc5;
 pub use self::nombc::NoMbc;
 
 /// Unified MBC interface.

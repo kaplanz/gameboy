@@ -21,7 +21,7 @@ use remus::{Block, Board};
 use thiserror::Error;
 
 use self::header::Kind;
-use self::mbc::{Mbc, Mbc1, NoMbc};
+use self::mbc::{Mbc, Mbc1, Mbc5, NoMbc};
 use crate::arch::Bus;
 use crate::dev::Unmapped;
 
@@ -133,6 +133,7 @@ impl Cartridge {
     }
 
     /// Constructs a memory bank controller from a parsed ROM and header.
+    #[allow(clippy::too_many_lines)]
     fn mbc(header: &Header, rom: &[u8]) -> Result<Box<dyn Mbc>, Error> {
         // Extract dimensions from header
         let &Header { romsz, ramsz, .. } = header;
@@ -237,6 +238,18 @@ impl Cartridge {
                     len: ramsz.max(0x2000),
                 };
                 Box::new(Mbc1::with(rom, ram))
+            }
+            &Kind::Mbc5 { ram: has_ram, .. } => {
+                let rom = Memory {
+                    buf: rom,
+                    len: romsz,
+                };
+                let ram =
+                    Memory {
+                        buf: [null, ram][has_ram as usize].clone(),
+                        len: ramsz,
+                    };
+                Box::new(Mbc5::with(rom, ram))
             }
             cart => return Err(Error::Unimplemented(cart.clone())),
         };

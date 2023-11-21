@@ -28,6 +28,7 @@ A cycle accurate emulator of the original 1989 Nintendo Game Boy.
   - [ ] Support MBCs
     - [x] MBC1
     - [ ] MBC3
+    - [x] MBC5
 - [x] Implement CPU
   - [x] Instruction correctness
   - [x] Cycle accuracy
