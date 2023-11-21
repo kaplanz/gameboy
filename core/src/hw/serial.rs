@@ -39,7 +39,7 @@ pub enum Control {
 }
 
 /// Serial interface model.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Serial {
     // State
     ip: u8,
@@ -61,8 +61,14 @@ impl Serial {
     #[must_use]
     pub fn new(pic: Shared<Pic>) -> Self {
         Self {
+            // State
+            ip: u8::default(),
+            rx: VecDeque::default(),
+            tx: VecDeque::default(),
+            // Control
+            file: File::default(),
+            // Shared
             pic,
-            ..Default::default()
         }
     }
 

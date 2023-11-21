@@ -110,7 +110,7 @@ pub enum Control {
 }
 
 /// PPU model.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Ppu {
     // State
     dot: usize,
@@ -150,6 +150,12 @@ impl Ppu {
         pic: Shared<Pic>,
     ) -> Self {
         Self {
+            // State
+            dot: usize::default(),
+            winln: u8::default(),
+            mode: Mode::default(),
+            // Output
+            lcd: Screen::default(),
             // Control
             file: File::new(dma),
             // Memory
@@ -158,8 +164,6 @@ impl Ppu {
             // Shared
             bus,
             pic,
-            // Defaults
-            ..Default::default()
         }
     }
 
@@ -386,7 +390,7 @@ impl Machine for Ppu {
 
 /// PPU control register file.
 #[rustfmt::skip]
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct File {
     // ┌──────┬────────────────┬─────┬───────┐
     // │ Size │      Name      │ Dev │ Alias │
@@ -420,10 +424,21 @@ struct File {
 
 impl File {
     /// Constructs a new `File`.
+    #[rustfmt::skip]
     pub fn new(dma: Shared<Dma>) -> Self {
         Self {
+            lcdc: Shared::default(),
+            stat: Shared::default(),
+            scy:  Shared::default(),
+            scx:  Shared::default(),
+            ly:   Shared::default(),
+            lyc:  Shared::default(),
             dma,
-            ..Default::default()
+            bgp:  Shared::default(),
+            obp0: Shared::default(),
+            obp1: Shared::default(),
+            wy:   Shared::default(),
+            wx:   Shared::default(),
         }
     }
 }

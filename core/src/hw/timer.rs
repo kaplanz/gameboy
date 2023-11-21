@@ -28,7 +28,7 @@ pub enum Control {
 
 /// Timer model.
 #[rustfmt::skip]
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Timer {
     // State
     last: bool,
@@ -48,8 +48,12 @@ impl Timer {
     #[must_use]
     pub fn new(pic: Shared<Pic>) -> Self {
         Self {
+            // State
+            last: bool::default(),
+            // Control
+            file: File::default(),
+            // Shared
             pic,
-            ..Default::default()
         }
     }
 
