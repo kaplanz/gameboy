@@ -31,6 +31,12 @@ pub mod mbc;
 
 pub use self::header::{Error as HeaderError, Header};
 
+/// Intermediate memory parts.
+struct Memory {
+    buf: Dynamic<u16, u8>,
+    len: usize,
+}
+
 /// Cartridge model.
 ///
 /// Parses a [`Header`] from the ROM, then initializes the memory bank
@@ -128,10 +134,13 @@ impl Cartridge {
 
     /// Constructs a memory bank controller from a parsed ROM and header.
     fn mbc(header: &Header, rom: &[u8]) -> Result<Box<dyn Mbc>, Error> {
+        // Extract dimensions from header
+        let &Header { romsz, ramsz, .. } = header;
+
         // Construct null device (for reuse where needed)
         let null = Unmapped::<0x2000>::new().to_dynamic();
 
-        // Prepare external ROM
+        // Prepare ROM
         let rom = {
             // Calculate buffer stats
             let read = rom.len();
@@ -155,61 +164,58 @@ impl Cartridge {
             rom.iter()
                 .copied()
                 .chain(iter::repeat(0xffu8))
-                .take(header.romsz)
+                .take(romsz)
                 .collect::<Vec<_>>()
                 .into_boxed_slice()
         };
         trace!("ROM:\n{rom}", rom = phex::Printer::<u8>::new(0, &rom));
 
-        // Construct external ROM
-        let rom = {
-            match header.romsz {
-                0x0000_8000 => Rom::<u8, 0x0000_8000>::from(
-                    &*Box::<[_; 0x0000_8000]>::try_from(rom).map_err(Error::Mismatch)?,
-                )
-                .to_dynamic(),
-                0x0001_0000 => Rom::<u8, 0x0001_0000>::from(
-                    &*Box::<[_; 0x0001_0000]>::try_from(rom).map_err(Error::Mismatch)?,
-                )
-                .to_dynamic(),
-                0x0002_0000 => Rom::<u8, 0x0002_0000>::from(
-                    &*Box::<[_; 0x0002_0000]>::try_from(rom).map_err(Error::Mismatch)?,
-                )
-                .to_dynamic(),
-                0x0004_0000 => Rom::<u8, 0x0004_0000>::from(
-                    &*Box::<[_; 0x0004_0000]>::try_from(rom).map_err(Error::Mismatch)?,
-                )
-                .to_dynamic(),
-                0x0008_0000 => Rom::<u8, 0x0008_0000>::from(
-                    &*Box::<[_; 0x0008_0000]>::try_from(rom).map_err(Error::Mismatch)?,
-                )
-                .to_dynamic(),
-                0x0010_0000 => Rom::<u8, 0x0010_0000>::from(
-                    &*Box::<[_; 0x0010_0000]>::try_from(rom).map_err(Error::Mismatch)?,
-                )
-                .to_dynamic(),
-                0x0020_0000 => Rom::<u8, 0x0020_0000>::from(
-                    &*Box::<[_; 0x0020_0000]>::try_from(rom).map_err(Error::Mismatch)?,
-                )
-                .to_dynamic(),
-                0x0040_0000 => Rom::<u8, 0x0040_0000>::from(
-                    &*Box::<[_; 0x0040_0000]>::try_from(rom).map_err(Error::Mismatch)?,
-                )
-                .to_dynamic(),
-                0x0080_0000 => Rom::<u8, 0x0080_0000>::from(
-                    &*Box::<[_; 0x0080_0000]>::try_from(rom).map_err(Error::Mismatch)?,
-                )
-                .to_dynamic(),
-                _ => unreachable!(),
-            }
+        // Construct ROM
+        let rom = match romsz {
+            0x0000_8000 => Rom::<u8, 0x0000_8000>::from(
+                &*Box::<[_; 0x0000_8000]>::try_from(rom).map_err(Error::Mismatch)?,
+            )
+            .to_dynamic(),
+            0x0001_0000 => Rom::<u8, 0x0001_0000>::from(
+                &*Box::<[_; 0x0001_0000]>::try_from(rom).map_err(Error::Mismatch)?,
+            )
+            .to_dynamic(),
+            0x0002_0000 => Rom::<u8, 0x0002_0000>::from(
+                &*Box::<[_; 0x0002_0000]>::try_from(rom).map_err(Error::Mismatch)?,
+            )
+            .to_dynamic(),
+            0x0004_0000 => Rom::<u8, 0x0004_0000>::from(
+                &*Box::<[_; 0x0004_0000]>::try_from(rom).map_err(Error::Mismatch)?,
+            )
+            .to_dynamic(),
+            0x0008_0000 => Rom::<u8, 0x0008_0000>::from(
+                &*Box::<[_; 0x0008_0000]>::try_from(rom).map_err(Error::Mismatch)?,
+            )
+            .to_dynamic(),
+            0x0010_0000 => Rom::<u8, 0x0010_0000>::from(
+                &*Box::<[_; 0x0010_0000]>::try_from(rom).map_err(Error::Mismatch)?,
+            )
+            .to_dynamic(),
+            0x0020_0000 => Rom::<u8, 0x0020_0000>::from(
+                &*Box::<[_; 0x0020_0000]>::try_from(rom).map_err(Error::Mismatch)?,
+            )
+            .to_dynamic(),
+            0x0040_0000 => Rom::<u8, 0x0040_0000>::from(
+                &*Box::<[_; 0x0040_0000]>::try_from(rom).map_err(Error::Mismatch)?,
+            )
+            .to_dynamic(),
+            0x0080_0000 => Rom::<u8, 0x0080_0000>::from(
+                &*Box::<[_; 0x0080_0000]>::try_from(rom).map_err(Error::Mismatch)?,
+            )
+            .to_dynamic(),
+            _ => unreachable!(),
         };
 
-        // Construct external RAM
-        #[rustfmt::skip]
-        let eram = match header.ramsz {
-            0x0     => null.clone().to_dynamic(),
-            0x2000  => Ram::<u8, 0x2000>::new().to_dynamic(),
-            0x8000  => Ram::<u8, 0x8000>::new().to_dynamic(),
+        // Construct RAM
+        let ram = match ramsz {
+            0x00000 => null.clone().to_dynamic(),
+            0x02000 => Ram::<u8, 0x02000>::new().to_dynamic(),
+            0x08000 => Ram::<u8, 0x08000>::new().to_dynamic(),
             0x20000 => Ram::<u8, 0x20000>::new().to_dynamic(),
             0x10000 => Ram::<u8, 0x10000>::new().to_dynamic(),
             _ => unreachable!(),
@@ -218,14 +224,19 @@ impl Cartridge {
         // Construct a memory bank controller
         let mbc: Box<dyn Mbc> = match &header.cart {
             &Kind::NoMbc { ram: has_ram, .. } => {
-                let ram = [null, eram][has_ram as usize].clone();
+                let ram = [null, ram][has_ram as usize].clone();
                 Box::new(NoMbc::with(rom, ram))
             }
-            &Kind::Mbc1 { ram: has_rom, .. } => {
-                let romsz = header.romsz;
-                let ram = [null, eram][has_rom as usize].clone();
-                let ramsz = usize::max(header.ramsz, 0x2000);
-                Box::new(Mbc1::with((romsz, rom), (ramsz, ram)))
+            &Kind::Mbc1 { ram: has_ram, .. } => {
+                let rom = Memory {
+                    buf: rom,
+                    len: romsz,
+                };
+                let ram = Memory {
+                    buf: [null, ram][has_ram as usize].clone(),
+                    len: ramsz.max(0x2000),
+                };
+                Box::new(Mbc1::with(rom, ram))
             }
             cart => return Err(Error::Unimplemented(cart.clone())),
         };
