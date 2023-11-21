@@ -108,15 +108,16 @@ fn main() -> Result<()> {
 
     #[cfg(feature = "doctor")]
     // Open doctor logfile
-    let doc = if let Some(path) = args.doc {
-        Some(&path)
-            .map(File::create)
-            .transpose()
-            .with_context(|| format!("failed to open doctor logfile: `{}`", path.display()))?
-            .map(Doctor::new)
-    } else {
-        None
-    };
+    let doc = args
+        .doc
+        .map(|path| -> Result<_> {
+            // Create logfile
+            let f = File::create(&path)
+                .with_context(|| format!("failed to open doctor logfile: `{}`", path.display()))?;
+            // Construct a doctor instance
+            Ok(Doctor::new(f))
+        })
+        .transpose()?;
 
     // Declare debugger
     #[cfg(feature = "gbd")]
@@ -183,13 +184,13 @@ fn cart(path: Option<PathBuf>, chk: bool, force: bool) -> Result<Cartridge> {
             let f = File::open(&path)
                 .with_context(|| format!("failed to open ROM: `{}`", path.display()))?;
             // Read ROM into a buffer
-            // NOTE: Game Paks manufactured by Nintendo have a maximum 8 MiB ROM.
             let mut buf = Vec::new();
-            let read = f
+            let nbytes = f
+                // Game Paks manufactured by Nintendo have a maximum 8 MiB ROM
                 .take(0x0080_0000)
                 .read_to_end(&mut buf)
                 .with_context(|| format!("failed to read ROM: `{}`", path.display()))?;
-            info!("read {read} bytes from ROM: `{}`", path.display());
+            info!("read {nbytes} bytes from ROM: `{}`", path.display());
 
             buf
         };
@@ -201,7 +202,6 @@ fn cart(path: Option<PathBuf>, chk: bool, force: bool) -> Result<Cartridge> {
         } else if chk {
             // Check ROM integrity and create a cartridge
             let cart = Cartridge::checked(&rom)
-                // exit on failure
                 .with_context(|| format!("failed ROM integrity check: `{}`", path.display()))?;
             info!("passed ROM integrity check");
 
@@ -209,7 +209,6 @@ fn cart(path: Option<PathBuf>, chk: bool, force: bool) -> Result<Cartridge> {
         } else {
             // Attempt to create a cartridge
             Cartridge::new(&rom)
-                // exit on failure
                 .with_context(|| format!("failed to load cartridge: `{}`", path.display()))?
         };
         info!("loaded cartridge:\n{}", cart.header());
