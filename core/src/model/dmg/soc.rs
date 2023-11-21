@@ -33,15 +33,13 @@ impl SoC {
         let oam = Shared::new(Oam::default());
         // Create shared blocks
         let dma = Dma::new(dma, oam.clone()).to_shared();
-        // Extract shared blocks
-        let ibus = noc.int.clone();
 
         // Construct self
         Self {
             // Processors
             apu: Apu::default(),
             cpu: Cpu::new(cpu, pic.clone()),
-            ppu: Ppu::new(vram, oam, ibus, dma, pic),
+            ppu: Ppu::new(vram, oam, dma, pic),
             // Memory
             boot: Option::default(),
             hram: Shared::new(Hram::default()),

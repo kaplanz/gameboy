@@ -135,20 +135,13 @@ pub struct Ppu {
     vram: Shared<Vram>,
     oam: Shared<Oam>,
     // Shared
-    bus: Shared<Bus>,
     pic: Shared<Pic>,
 }
 
 impl Ppu {
     /// Constructs a new `Ppu`.
     #[must_use]
-    pub fn new(
-        vram: Shared<Vram>,
-        oam: Shared<Oam>,
-        bus: Shared<Bus>,
-        dma: Shared<Dma>,
-        pic: Shared<Pic>,
-    ) -> Self {
+    pub fn new(vram: Shared<Vram>, oam: Shared<Oam>, dma: Shared<Dma>, pic: Shared<Pic>) -> Self {
         Self {
             // State
             dot: usize::default(),
@@ -162,7 +155,6 @@ impl Ppu {
             vram,
             oam,
             // Shared
-            bus,
             pic,
         }
     }
@@ -316,16 +308,6 @@ impl Board<u16, u8> for Ppu {
                                         // ├──────┼────────┼────────┼─────┤
         bus.map(0xfe00..=0xfe9f, oam);  // │ fe00 │  160 B │ Object │ RAM │
                                         // └──────┴────────┴────────┴─────┘
-    }
-}
-
-impl Linked<Bus> for Ppu {
-    fn mine(&self) -> Shared<Bus> {
-        self.bus.clone()
-    }
-
-    fn link(&mut self, it: Shared<Bus>) {
-        self.bus = it;
     }
 }
 
