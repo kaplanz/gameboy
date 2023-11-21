@@ -23,7 +23,7 @@ pub enum Button {
 }
 
 /// Joypad model.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Joypad {
     // Control
     // ┌──────┬────────┬─────┬───────┐
@@ -40,8 +40,10 @@ impl Joypad {
     /// Constructs a new `Joypad`.
     pub fn new(pic: Shared<Pic>) -> Self {
         Self {
+            // Control
+            con: Shared::default(),
+            // Shared
             pic,
-            ..Default::default()
         }
     }
 

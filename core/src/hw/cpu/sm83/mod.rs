@@ -46,7 +46,7 @@ pub mod reg {
 }
 
 /// SM83 central processing unit.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Cpu {
     // State
     stage: Stage,
@@ -65,9 +65,16 @@ impl Cpu {
     #[must_use]
     pub fn new(bus: Shared<Bus>, pic: Shared<Pic>) -> Self {
         Self {
+            // State
+            stage: Stage::default(),
+            run: Status::default(),
+            ime: Ime::default(),
+            halt_bug: bool::default(),
+            // Control
+            file: File::default(),
+            // Shared
             bus,
             pic,
-            ..Default::default()
         }
     }
 

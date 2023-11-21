@@ -8,7 +8,7 @@ use crate::arch::Bus;
 const OAM: u8 = 160;
 
 /// Direct memory access.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Dma {
     // State
     page: u8,
@@ -23,9 +23,12 @@ impl Dma {
     #[must_use]
     pub fn new(bus: Shared<Bus>, oam: Shared<Oam>) -> Self {
         Self {
+            // State
+            page: u8::default(),
+            state: State::default(),
+            // Shared
             bus,
             oam,
-            ..Default::default()
         }
     }
 }
