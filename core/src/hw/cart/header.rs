@@ -310,17 +310,17 @@ impl Display for Kind {
     #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NoMbc { .. }  => "ROM",
-            Self::Mbc1 { .. }   => "MBC1",
-            Self::Mbc2 { .. }   => "MBC2",
-            Self::Mmm01 { .. }  => "MMM01",
-            Self::Mbc3 { .. }   => "MBC3",
-            Self::Mbc5 { .. }   => "MBC5",
-            Self::Mbc6 { .. }   => "MBC6",
-            Self::Mbc7 { .. }   => "MBC7",
+            Self::NoMbc  { .. } => "ROM",
+            Self::Mbc1   { .. } => "MBC1",
+            Self::Mbc2   { .. } => "MBC2",
+            Self::Mmm01  { .. } => "MMM01",
+            Self::Mbc3   { .. } => "MBC3",
+            Self::Mbc5   { .. } => "MBC5",
+            Self::Mbc6   { .. } => "MBC6",
+            Self::Mbc7   { .. } => "MBC7",
             Self::Camera { .. } => "Camera",
-            Self::HuC3 { .. }   => "HuC3",
-            Self::HuC1 { .. }   => "HuC1",
+            Self::HuC3   { .. } => "HuC3",
+            Self::HuC1   { .. } => "HuC1",
         }
         .fmt(f)
     }
