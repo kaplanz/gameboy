@@ -14,10 +14,7 @@ opt-level = 3
 [workspace]
 members = [
     "core",
-    "crates/enuf",
-    "crates/chex",
-    "crates/phex",
-    "crates/tell",
+    "crates/*",
 ]
 
 [workspace.package]
