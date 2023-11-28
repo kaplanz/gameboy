@@ -193,7 +193,8 @@ impl App {
                 // Redraw debug view
                 #[cfg(feature = "view")]
                 if let Some(view) = &mut gui.view {
-                    if frame == 0 {
+                    // Update upon counter reset
+                    if stamp == cycle {
                         // Gather debug info
                         let info = dmg::dbg::ppu(&mut emu);
                         // Extract PPU state
