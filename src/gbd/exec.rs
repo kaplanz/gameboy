@@ -1,9 +1,8 @@
 #![allow(clippy::unnecessary_wraps)]
 
-use std::cmp::Ordering;
 use std::io::Read;
-use std::ops::Range;
 
+use derange::Derange;
 use gameboy::dmg::cpu::Processor;
 use remus::{Block, Location as _};
 
@@ -224,17 +223,10 @@ pub fn read(emu: &mut GameBoy, addr: u16) -> Result<()> {
     Ok(())
 }
 
-pub fn read_range(emu: &mut GameBoy, range: Range<u16>) -> Result<()> {
-    // Allow range to wrap
-    let Range { start, end } = range;
-    let iter: Box<dyn Iterator<Item = u16>> = match start.cmp(&end) {
-        Ordering::Less => Box::new(start..end),
-        Ordering::Equal => return Ok(()),
-        Ordering::Greater => {
-            tell::warn!("wrapping range for `read`");
-            Box::new((start..u16::MAX).chain(u16::MIN..end))
-        }
-    };
+pub fn read_range(emu: &mut GameBoy, range: Derange<u16>) -> Result<()> {
+    // Create iterator from range
+    let Derange { start, .. } = range.clone();
+    let iter = range.into_iter();
     // Load all reads
     let data: Vec<_> = iter.map(|addr| emu.cpu().read(addr)).collect();
     // Display results
@@ -351,17 +343,10 @@ pub fn write(emu: &mut GameBoy, addr: u16, byte: u8) -> Result<()> {
     Ok(())
 }
 
-pub fn write_range(emu: &mut GameBoy, range: Range<u16>, byte: u8) -> Result<()> {
-    // Allow range to wrap
-    let Range { start, end } = range;
-    let iter: Box<dyn Iterator<Item = u16>> = match start.cmp(&end) {
-        Ordering::Less => Box::new(start..end),
-        Ordering::Equal => return Ok(()),
-        Ordering::Greater => {
-            tell::warn!("wrapping range for `write`");
-            Box::new((start..u16::MAX).chain(u16::MIN..end))
-        }
-    };
+pub fn write_range(emu: &mut GameBoy, range: Derange<u16>, byte: u8) -> Result<()> {
+    // Create iterator from range
+    let Derange { start, end } = range.clone();
+    let iter = range.into_iter();
     // Store all writes
     let data: Vec<_> = iter
         .map(|addr| {
