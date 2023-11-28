@@ -480,6 +480,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "ctrlc",
+ "derange",
  "displaydoc",
  "eyre",
  "gameboy-core",

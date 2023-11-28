@@ -51,3 +51,4 @@ thiserror = "1.0.50"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 bytecount = "0.6.7"
 displaydoc = { version = "0.2.4", optional = true }
+derange = { version = "0.1.0", path = "crates/derange" }

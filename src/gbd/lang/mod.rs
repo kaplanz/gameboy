@@ -1,7 +1,8 @@
 use std::collections::VecDeque;
-use std::ops::{Deref, DerefMut, Range};
+use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 
+use derange::Derange;
 use displaydoc::Display;
 use gameboy::dmg::{cpu, pic, ppu, serial, timer};
 
@@ -70,13 +71,13 @@ pub enum Command {
     Log(Option<String>),
     Quit,
     Read(u16),
-    ReadRange(Range<u16>),
-    Reset,
+    ReadRange(Derange<u16>),
     Serial,
+    Reset,
     Step(Option<usize>),
     Store(Location, Value),
     Write(u16, u8),
-    WriteRange(Range<u16>, u8),
+    WriteRange(Derange<u16>, u8),
 }
 
 #[derive(Clone, Debug, Display)]

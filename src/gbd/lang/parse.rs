@@ -1,9 +1,11 @@
 use std::fmt::Display;
 use std::num::ParseIntError;
+use std::ops::RangeInclusive;
 
+use derange::Derange;
 use gameboy::core::dmg::{cpu, pic, ppu, serial, timer};
 use log::trace;
-use num::traits::WrappingAdd;
+use num::traits::WrappingSub;
 use num::{Bounded, Integer};
 use pest::iterators::Pair;
 use pest::Parser;
@@ -118,8 +120,10 @@ impl Language {
                     }
                     Rule::RangeBounds => {
                         let mut pairs = what.into_inner();
-                        let (start, end) = Self::range(pairs.next().ok_or(Error::ExpectedRule)?)?;
-                        Command::ReadRange(start..end)
+                        // Match on range bounds
+                        let pair = pairs.next().ok_or(Error::ExpectedRule)?;
+                        let range = Self::range(pair)?;
+                        Command::ReadRange(range)
                     }
                     rule => unreachable!("invalid rule: {rule:?}"),
                 }
@@ -159,8 +163,10 @@ impl Language {
                     }
                     Rule::RangeBounds => {
                         let mut pairs = what.into_inner();
-                        let (start, end) = Self::range(pairs.next().ok_or(Error::ExpectedRule)?)?;
-                        Command::WriteRange(start..end, byte)
+                        // Match on range bounds
+                        let pair = pairs.next().ok_or(Error::ExpectedRule)?;
+                        let range = Self::range(pair)?;
+                        Command::WriteRange(range, byte)
                     }
                     rule => unreachable!("invalid rule: {rule:?}"),
                 }
@@ -192,48 +198,76 @@ impl Language {
         .map_err(Error::ParseInt)
     }
 
-    fn range<I>(pair: Pair<Rule>) -> Result<(I, I), Error>
+    fn range<I>(pair: Pair<Rule>) -> Result<Derange<I>, Error>
     where
-        I: Bounded + Integer<FromStrRadixErr = ParseIntError> + WrappingAdd,
+        I: Bounded
+            + Clone
+            + Copy
+            + Integer<FromStrRadixErr = ParseIntError>
+            + WrappingSub
+            + 'static,
+        RangeInclusive<I>: Iterator<Item = I>,
     {
         // Extract the range rule
         match pair.as_rule() {
             Rule::Range => {
                 let mut range = pair.into_inner();
-                let start = Self::int(range.next().ok_or(Error::ExpectedRule)?)?;
-                let end = Self::int(range.next().ok_or(Error::ExpectedRule)?)?;
-                Ok((start, end))
+                // Extract
+                let stx = range.next().ok_or(Error::ExpectedRule)?;
+                let end = range.next().ok_or(Error::ExpectedRule)?;
+                // Parse
+                let stx = Self::int(stx)?;
+                let end = Self::int(end)?;
+                // Define
+                let range = Derange::from(stx..end);
+                Ok(range)
             }
             Rule::RangeFrom => {
                 let mut range = pair.into_inner();
-                let start = Self::int(range.next().ok_or(Error::ExpectedRule)?)?;
-                let end = I::max_value();
-                Ok((start, end))
+                // Extract
+                let stx = range.next().ok_or(Error::ExpectedRule)?;
+                // Parse
+                let stx = Self::int(stx)?;
+                // Define
+                let range = Derange::from(stx..);
+                Ok(range)
             }
             Rule::RangeFull => {
-                let start = I::min_value();
-                let end = I::max_value();
-                Ok((start, end))
+                // Define
+                let range = Derange::from(..);
+                Ok(range)
             }
             Rule::RangeInc => {
                 let mut range = pair.into_inner();
-                let start = Self::int(range.next().ok_or(Error::ExpectedRule)?)?;
-                let end = Self::int::<I>(range.next().ok_or(Error::ExpectedRule)?)?
-                    .wrapping_add(&I::one());
-                Ok((start, end))
+                // Extract
+                let stx = range.next().ok_or(Error::ExpectedRule)?;
+                let end = range.next().ok_or(Error::ExpectedRule)?;
+                // Parse
+                let stx = Self::int(stx)?;
+                let end = Self::int(end)?;
+                // Define
+                let range = Derange::from(stx..=end);
+                Ok(range)
             }
             Rule::RangeTo => {
                 let mut range = pair.into_inner();
-                let start = I::min_value();
-                let end = Self::int(range.next().ok_or(Error::ExpectedRule)?)?;
-                Ok((start, end))
+                // Extract
+                let end = range.next().ok_or(Error::ExpectedRule)?;
+                // Parse
+                let end = Self::int(end)?;
+                // Define
+                let range = Derange::from(..end);
+                Ok(range)
             }
             Rule::RangeToInc => {
                 let mut range = pair.into_inner();
-                let start = I::min_value();
-                let end = Self::int::<I>(range.next().ok_or(Error::ExpectedRule)?)?
-                    .wrapping_add(&I::one());
-                Ok((start, end))
+                // Extract
+                let end = range.next().ok_or(Error::ExpectedRule)?;
+                // Parse
+                let end = Self::int(end)?;
+                // Define
+                let range = Derange::from(..=end);
+                Ok(range)
             }
             rule => unreachable!("invalid rule: {rule:?}"),
         }
