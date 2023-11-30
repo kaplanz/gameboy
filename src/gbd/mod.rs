@@ -83,7 +83,7 @@ pub struct Debugger {
     step: Option<usize>,
     line: Option<Readline>,
     prog: Option<Program>,
-    prev: Option<Command>,
+    prev: Option<Program>,
     bpts: IndexMap<u16, Option<Breakpoint>>,
 }
 
@@ -118,10 +118,19 @@ impl Debugger {
                             } {
                                 // Program input; fetch next iteration
                                 Ok(()) => continue 'gbd,
-                                // No input; repeat previous command
-                                Err(Error::NoInput) => self.prev().cloned(),
+                                // No input; repeat previous program
+                                Err(Error::NoInput) => {
+                                    // Re-use previous program
+                                    self.prog = self.prev.clone();
+                                    debug!("repeat program: `{:?}`", self.prog);
+                                    // Fetch command from repeated program
+                                    self.fetch()
+                                },
                                 // Prompt error; handle upstream
                                 err @ Err(_) => {
+                                    // Clear previous program
+                                    self.prev = None;
+                                    // Raise prompt error upwards
                                     break 'res err;
                                 }
                             }
@@ -149,17 +158,6 @@ impl Debugger {
         clk.as_mut().map(Clock::resume);
 
         Ok(())
-    }
-
-    /// Fetches the currently loaded program.
-    #[allow(dead_code)]
-    pub fn prog(&self) -> Option<&Program> {
-        self.prog.as_ref()
-    }
-
-    /// Returns the previously executed command.
-    pub fn prev(&self) -> Option<&Command> {
-        self.prev.as_ref()
     }
 
     /// Sets the logging handle.
@@ -233,12 +231,13 @@ impl Debugger {
         if prog.is_empty() {
             // Remove stored program
             self.prog = None;
-
+            // Report no input
             Err(Error::NoInput)
         } else {
-            // Store program
+            // Store program; update previous
             self.prog = Some(prog);
-
+            self.prev = self.prog.clone();
+            // Return successfully
             Ok(())
         }
     }
@@ -253,9 +252,6 @@ impl Debugger {
     #[allow(clippy::enum_glob_use)]
     pub fn exec(&mut self, emu: &mut GameBoy, cmd: Command) -> Result<()> {
         use Command::*;
-
-        // Update internal bookkeeping data
-        self.prev = Some(cmd.clone()); // recall previous command
 
         // Perform the command
         match cmd {
