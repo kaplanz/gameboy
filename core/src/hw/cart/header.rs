@@ -149,7 +149,11 @@ impl Display for Header {
         writeln!(f, "│ ROM: {:>9} B │", self.romsz)?;
         writeln!(f, "│ RAM: {:>9} B │", self.ramsz)?;
         writeln!(f, "├──────────────────┤")?;
-        writeln!(f, "│ Japan: {:>9} │", self.jpn)?;
+        writeln!(
+            f,
+            "│ Region: {:>8} │",
+            if self.jpn { "Japan" } else { "World" }
+        )?;
         writeln!(
             f,
             "│ Version: {:>7} │",
