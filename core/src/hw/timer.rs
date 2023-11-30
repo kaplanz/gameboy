@@ -382,3 +382,49 @@ impl Default for Tac {
 }
 
 impl Device<u16, u8> for Tac {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tima_reload_works() {
+        let mut timer = Timer::new(Shared::default());
+
+        // Configure 65536 Hz timer (64 cycles)
+        timer.tac().store(0b0000_0110);
+        timer.tma().store(0xfe);
+        timer.tima().store(0xfe);
+
+        // Test 1
+        for _ in 0..64 {
+            timer.cycle();
+        }
+        for _ in 0..64 {
+            timer.cycle();
+        }
+        assert_eq!(timer.tima().load(), 0xff);
+        for _ in 0..4 {
+            timer.cycle();
+        }
+        assert_eq!(timer.tima().load(), 0x00);
+        for _ in 0..4 {
+            timer.cycle();
+        }
+        assert_eq!(timer.tima().load(), 0xfe);
+        for _ in 0..56 {
+            timer.cycle();
+        }
+        for _ in 0..64 {
+            timer.cycle();
+        }
+        assert_eq!(timer.tima().load(), 0xff);
+        for _ in 0..4 {
+            timer.cycle();
+        }
+        assert_eq!(timer.tima().load(), 0x00);
+        for _ in 0..4 {
+            timer.cycle();
+        }
+    }
+}
