@@ -16,11 +16,12 @@ pub enum Rrc {
 }
 
 impl Execute for Rrc {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch => fetch(code, cpu),
+            Self::Fetch        => fetch(code, cpu),
             Self::Execute(op1) => execute(code, cpu, op1),
-            Self::Delay => delay(code, cpu),
+            Self::Delay        => delay(code, cpu),
         }
     }
 }

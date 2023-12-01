@@ -11,6 +11,7 @@ pub enum Stop {
 }
 
 impl Execute for Stop {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
             Self::Execute => execute(code, cpu),

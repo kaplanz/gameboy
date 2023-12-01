@@ -14,13 +14,14 @@ pub enum Int {
 }
 
 impl Execute for Int {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
             Self::Execute => execute(code, cpu),
-            Self::Nop => nop(code, cpu),
-            Self::Push => push(code, cpu),
-            Self::Delay => delay(code, cpu),
-            Self::Jump => jump(code, cpu),
+            Self::Nop     => nop(code, cpu),
+            Self::Push    => push(code, cpu),
+            Self::Delay   => delay(code, cpu),
+            Self::Jump    => jump(code, cpu),
         }
     }
 }

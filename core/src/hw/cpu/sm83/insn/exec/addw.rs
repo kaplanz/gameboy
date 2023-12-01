@@ -18,13 +18,14 @@ pub enum Addw {
 }
 
 impl Execute for Addw {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch => fetch(code, cpu),
+            Self::Fetch             => fetch(code, cpu),
             Self::Execute(op1, op2) => execute(code, cpu, op1, op2),
-            Self::Fetch0xE8 => fetch_0xe8(code, cpu),
-            Self::Delay0xE8(e8) => delay_0xe8(code, cpu, e8),
-            Self::Execute0xE8(e8) => execute_0xe8(code, cpu, e8),
+            Self::Fetch0xE8         => fetch_0xe8(code, cpu),
+            Self::Delay0xE8(e8)     => delay_0xe8(code, cpu, e8),
+            Self::Execute0xE8(e8)   => execute_0xe8(code, cpu, e8),
         }
     }
 }

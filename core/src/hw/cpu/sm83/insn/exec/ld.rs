@@ -19,15 +19,16 @@ pub enum Ld {
 }
 
 impl Execute for Ld {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch => fetch(code, cpu),
-            Self::Delay => delay(code, cpu),
-            Self::Write(op2) => write(code, cpu, op2),
-            Self::ExecuteByte(op2) => execute_byte(code, cpu, op2),
-            Self::DelayWord(word) => delay_word(code, cpu, word),
+            Self::Fetch             => fetch(code, cpu),
+            Self::Delay             => delay(code, cpu),
+            Self::Write(op2)        => write(code, cpu, op2),
+            Self::ExecuteByte(op2)  => execute_byte(code, cpu, op2),
+            Self::DelayWord(word)   => delay_word(code, cpu, word),
             Self::ExecuteWord(word) => execute_word(code, cpu, word),
-            Self::Done => done(code, cpu),
+            Self::Done              => done(code, cpu),
         }
     }
 }

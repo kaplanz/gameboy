@@ -15,9 +15,10 @@ pub enum Adc {
 }
 
 impl Execute for Adc {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch => fetch(code, cpu),
+            Self::Fetch        => fetch(code, cpu),
             Self::Execute(op2) => execute(code, cpu, op2),
         }
     }
