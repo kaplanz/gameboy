@@ -14,6 +14,7 @@ pub enum Cpl {
 }
 
 impl Execute for Cpl {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
             Self::Execute => execute(code, cpu),

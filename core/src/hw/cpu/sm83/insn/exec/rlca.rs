@@ -14,6 +14,7 @@ pub enum Rlca {
 }
 
 impl Execute for Rlca {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
             Self::Execute => execute(code, cpu),

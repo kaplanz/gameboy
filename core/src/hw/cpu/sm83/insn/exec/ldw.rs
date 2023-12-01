@@ -22,17 +22,18 @@ pub enum Ldw {
 }
 
 impl Execute for Ldw {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch => fetch(code, cpu),
-            Self::Delay(op2) => delay(code, cpu, op2),
-            Self::Execute(op2) => execute(code, cpu, op2),
-            Self::DelayA0x08(a16) => delay_a_0x08(code, cpu, a16),
+            Self::Fetch            => fetch(code, cpu),
+            Self::Delay(op2)       => delay(code, cpu, op2),
+            Self::Execute(op2)     => execute(code, cpu, op2),
+            Self::DelayA0x08(a16)  => delay_a_0x08(code, cpu, a16),
             Self::Execute0x08(a16) => execute_0x08(code, cpu, a16),
-            Self::DelayB0x08 => delay_b_0x08(code, cpu),
-            Self::Done0x08 => done_0x08(code, cpu),
-            Self::Execute0xF8(e8) => execute_0xf8(code, cpu, e8),
-            Self::Done0xF8 => done_0xf8(code, cpu),
+            Self::DelayB0x08       => delay_b_0x08(code, cpu),
+            Self::Done0x08         => done_0x08(code, cpu),
+            Self::Execute0xF8(e8)  => execute_0xf8(code, cpu, e8),
+            Self::Done0xF8         => done_0xf8(code, cpu),
         }
     }
 }

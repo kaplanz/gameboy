@@ -13,10 +13,11 @@ pub enum Pop {
 }
 
 impl Execute for Pop {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch => fetch(code, cpu),
-            Self::Delay(word) => delay(code, cpu, word),
+            Self::Fetch         => fetch(code, cpu),
+            Self::Delay(word)   => delay(code, cpu, word),
             Self::Execute(word) => execute(code, cpu, word),
         }
     }

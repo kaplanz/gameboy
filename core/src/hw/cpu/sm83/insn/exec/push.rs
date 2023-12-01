@@ -14,12 +14,13 @@ pub enum Push {
 }
 
 impl Execute for Push {
+    #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch => fetch(code, cpu),
+            Self::Fetch     => fetch(code, cpu),
             Self::Push(op2) => push(code, cpu, op2),
-            Self::Delay => delay(code, cpu),
-            Self::Done => done(code, cpu),
+            Self::Delay     => delay(code, cpu),
+            Self::Done      => done(code, cpu),
         }
     }
 }
