@@ -401,7 +401,7 @@ mod tests {
     use super::*;
 
     /// Sample boot ROM.
-    const BOOT: &[u8; 0x100] = include_bytes!("../../../../roms/boot/sameboy.bin");
+    const BOOT: &[u8; 0x0100] = include_bytes!("../../../../roms/boot/sameboy.bin");
 
     /// Sample ROM header.
     const GAME: &[u8; 0x8000] = include_bytes!("../../../../roms/games/gbmines.gb");
