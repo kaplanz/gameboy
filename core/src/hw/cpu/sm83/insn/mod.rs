@@ -133,3 +133,5 @@ pub enum Error {
     Overwrite(Instruction),
 }
 
+#[cfg(test)]
+mod tests;
