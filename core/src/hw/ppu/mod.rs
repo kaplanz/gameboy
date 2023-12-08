@@ -10,19 +10,18 @@ use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
 use self::exec::Mode;
 use self::pixel::{Meta, Palette, Pixel};
 use self::tile::Tile;
+use super::dma::Control as Dma;
 use super::pic::{Interrupt, Pic};
 use crate::arch::Bus;
 use crate::dmg::SCREEN;
 
 mod blk;
-mod dma;
 mod exec;
 mod pixel;
 mod screen;
 mod sprite;
 mod tile;
 
-pub use self::dma::Dma;
 pub use self::pixel::Color;
 pub use self::screen::Screen;
 
@@ -299,15 +298,6 @@ impl Board<u16, u8> for Ppu {
     fn connect(&self, bus: &mut Bus) {
         // Connect boards
         self.file.connect(bus);
-
-        // Extract devices
-        let oam  = self.oam().to_dynamic();
-
-        // Map devices on bus           // ┌──────┬────────┬────────┬─────┐
-                                        // │ Addr │  Size  │  Name  │ Dev │
-                                        // ├──────┼────────┼────────┼─────┤
-        bus.map(0xfe00..=0xfe9f, oam);  // │ fe00 │  160 B │ Object │ RAM │
-                                        // └──────┴────────┴────────┴─────┘
     }
 }
 
@@ -383,7 +373,7 @@ struct File {
     // │  1 B │ Scroll X       │ Reg │ SCX   │
     // │  1 B │ LCD Y          │ Reg │ LY    │
     // │  1 B │ LY Compare     │ Reg │ LYC   │
-    // │  1 B │ DMA Start      │ DMA │ DMA   │
+    // │  1 B │ DMA Start      │ Reg │ DMA   │
     // │  1 B │ BG Palette     │ Reg │ BGP   │
     // │  1 B │ OBJ Palette 0  │ Reg │ OBP0  │
     // │  1 B │ OBJ Palette 1  │ Reg │ OBP1  │

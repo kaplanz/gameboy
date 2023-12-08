@@ -5,11 +5,12 @@ use remus::{Block, Board, Shared};
 use super::cpu::Cpu;
 use super::noc::NoC;
 use super::pic::Pic;
-use super::ppu::{Dma, Oam, Ppu, Vram};
+use super::ppu::{Oam, Ppu, Vram};
 use super::{boot, Hram};
 use crate::arch::Bus;
 use crate::dev::Unmapped;
 use crate::hw::apu::Apu;
+use crate::hw::dma::Dma;
 
 /// Sharp LR35902 system-on-chip.
 #[derive(Debug)]
@@ -18,6 +19,7 @@ pub struct SoC {
     pub apu: Apu,
     pub cpu: Cpu,
     pub ppu: Ppu,
+    pub dma: Dma,
     // Memory
     pub boot: Option<boot::Rom>,
     pub hram: Shared<Hram>,
@@ -32,14 +34,15 @@ impl SoC {
         // Create shared memory
         let oam = Shared::new(Oam::default());
         // Create shared blocks
-        let dma = Dma::new(dma, oam.clone()).to_shared();
+        let dma = Dma::new(dma, oam.clone());
 
         // Construct self
         Self {
             // Processors
             apu: Apu::default(),
             cpu: Cpu::new(cpu, pic.clone()),
-            ppu: Ppu::new(vram, oam, dma, pic),
+            ppu: Ppu::new(vram, oam, dma.ctrl(), pic),
+            dma,
             // Memory
             boot: Option::default(),
             hram: Shared::new(Hram::default()),
@@ -67,6 +70,7 @@ impl Board<u16, u8> for SoC {
         // Connect boards
         self.apu.connect(bus);
         self.cpu.connect(bus);
+        self.dma.connect(bus);
         self.ppu.connect(bus);
 
         // Extract devices

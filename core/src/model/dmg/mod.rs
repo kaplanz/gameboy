@@ -51,8 +51,9 @@ pub const SCREEN: Dimensions = Dimensions {
 pub struct GameBoy {
     // State
     clock: u128,
-    // ASICs
+    // Systems
     soc: SoC,
+    // Memory
     wram: Shared<Wram>,
     vram: Shared<Vram>,
     // Peripherals
@@ -79,8 +80,9 @@ impl Default for GameBoy {
         Self {
             // State
             clock: u128::default(),
-            // ASICs
+            // Systems
             soc: SoC::new(vram.clone(), &noc, pic.clone()),
+            // Memory
             wram: Shared::new(Wram::default()),
             vram,
             // Peripherals
@@ -178,7 +180,7 @@ impl GameBoy {
         // mapped by `pic`               // │ ffff │    1 B │ Interrupt  │ Reg │
                                          // └──────┴────────┴────────────┴─────┘
 
-        // ASICs
+        // Systems
         self.soc.connect(ibus);
         // Peripherals
         self.joypad.connect(ibus);
@@ -305,8 +307,9 @@ impl GameBoy {
 impl Block for GameBoy {
     #[rustfmt::skip]
     fn reset(&mut self) {
-        // ASICs
+        // Systems
         self.soc.reset();
+        // Memory
         self.wram.reset();
         self.vram.reset();
         // Peripherals
@@ -366,8 +369,8 @@ impl Machine for GameBoy {
         }
 
         // DMA: 1 MiHz
-        if self.clock % 4 == 0 && self.soc.ppu.dma().enabled() {
-            self.soc.ppu.dma().cycle();
+        if self.clock % 4 == 0 && self.soc.dma.enabled() {
+            self.soc.dma.cycle();
         }
 
         // PPU: 4 MiHz
