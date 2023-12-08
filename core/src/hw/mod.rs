@@ -8,6 +8,7 @@
 
 pub mod cart;
 pub mod cpu;
+pub mod dma;
 pub mod pic;
 pub mod ppu;
 pub mod serial;
