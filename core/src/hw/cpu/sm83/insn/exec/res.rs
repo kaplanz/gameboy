@@ -1,4 +1,4 @@
-use super::{helpers, Cpu, Error, Execute, Operation, Return};
+use super::{help, Cpu, Error, Execute, Operation, Return};
 
 pub const fn default() -> Operation {
     Operation::Res(Res::Fetch)
@@ -40,7 +40,7 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
         }
         0x80..=0xbf => {
             // Prepare op2
-            let op2 = helpers::get_op8(cpu, code & 0x07);
+            let op2 = help::get_op8(cpu, code & 0x07);
             // Continue
             execute(code, cpu, op2)
         }
@@ -64,7 +64,7 @@ fn execute(code: u8, cpu: &mut Cpu, op2: u8) -> Return {
         }
         0x80..=0xbf => {
             // Store r8
-            helpers::set_op8(cpu, code & 0x07, res);
+            help::set_op8(cpu, code & 0x07, res);
             // Finish
             Ok(None)
         }

@@ -6,10 +6,10 @@ use crate::hw::pic::Interrupt;
 #[derive(Clone, Debug, Default)]
 pub enum Int {
     #[default]
-    Execute,
+    Fetch,
     Nop,
-    Push,
-    Delay,
+    Push0,
+    Push1,
     Jump,
 }
 
@@ -17,11 +17,11 @@ impl Execute for Int {
     #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Execute => execute(code, cpu),
-            Self::Nop     => nop(code, cpu),
-            Self::Push    => push(code, cpu),
-            Self::Delay   => delay(code, cpu),
-            Self::Jump    => jump(code, cpu),
+            Self::Fetch => fetch(code, cpu),
+            Self::Nop   => nop(code, cpu),
+            Self::Push0 => push0(code, cpu),
+            Self::Push1 => push1(code, cpu),
+            Self::Jump  => jump(code, cpu),
         }
     }
 }
@@ -32,7 +32,7 @@ impl From<Int> for Operation {
     }
 }
 
-fn execute(_: u8, cpu: &mut Cpu) -> Return {
+fn fetch(_: u8, cpu: &mut Cpu) -> Return {
     // Disable interrupts
     cpu.ime = Ime::Disabled;
 
@@ -44,20 +44,26 @@ fn nop(_: u8, _: &mut Cpu) -> Return {
     // Execute NOP
 
     // Proceed
-    Ok(Some(Int::Push.into()))
+    Ok(Some(Int::Push0.into()))
 }
 
-fn push(_: u8, cpu: &mut Cpu) -> Return {
-    // Push [SP] <- PC
-    let pc = cpu.file.pc.load();
-    cpu.pushword(pc);
+fn push0(_: u8, cpu: &mut Cpu) -> Return {
+    // Load MSB
+    let msb = cpu.file.pc.load().to_le_bytes()[1];
+
+    // Push MSB -> [--SP]
+    cpu.pushbyte(msb);
 
     // Proceed
-    Ok(Some(Int::Delay.into()))
+    Ok(Some(Int::Push1.into()))
 }
 
-fn delay(_: u8, _: &mut Cpu) -> Return {
-    // Delay by 1 cycle
+fn push1(_: u8, cpu: &mut Cpu) -> Return {
+    // Load LSB
+    let lsb = cpu.file.pc.load().to_le_bytes()[0];
+
+    // Push LSB -> [--SP]
+    cpu.pushbyte(lsb);
 
     // Proceed
     Ok(Some(Int::Jump.into()))

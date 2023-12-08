@@ -11,7 +11,7 @@ pub enum Rst {
     #[default]
     Fetch,
     Push0(u8),
-    Push1(u8, u8),
+    Push1(u8),
     Jump(u8),
 }
 
@@ -19,10 +19,10 @@ impl Execute for Rst {
     #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch          => fetch(code, cpu),
-            Self::Push0(v8)      => push0(code, cpu, v8),
-            Self::Push1(v8, pc0) => push1(code, cpu, v8, pc0),
-            Self::Jump(v8)       => jump(code, cpu, v8),
+            Self::Fetch     => fetch(code, cpu),
+            Self::Push0(v8) => push0(code, cpu, v8),
+            Self::Push1(v8) => push1(code, cpu, v8),
+            Self::Jump(v8)  => jump(code, cpu, v8),
         }
     }
 }
@@ -54,16 +54,18 @@ fn fetch(code: u8, _: &mut Cpu) -> Return {
 fn push0(_: u8, cpu: &mut Cpu, v8: u8) -> Return {
     // Load PC
     let pc = cpu.file.pc.load().to_le_bytes();
-    // Push [SP] <- upper(PC + 2)
+    // Push upper(PC) -> [--SP]
     cpu.pushbyte(pc[1]);
 
     // Proceed
-    Ok(Some(Rst::Push1(v8, pc[0]).into()))
+    Ok(Some(Rst::Push1(v8).into()))
 }
 
-fn push1(_: u8, cpu: &mut Cpu, v8: u8, pc0: u8) -> Return {
-    // Push [SP - 1] <- lower(PC + 2)
-    cpu.pushbyte(pc0);
+fn push1(_: u8, cpu: &mut Cpu, v8: u8) -> Return {
+    // Load PC
+    let pc = cpu.file.pc.load().to_le_bytes();
+    // Push lower(PC) -> [--SP]
+    cpu.pushbyte(pc[0]);
 
     // Proceed
     Ok(Some(Rst::Jump(v8).into()))

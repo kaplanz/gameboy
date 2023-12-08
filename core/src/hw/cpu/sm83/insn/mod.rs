@@ -84,7 +84,7 @@ impl Display for Instruction {
 }
 
 /// Helper functions.
-mod helpers {
+mod help {
     use remus::Cell;
 
     use super::Cpu;

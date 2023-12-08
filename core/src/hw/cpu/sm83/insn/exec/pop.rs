@@ -1,24 +1,26 @@
+use remus::Cell;
+
 use super::{Cpu, Error, Execute, Operation, Return};
 
 pub const fn default() -> Operation {
-    Operation::Pop(Pop::Fetch)
+    Operation::Pop(Pop::Pop1)
 }
 
 #[derive(Clone, Debug, Default)]
 pub enum Pop {
     #[default]
-    Fetch,
-    Delay(u16),
-    Execute(u16),
+    Pop1,
+    Pop0,
+    Delay,
 }
 
 impl Execute for Pop {
     #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch         => fetch(code, cpu),
-            Self::Delay(word)   => delay(code, cpu, word),
-            Self::Execute(word) => execute(code, cpu, word),
+            Self::Pop1  => pop1(code, cpu),
+            Self::Pop0  => pop0(code, cpu),
+            Self::Delay => delay(code, cpu),
         }
     }
 }
@@ -29,40 +31,47 @@ impl From<Pop> for Operation {
     }
 }
 
-fn fetch(code: u8, cpu: &mut Cpu) -> Return {
-    // Check opcode
-    match code {
-        0xc1 | 0xd1 | 0xe1 | 0xf1 => (),
-        code => return Err(Error::Opcode(code)),
-    }
-
-    // Pop r16 <- [SP]
-    let mut word = cpu.popword();
+fn pop1(code: u8, cpu: &mut Cpu) -> Return {
+    // Pop LSB <- [SP++]
+    let mut lsb = cpu.popbyte();
     if code == 0xf1 {
-        word &= 0xfff0; // lower 4 bits of F cannot be changed
+        lsb &= 0xf0; // pop1 4 bits of F cannot be changed
     }
 
-    // Proceed
-    Ok(Some(Pop::Delay(word).into()))
-}
-
-fn delay(_: u8, _: &mut Cpu, word: u16) -> Return {
-    // Delay by 1 cycle
-
-    // Proceed
-    Ok(Some(Pop::Execute(word).into()))
-}
-
-fn execute(code: u8, cpu: &mut Cpu, word: u16) -> Return {
-    // Perform pop
+    // Store LSB
     match code {
-        0xc1 => cpu.file.bc,
-        0xd1 => cpu.file.de,
-        0xe1 => cpu.file.hl,
-        0xf1 => cpu.file.af,
+        0xc1 => &mut cpu.file.c,
+        0xd1 => &mut cpu.file.e,
+        0xe1 => &mut cpu.file.l,
+        0xf1 => &mut cpu.file.f,
         code => return Err(Error::Opcode(code)),
     }
-    .store(&mut cpu.file, word);
+    .store(lsb);
+
+    // Proceed
+    Ok(Some(Pop::Pop0.into()))
+}
+
+fn pop0(code: u8, cpu: &mut Cpu) -> Return {
+    // Pop MSB <- [SP++]
+    let msb = cpu.popbyte();
+
+    // Store MSB
+    match code {
+        0xc1 => &mut cpu.file.b,
+        0xd1 => &mut cpu.file.d,
+        0xe1 => &mut cpu.file.h,
+        0xf1 => &mut cpu.file.a,
+        code => return Err(Error::Opcode(code)),
+    }
+    .store(msb);
+
+    // Finish
+    Ok(Some(Pop::Delay.into()))
+}
+
+fn delay(_: u8, _: &mut Cpu) -> Return {
+    // Delay by 1 cycle
 
     // Finish
     Ok(None)

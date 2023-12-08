@@ -3,7 +3,7 @@ use std::ops::BitOr;
 use enuf::Enuf;
 use remus::Cell;
 
-use super::{helpers, Cpu, Error, Execute, Flag, Operation, Return};
+use super::{help, Cpu, Error, Execute, Flag, Operation, Return};
 
 pub const fn default() -> Operation {
     Operation::Or(Or::Fetch)
@@ -42,13 +42,14 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
             Ok(Some(Or::Execute(op2).into()))
         }
         0xf6 => {
+            // Fetch [PC++]
             let op2 = cpu.fetchbyte();
             // Proceed
             Ok(Some(Or::Execute(op2).into()))
         }
         0xb0..=0xb7 => {
             // Prepare op2
-            let op2 = helpers::get_op8(cpu, code & 0x07);
+            let op2 = help::get_op8(cpu, code & 0x07);
             // Continue
             execute(code, cpu, op2)
         }

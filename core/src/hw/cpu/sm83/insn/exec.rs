@@ -17,7 +17,7 @@
 #![allow(clippy::unnecessary_wraps)]
 #![allow(clippy::wildcard_imports)]
 
-use super::{helpers, Cpu, Error, Execute, Flag, Ime, Instruction, Result, Status};
+use super::{help, Cpu, Error, Execute, Flag, Ime, Instruction, Result, Status};
 
 type Return = Result<Option<Operation>>;
 

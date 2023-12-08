@@ -1,7 +1,7 @@
 use enuf::Enuf;
 use remus::Cell;
 
-use super::{helpers, Cpu, Error, Execute, Flag, Operation, Return};
+use super::{help, Cpu, Error, Execute, Flag, Operation, Return};
 
 pub const fn default() -> Operation {
     Operation::Cp(Cp::Fetch)
@@ -44,7 +44,7 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
             Ok(Some(Cp::Execute(op2).into()))
         }
         0xb8..=0xbf => {
-            let op2 = helpers::get_op8(cpu, code & 0x07);
+            let op2 = help::get_op8(cpu, code & 0x07);
             // Continue
             execute(code, cpu, op2)
         }

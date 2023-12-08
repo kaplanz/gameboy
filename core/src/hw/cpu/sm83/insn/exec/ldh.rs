@@ -10,7 +10,8 @@ pub const fn default() -> Operation {
 pub enum Ldh {
     #[default]
     Fetch,
-    Execute(u8),
+    Read(u8),
+    Write(u8),
     Delay,
 }
 
@@ -18,9 +19,10 @@ impl Execute for Ldh {
     #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch        => fetch(code, cpu),
-            Self::Execute(op2) => execute(code, cpu, op2),
-            Self::Delay        => delay(code, cpu),
+            Self::Fetch     => fetch(code, cpu),
+            Self::Read(a8)  => read(code, cpu, a8),
+            Self::Write(a8) => write(code, cpu, a8),
+            Self::Delay     => delay(code, cpu),
         }
     }
 }
@@ -34,40 +36,53 @@ impl From<Ldh> for Operation {
 fn fetch(code: u8, cpu: &mut Cpu) -> Return {
     // Check opcode
     match code {
-        0xe0 | 0xf0 => {
-            // Fetch a8
+        0xe0 => {
+            // Fetch a8 <- [PC++]
             let a8 = cpu.fetchbyte();
             // Proceed
-            Ok(Some(Ldh::Execute(a8).into()))
+            Ok(Some(Ldh::Write(a8).into()))
         }
-        0xe2 | 0xf2 => {
+        0xf0 => {
+            // Fetch a8 <- [PC++]
+            let a8 = cpu.fetchbyte();
+            // Proceed
+            Ok(Some(Ldh::Read(a8).into()))
+        }
+        0xe2 => {
             // Load C
             let a8 = cpu.file.c.load();
-            // Proceed
-            execute(code, cpu, a8)
+            // Continue
+            write(code, cpu, a8)
+        }
+        0xf2 => {
+            // Load C
+            let a8 = cpu.file.c.load();
+            // Continue
+            read(code, cpu, a8)
         }
         code => Err(Error::Opcode(code)),
     }
 }
 
-fn execute(code: u8, cpu: &mut Cpu, a8: u8) -> Return {
-    // Calculate absolute address from relative
-    let addr = 0xff00 | a8 as u16;
+fn read(_: u8, cpu: &mut Cpu, a8: u8) -> Return {
+    // Calculate absolute address
+    let addr = u16::from_be_bytes([0xff, a8]);
 
-    // Perform a read/write to the address
-    match code {
-        0xe0 | 0xe2 => {
-            // Execute LDH {a8, C}, A
-            let op2 = cpu.file.a.load();
-            cpu.write(addr, op2);
-        }
-        0xf0 | 0xf2 => {
-            // Execute LDH A, {a8, C}
-            let op2 = cpu.read(addr);
-            cpu.file.a.store(op2);
-        }
-        code => return Err(Error::Opcode(code)),
-    }
+    // Execute LDH B, {a8, C}
+    let op2 = cpu.read(addr);
+    cpu.file.a.store(op2);
+
+    // Proceed
+    Ok(Some(Ldh::Delay.into()))
+}
+
+fn write(_: u8, cpu: &mut Cpu, a8: u8) -> Return {
+    // Calculate absolute address
+    let addr = u16::from_be_bytes([0xff, a8]);
+
+    // Execute LDH {a8, C}, A
+    let op2 = cpu.file.a.load();
+    cpu.write(addr, op2);
 
     // Proceed
     Ok(Some(Ldh::Delay.into()))

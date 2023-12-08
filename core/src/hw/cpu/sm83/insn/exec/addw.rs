@@ -88,7 +88,7 @@ fn execute(_: u8, cpu: &mut Cpu, op1: u16, op2: u16) -> Return {
 }
 
 fn fetch_0xe8(_: u8, cpu: &mut Cpu) -> Return {
-    // Fetch e8
+    // Fetch e8 <- [PC++]
     let e8 = cpu.fetchbyte();
 
     // Proceed

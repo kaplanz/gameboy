@@ -1,20 +1,22 @@
 use remus::Cell;
 
-use super::{helpers, Cpu, Error, Execute, Operation, Return};
+use super::{help, Cpu, Error, Execute, Operation, Return};
 
 pub const fn default() -> Operation {
     Operation::Ld(Ld::Fetch)
 }
 
+#[allow(unused)]
 #[derive(Clone, Debug, Default)]
 pub enum Ld {
     #[default]
     Fetch,
-    Delay,
+    Update,
     Write(u8),
-    ExecuteByte(u8),
-    DelayWord(u16),
-    ExecuteWord(u16),
+    Byte(u8),
+    Fetch0,
+    Fetch1(u8),
+    Word(u16),
     Done,
 }
 
@@ -22,13 +24,14 @@ impl Execute for Ld {
     #[rustfmt::skip]
     fn exec(self, code: u8, cpu: &mut Cpu) -> Return {
         match self {
-            Self::Fetch             => fetch(code, cpu),
-            Self::Delay             => delay(code, cpu),
-            Self::Write(op2)        => write(code, cpu, op2),
-            Self::ExecuteByte(op2)  => execute_byte(code, cpu, op2),
-            Self::DelayWord(word)   => delay_word(code, cpu, word),
-            Self::ExecuteWord(word) => execute_word(code, cpu, word),
-            Self::Done              => done(code, cpu),
+            Self::Fetch       => fetch(code, cpu),
+            Self::Update      => update(code, cpu),
+            Self::Write(op2)  => write(code, cpu, op2),
+            Self::Byte(op2)   => byte(code, cpu, op2),
+            Self::Fetch0      => fetch0(code, cpu),
+            Self::Fetch1(lsb) => fetch1(code, cpu, lsb),
+            Self::Word(a16)   => word(code, cpu, a16),
+            Self::Done        => done(code, cpu),
         }
     }
 }
@@ -57,7 +60,11 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
             // Write A
             cpu.write(r16, op2);
             // Proceed
-            Ok(Some(Ld::Delay.into()))
+            match code {
+                0x02 | 0x12 => Ok(Some(Ld::Done.into())),
+                0x22 | 0x32 => Ok(Some(Ld::Update.into())),
+                code => Err(Error::Opcode(code)),
+            }
         }
         // LD A, [r16]
         0x0a | 0x1a | 0x2a | 0x3a => {
@@ -72,18 +79,18 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
             // Read r16
             let op2 = cpu.read(r16);
             // Proceed
-            Ok(Some(Ld::ExecuteByte(op2).into()))
+            Ok(Some(Ld::Byte(op2).into()))
         }
         // LD r8, n8
         0x06 | 0x0e | 0x16 | 0x1e | 0x26 | 0x2e | 0x3e => {
-            // Fetch n8
+            // Fetch n8 <- [PC++]
             let op2 = cpu.fetchbyte();
             // Proceed
-            Ok(Some(Ld::ExecuteByte(op2).into()))
+            Ok(Some(Ld::Byte(op2).into()))
         }
         // LD [HL], n8
         0x36 => {
-            // Fetch n8
+            // Fetch n8 <- [PC++]
             let op2 = cpu.fetchbyte();
             // Proceed
             Ok(Some(Ld::Write(op2).into()))
@@ -93,7 +100,7 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
             // Load [HL]
             let op2 = cpu.readbyte();
             // Proceed
-            Ok(Some(Ld::ExecuteByte(op2).into()))
+            Ok(Some(Ld::Byte(op2).into()))
         }
         // HALT (unexpected opcode)
         0x76 => Err(Error::Opcode(code)),
@@ -102,47 +109,24 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
             // Load HL
             let addr = cpu.file.hl.load(&cpu.file);
             // Prepare op2
-            let op2 = helpers::get_op8(cpu, code & 0x07);
+            let op2 = help::get_op8(cpu, code & 0x07);
             // Write op2
             cpu.write(addr, op2);
             // Proceed
-            Ok(Some(Ld::Delay.into()))
+            Ok(Some(Ld::Done.into()))
         }
         // LD r8, r8
         0x40..=0x7f => {
             // Prepare op2
-            let op2 = helpers::get_op8(cpu, code & 0x07);
+            let op2 = help::get_op8(cpu, code & 0x07);
             // Continue
-            execute_byte(code, cpu, op2)
+            byte(code, cpu, op2)
         }
         // LD [a16], A
         // LD A, [a16]
         0xea | 0xfa => {
-            // Fetch a16
-            let word = cpu.fetchword();
-            // Proceed
-            Ok(Some(Ld::DelayWord(word).into()))
-        }
-        code => Err(Error::Opcode(code)),
-    }
-}
-
-fn delay(code: u8, cpu: &mut Cpu) -> Return {
-    // Delay by 1 cycle
-
-    #[allow(clippy::match_same_arms)]
-    match code {
-        0x02 | 0x12 => {
             // Continue
-            done(code, cpu)
-        }
-        0x22 | 0x32 => {
-            // Continue
-            update(code, cpu)
-        }
-        0x70 | 0x71 | 0x72 | 0x73 | 0x74 | 0x75 | 0x77 => {
-            // Continue
-            done(code, cpu)
+            fetch0(code, cpu)
         }
         code => Err(Error::Opcode(code)),
     }
@@ -173,13 +157,14 @@ fn write(code: u8, cpu: &mut Cpu, op2: u8) -> Return {
         return Err(Error::Opcode(code));
     }
 
-    // Execute [HL], n8
+    // Write [HL]
     cpu.writebyte(op2);
+
     // Proceed
     Ok(Some(Ld::Done.into()))
 }
 
-fn execute_byte(code: u8, cpu: &mut Cpu, op2: u8) -> Return {
+fn byte(code: u8, cpu: &mut Cpu, op2: u8) -> Return {
     // Store r8 <- {r8, n8, [HL]}
     let op1 = match code {
         0x06 | 0x40..=0x47 => &mut cpu.file.b,
@@ -200,14 +185,24 @@ fn execute_byte(code: u8, cpu: &mut Cpu, op2: u8) -> Return {
     }
 }
 
-fn delay_word(_: u8, _: &mut Cpu, word: u16) -> Return {
-    // Delay by 1 cycle
-
+fn fetch0(_: u8, cpu: &mut Cpu) -> Return {
+    // Fetch LSB
+    let lsb = cpu.fetchbyte();
     // Proceed
-    Ok(Some(Ld::ExecuteWord(word).into()))
+    Ok(Some(Ld::Fetch1(lsb).into()))
 }
 
-fn execute_word(code: u8, cpu: &mut Cpu, word: u16) -> Return {
+fn fetch1(_: u8, cpu: &mut Cpu, lsb: u8) -> Return {
+    // Fetch LSB
+    let msb = cpu.fetchbyte();
+    // Combine bytes
+    let a16 = u16::from_le_bytes([lsb, msb]);
+
+    // Proceed
+    Ok(Some(Ld::Word(a16).into()))
+}
+
+fn word(code: u8, cpu: &mut Cpu, word: u16) -> Return {
     match code {
         0xea => {
             // Execute LD [a16], A
