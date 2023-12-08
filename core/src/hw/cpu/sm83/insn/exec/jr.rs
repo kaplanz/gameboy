@@ -36,7 +36,7 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
     // Check opcode
     match code {
         0x18 | 0x20 | 0x28 | 0x30 | 0x38 => {
-            // Fetch e8
+            // Fetch e8 <- [PC++]
             let e8 = cpu.fetchbyte();
             // Proceed
             Ok(Some(Jr::Check(e8).into()))

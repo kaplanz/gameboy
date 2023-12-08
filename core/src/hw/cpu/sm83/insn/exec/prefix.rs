@@ -31,7 +31,7 @@ fn fetch(code: u8, cpu: &mut Cpu) -> Return {
         return Err(Error::Opcode(code));
     }
 
-    // Fetch
+    // Fetch [PC++]
     let code = cpu.fetchbyte();
     // Decode
     let insn = Instruction::prefix(code);

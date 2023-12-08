@@ -108,17 +108,6 @@ impl Cpu {
         byte
     }
 
-    /// Fetch the next word after PC.
-    fn fetchword(&mut self) -> u16 {
-        let mut word = [0; 2];
-        // Fetch lower byte of word
-        word[0] = self.fetchbyte();
-        // Fetch upper byte of word
-        word[1] = self.fetchbyte();
-        // Combine bytes into word
-        u16::from_le_bytes(word)
-    }
-
     /// Read the byte at HL.
     fn readbyte(&mut self) -> u8 {
         // Load value of HL
@@ -148,17 +137,6 @@ impl Cpu {
         byte
     }
 
-    /// Pop the word at SP.
-    fn popword(&mut self) -> u16 {
-        let mut word = [0; 2];
-        // Pop lower byte of word
-        word[0] = self.popbyte();
-        // Pop lower byte of word
-        word[1] = self.popbyte();
-        // Combine bytes into word
-        u16::from_le_bytes(word)
-    }
-
     /// Push to the byte at SP.
     fn pushbyte(&mut self, byte: u8) {
         // Increment SP
@@ -167,15 +145,6 @@ impl Cpu {
         self.file.sp.store(sp);
         // Push to SP
         self.write(sp, byte);
-    }
-
-    /// Push to the word at SP.
-    fn pushword(&mut self, word: u16) {
-        let word = word.to_le_bytes();
-        // Push upper byte of word
-        self.pushbyte(word[1]);
-        // Push lower byte of word
-        self.pushbyte(word[0]);
     }
 
     /// Prepares an introspective view of the state.
