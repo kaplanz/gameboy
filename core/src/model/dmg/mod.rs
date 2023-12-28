@@ -411,7 +411,7 @@ mod tests {
 
     fn setup() -> GameBoy {
         // Instantiate a `Boot`
-        let boot = Boot::try_from(BOOT).unwrap();
+        let boot = Boot::from(BOOT);
         // Instantiate a `Cartridge`
         let cart = Cartridge::new(GAME).unwrap();
         // Create a `GameBoy` instance

@@ -70,6 +70,7 @@ impl Mbc for Mbc1 {
 }
 
 /// MBC1 ROM.
+#[allow(clippy::struct_field_names)]
 #[derive(Debug)]
 struct Rom {
     bus: Shared<Bus>,
