@@ -244,11 +244,10 @@ impl Cartridge {
                     buf: rom,
                     len: romsz,
                 };
-                let ram =
-                    Memory {
-                        buf: [null, ram][has_ram as usize].clone(),
-                        len: ramsz,
-                    };
+                let ram = Memory {
+                    buf: [null, ram][has_ram as usize].clone(),
+                    len: ramsz,
+                };
                 Box::new(Mbc5::with(rom, ram))
             }
             cart => return Err(Error::Unimplemented(cart.clone())),

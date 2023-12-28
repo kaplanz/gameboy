@@ -90,11 +90,10 @@ impl Fetch {
         let ly = ppu.file.ly.load();
 
         // Calculate the y-offset within the tile
-        let yoff =
-            match loc {
-                Background | Sprite => ly.wrapping_add(scy) % 8,
-                Window => ppu.winln % 8,
-            };
+        let yoff = match loc {
+            Background | Sprite => ly.wrapping_add(scy) % 8,
+            Window => ppu.winln % 8,
+        };
 
         // Calculate the tile data address
         match loc {
