@@ -6,6 +6,79 @@ use std::str::FromStr;
 
 use thiserror::Error;
 
+mod decl {
+    #![allow(clippy::unreadable_literal)]
+
+    use super::{Color, Palette};
+
+    /// Chrome palette.
+    ///
+    /// Based upon [2bit Demichrome][source] by [Space Sandwich][author].
+    ///
+    /// [author]: https://lospec.com/kerrielake
+    /// [source]: https://lospec.com/palette-list/2bit-demichrome
+    pub const CHROME: Palette = Palette([
+        Color(0xe9efec),
+        Color(0xa0a08b),
+        Color(0x555568),
+        Color(0x211e20),
+    ]);
+
+    /// Legacy palette.
+    ///
+    /// Based upon [Legacy][source] by [Patrick Adams][author].
+    ///
+    /// [author]: https://www.deviantart.com/thewolfbunny64
+    /// [source]: https://www.deviantart.com/thewolfbunny64/art/Game-Boy-Palette-DMG-Ver-808181265
+    pub const LEGACY: Palette = Palette([
+        Color(0x7f860f),
+        Color(0x577c44),
+        Color(0x365d48),
+        Color(0x2a453b),
+    ]);
+
+    /// Mystic palette.
+    ///
+    /// Based upon [Mist][source] by [Kerrie Lake][author].
+    ///
+    /// [author]: https://lospec.com/kerrielake
+    /// [source]: https://lospec.com/palette-list/mist-gb
+    pub const MYSTIC: Palette = Palette([
+        Color(0xc4f0c2),
+        Color(0x5ab9a8),
+        Color(0x1e606e),
+        Color(0x2d1b00),
+    ]);
+
+    /// Rustic palette.
+    ///
+    /// Based upon [Rustic][source] by [Kerrie Lake][author].
+    ///
+    /// [author]: https://lospec.com/kerrielake
+    /// [source]: https://lospec.com/palette-list/rustic-gb
+    pub const RUSTIC: Palette = Palette([
+        Color(0xa96868),
+        Color(0xedb4a1),
+        Color(0x764462),
+        Color(0x2c2137),
+    ]);
+
+    /// Winter palette.
+    ///
+    /// Based upon [BlueDream4][source] by [Snowy Owl][author].
+    ///
+    /// [author]: https://lospec.com/snowy-owl
+    /// [source]: https://lospec.com/palette-list/bluedream4
+    pub const WINTER: Palette = Palette([
+        Color(0xecf2cb),
+        Color(0x98d8b1),
+        Color(0x4b849a),
+        Color(0x1f285d),
+    ]);
+}
+
+pub use self::decl::*;
+
 /// Use [24-bit] color (stored as `0x00RRGGBB_u32`)
 ///
 /// [24-bit]: https://en.wikipedia.org/wiki/List_of_monochrome_and_RGB_color_formats#24-bit_RGB
@@ -35,17 +108,6 @@ impl From<Color> for u32 {
 /// Color palette.
 #[derive(Clone, Debug)]
 pub struct Palette([Color; 4]);
-
-impl Default for Palette {
-    fn default() -> Self {
-        Self([
-            Color(0x00e9_efec),
-            Color(0x00a0_a08b),
-            Color(0x0055_5568),
-            Color(0x0021_1e20),
-        ])
-    }
-}
 
 impl Display for Palette {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

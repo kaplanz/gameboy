@@ -2,8 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, ValueHint};
 
-use crate::pal::Palette;
-use crate::Speed;
+use crate::cfg::{Speed, Theme};
 
 /// Game Boy emulator written in Rust.
 #[allow(clippy::struct_excessive_bools)]
@@ -68,14 +67,15 @@ pub struct Args {
     /// darkest.
     #[arg(long = "palette")]
     #[arg(default_value_t)]
-    pub pal: Palette,
+    #[arg(value_enum)]
+    pub pal: Theme,
 
     /// Run at full-speed.
     ///
     /// Causes the emulator to run at the maximum possible speed the host
     /// machine supports.
     #[arg(short, long)]
-    #[arg(default_value_t = Speed::Full)]
+    #[arg(default_value_t)]
     #[arg(value_enum)]
     pub speed: Speed,
 
