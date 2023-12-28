@@ -55,14 +55,13 @@ fn prefix_cycle_count() {
         let mut cpu = setup();
         let mut insn = Instruction::prefix(code);
         // Count instruction execution cycles
-        let found =
-            2 + iter::from_fn(move || {
-                insn.clone()
-                    .exec(&mut cpu)
-                    .unwrap_or_else(|_| panic!("should execute: {code:#04X} ; {insn}"))
-                    .map(|next| insn = next)
-            })
-            .count();
+        let found = 2 + iter::from_fn(move || {
+            insn.clone()
+                .exec(&mut cpu)
+                .unwrap_or_else(|_| panic!("should execute: {code:#04X} ; {insn}"))
+                .map(|next| insn = next)
+        })
+        .count();
         // Confirm match with cycle table
         assert_eq!(
             expect,

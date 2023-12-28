@@ -25,28 +25,27 @@ impl Mbc1 {
         // Prepare RAM
         let ram = Bank::from(&*ram.fracture(0x2000)).to_shared();
         // Prepare ROM
-        let rom =
-            {
-                // Create views
-                let view = rom.fracture(0x4000);
-                let root = view[0].clone();
-                let bank = Bank::from(&*view).to_shared();
-                // Set default bank
-                bank.borrow_mut().set(0b1);
-                // Create memory map
-                let mmap = Bus::from([
-                    (0x0000..=0x3fff, root),
-                    (0x4000..=0x7fff, bank.clone().to_dynamic()),
-                ])
-                .to_shared();
-                // Create ROM
-                Rom {
-                    bus: mmap,
-                    rom: bank,
-                    ram: ram.clone(),
-                }
-            }
+        let rom = {
+            // Create views
+            let view = rom.fracture(0x4000);
+            let root = view[0].clone();
+            let bank = Bank::from(&*view).to_shared();
+            // Set default bank
+            bank.borrow_mut().set(0b1);
+            // Create memory map
+            let mmap = Bus::from([
+                (0x0000..=0x3fff, root),
+                (0x4000..=0x7fff, bank.clone().to_dynamic()),
+            ])
             .to_shared();
+            // Create ROM
+            Rom {
+                bus: mmap,
+                rom: bank,
+                ram: ram.clone(),
+            }
+        }
+        .to_shared();
 
         Self { rom, ram }
     }

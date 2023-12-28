@@ -115,11 +115,29 @@ mod tests {
     #[test]
     fn parse_errors() {
         assert!(matches!("".parse::<Color>().unwrap_err(), Error::Empty));
-        assert!(matches!("shalom".parse::<Color>().unwrap_err(), Error::MissingHash));
-        assert!(matches!("#".parse::<Color>().unwrap_err(), Error::ParseInt(_)));
-        assert!(matches!("#shalom".parse::<Color>().unwrap_err(), Error::ParseInt(_)));
-        assert!(matches!("#12".parse::<Color>().unwrap_err(), Error::Unsupported));
-        assert!(matches!("#1234".parse::<Color>().unwrap_err(), Error::Unsupported));
-        assert!(matches!("#1234567".parse::<Color>().unwrap_err(), Error::Unsupported));
+        assert!(matches!(
+            "shalom".parse::<Color>().unwrap_err(),
+            Error::MissingHash
+        ));
+        assert!(matches!(
+            "#".parse::<Color>().unwrap_err(),
+            Error::ParseInt(_)
+        ));
+        assert!(matches!(
+            "#shalom".parse::<Color>().unwrap_err(),
+            Error::ParseInt(_)
+        ));
+        assert!(matches!(
+            "#12".parse::<Color>().unwrap_err(),
+            Error::Unsupported
+        ));
+        assert!(matches!(
+            "#1234".parse::<Color>().unwrap_err(),
+            Error::Unsupported
+        ));
+        assert!(matches!(
+            "#1234567".parse::<Color>().unwrap_err(),
+            Error::Unsupported
+        ));
     }
 }

@@ -374,83 +374,61 @@ impl TryFrom<u8> for Kind {
                 ram: true,
                 battery: true,
             }),
-            0x0f => {
-                Ok(Kind::Mbc3 {
-                    timer: true,
-                    ram: false,
-                    battery: true,
-                })
-            }
-            0x10 => {
-                Ok(Kind::Mbc3 {
-                    timer: true,
-                    ram: true,
-                    battery: true,
-                })
-            }
-            0x11 => {
-                Ok(Kind::Mbc3 {
-                    timer: false,
-                    ram: false,
-                    battery: false,
-                })
-            }
-            0x12 => {
-                Ok(Kind::Mbc3 {
-                    timer: false,
-                    ram: true,
-                    battery: false,
-                })
-            }
-            0x13 => {
-                Ok(Kind::Mbc3 {
-                    timer: false,
-                    ram: true,
-                    battery: true,
-                })
-            }
-            0x19 => {
-                Ok(Kind::Mbc5 {
-                    rumble: false,
-                    ram: false,
-                    battery: false,
-                })
-            }
-            0x1a => {
-                Ok(Kind::Mbc5 {
-                    rumble: false,
-                    ram: true,
-                    battery: false,
-                })
-            }
-            0x1b => {
-                Ok(Kind::Mbc5 {
-                    rumble: false,
-                    ram: true,
-                    battery: true,
-                })
-            }
-            0x1c => {
-                Ok(Kind::Mbc5 {
-                    rumble: true,
-                    ram: false,
-                    battery: false,
-                })
-            }
-            0x1d => {
-                Ok(Kind::Mbc5 {
-                    rumble: true,
-                    ram: true,
-                    battery: false,
-                })
-            }
-            0x1e => {
-                Ok(Kind::Mbc5 {
-                    rumble: true,
-                    ram: true,
-                    battery: true,
-                })
-            }
+            0x0f => Ok(Kind::Mbc3 {
+                timer: true,
+                ram: false,
+                battery: true,
+            }),
+            0x10 => Ok(Kind::Mbc3 {
+                timer: true,
+                ram: true,
+                battery: true,
+            }),
+            0x11 => Ok(Kind::Mbc3 {
+                timer: false,
+                ram: false,
+                battery: false,
+            }),
+            0x12 => Ok(Kind::Mbc3 {
+                timer: false,
+                ram: true,
+                battery: false,
+            }),
+            0x13 => Ok(Kind::Mbc3 {
+                timer: false,
+                ram: true,
+                battery: true,
+            }),
+            0x19 => Ok(Kind::Mbc5 {
+                rumble: false,
+                ram: false,
+                battery: false,
+            }),
+            0x1a => Ok(Kind::Mbc5 {
+                rumble: false,
+                ram: true,
+                battery: false,
+            }),
+            0x1b => Ok(Kind::Mbc5 {
+                rumble: false,
+                ram: true,
+                battery: true,
+            }),
+            0x1c => Ok(Kind::Mbc5 {
+                rumble: true,
+                ram: false,
+                battery: false,
+            }),
+            0x1d => Ok(Kind::Mbc5 {
+                rumble: true,
+                ram: true,
+                battery: false,
+            }),
+            0x1e => Ok(Kind::Mbc5 {
+                rumble: true,
+                ram: true,
+                battery: true,
+            }),
             0x20 => Ok(Kind::Mbc6),
             0x22 => Ok(Kind::Mbc7 {
                 sensor: true,

@@ -214,12 +214,11 @@ impl Debugger {
 
         // Present the prompt; get input
         let fmt = format!("(#{} @ {:#06x})> ", self.cycle, self.pc);
-        let input =
-            match line.readline(&fmt) {
-                Err(ReadlineError::Interrupted) => return Ok(()),
-                Err(ReadlineError::Eof) => return Err(Error::Quit),
-                res => res?,
-            };
+        let input = match line.readline(&fmt) {
+            Err(ReadlineError::Interrupted) => return Ok(()),
+            Err(ReadlineError::Eof) => return Err(Error::Quit),
+            res => res?,
+        };
         line.history_mut().add(&input)?; // add input to history
 
         // Parse input

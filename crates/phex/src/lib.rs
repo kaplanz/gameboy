@@ -79,15 +79,14 @@ impl<'a> Internal<'a> {
         let mut data = data.chunks(linesz * wordsz).enumerate().peekable();
         while let Some((idx, line)) = data.next() {
             // Check if this line repeats a single padding byte
-            let pad =
-                match line {
-                    [head, tail @ ..] => tail
-                        .iter()
-                        .all(|byte| byte == head)
-                        .then_some(head)
-                        .copied(),
-                    _ => None,
-                };
+            let pad = match line {
+                [head, tail @ ..] => tail
+                    .iter()
+                    .all(|byte| byte == head)
+                    .then_some(head)
+                    .copied(),
+                _ => None,
+            };
             // Ignore repeated lines
             if skip && pad == repeat {
                 continue;
