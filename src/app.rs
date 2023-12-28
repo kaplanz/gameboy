@@ -16,13 +16,13 @@ use minifb::Key;
 use parking_lot::Mutex;
 use remus::{Clock, Machine};
 
+use crate::cfg::Settings;
 #[cfg(feature = "doctor")]
 use crate::doc::Doctor;
 #[cfg(feature = "gbd")]
 use crate::gbd::{self, Debugger};
 use crate::gui::Gui;
-use crate::pal::Palette;
-use crate::{Speed, FREQ};
+use crate::FREQ;
 
 // Clock divider for more efficient synchronization.
 const DIVIDER: u32 = 0x100;
@@ -35,12 +35,6 @@ pub struct App {
     pub gui: Option<Gui>,
     #[cfg(feature = "debug")]
     pub dbg: Debug,
-}
-
-#[derive(Debug)]
-pub struct Settings {
-    pub pal: Palette,
-    pub speed: Speed,
 }
 
 #[cfg(feature = "debug")]
@@ -66,17 +60,8 @@ impl App {
             mut dbg,
         } = self;
 
-        // Create 4 MiHz clock to sync emulator
-        #[rustfmt::skip]
-        let freq = match cfg.speed {
-            Speed::Half         => Some(FREQ / 2),
-            Speed::Full         => Some(FREQ),
-            Speed::Double       => Some(2 * FREQ),
-            Speed::Triple       => Some(3 * FREQ),
-            Speed::Custom(freq) => Some(freq),
-            Speed::Max          => None,
-        };
-        let mut clk = freq.map(|freq| freq / DIVIDER).map(Clock::with_freq);
+        // Construct clock for emulator sync
+        let mut clk = cfg.spd.map(|freq| freq / DIVIDER).map(Clock::with_freq);
 
         // Initialize timer, counters
         let mut now = std::time::Instant::now();

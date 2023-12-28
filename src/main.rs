@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 
-use clap::{Parser, ValueEnum};
+use clap::Parser;
 use eyre::{ensure, Result, WrapErr};
 use gameboy::core::dmg::Dimensions;
 use gameboy::dmg::cart::Cartridge;
@@ -17,9 +17,10 @@ use tracing_subscriber::layer::Layered;
 #[cfg(feature = "gbd")]
 use tracing_subscriber::{reload, EnvFilter, Registry};
 
+use crate::app::App;
 #[cfg(feature = "debug")]
 use crate::app::Debug;
-use crate::app::{App, Settings};
+use crate::cfg::Settings;
 use crate::cli::Args;
 #[cfg(feature = "doctor")]
 use crate::doc::Doctor;
@@ -30,6 +31,7 @@ use crate::gui::view::View;
 use crate::gui::{Gui, Window};
 
 mod app;
+mod cfg;
 mod cli;
 #[cfg(feature = "doctor")]
 mod doc;
@@ -43,19 +45,6 @@ type Handle = reload::Handle<EnvFilter, Layered<Layer<Registry>, Registry>>;
 
 /// Game Boy main clock frequency, set to 4,194,304 Hz.
 const FREQ: u32 = 0x0040_0000;
-
-/// Emulation speed modifier.
-#[derive(Clone, Debug, Default, PartialEq, ValueEnum)]
-pub enum Speed {
-    Half,
-    #[default]
-    Full,
-    Double,
-    Triple,
-    Max,
-    #[clap(skip)]
-    Custom(u32),
-}
 
 fn main() -> Result<()> {
     // Install panic and error report handlers
@@ -128,7 +117,10 @@ fn main() -> Result<()> {
 
     // Prepare settings
     let Args { pal, speed, .. } = args;
-    let cfg = Settings { pal, speed };
+    let cfg = Settings {
+        pal: pal.into(),
+        spd: speed.into(),
+    };
     // Prepare debug info
     #[cfg(feature = "debug")]
     let debug = Debug {
