@@ -36,6 +36,7 @@ clap = { version = "4.4.8", features = ["derive", "env", "wrap_help"] }
 color-eyre = { version = "0.6.2" }
 ctrlc = { version = "3.4.1", optional = true }
 derange = { version = "0.1.0", path = "crates/derange" }
+dirs = "5.0.1"
 displaydoc = { version = "0.2.4", optional = true }
 eyre = "0.6.9"
 gameboy-core = { path = "core" }
@@ -49,6 +50,9 @@ pest_derive = "2.7.5"
 phex = { version = "0.1.0", path = "crates/phex", optional = true }
 remus = { git = "https://github.com/kaplanz/remus.git" }
 rustyline = "12.0.0"
+serde = { version = "1.0.193", features = ["derive"] }
+sysexits = "0.7.7"
 tell = { version = "0.1.0", path = "crates/tell" }
 thiserror = "1.0.50"
+toml = "0.8.8"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
