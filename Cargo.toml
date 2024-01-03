@@ -30,12 +30,15 @@ gbd = ["debug", "dep:ctrlc", "dep:displaydoc", "dep:phex", "dep:parking_lot"]
 view = ["debug"]
 
 [dependencies]
+bytecount = "0.6.7"
+chex = { version = "0.1.0", path = "crates/chex" }
 clap = { version = "4.4.8", features = ["derive", "env", "wrap_help"] }
 color-eyre = { version = "0.6.2" }
 ctrlc = { version = "3.4.1", optional = true }
+derange = { version = "0.1.0", path = "crates/derange" }
+displaydoc = { version = "0.2.4", optional = true }
 eyre = "0.6.9"
 gameboy-core = { path = "core" }
-chex = { version = "0.1.0", path = "crates/chex" }
 indexmap = "2.1.0"
 log = "0.4.20"
 minifb = "0.25.0"
@@ -49,6 +52,3 @@ rustyline = "12.0.0"
 tell = { version = "0.1.0", path = "crates/tell" }
 thiserror = "1.0.50"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-bytecount = "0.6.7"
-displaydoc = { version = "0.2.4", optional = true }
-derange = { version = "0.1.0", path = "crates/derange" }
