@@ -11,13 +11,16 @@ use rustyline::error::ReadlineError;
 use rustyline::history::History;
 use rustyline::DefaultEditor as Readline;
 use thiserror::Error;
-use tracing_subscriber::reload;
+use tracing_subscriber::fmt::Layer;
+use tracing_subscriber::layer::Layered;
+use tracing_subscriber::{reload, EnvFilter, Registry};
 
 use self::lang::{Command, Program};
-use super::Handle;
 
 mod exec;
 mod lang;
+
+pub(crate) type Handle = reload::Handle<EnvFilter, Layered<Layer<Registry>, Registry>>;
 
 type Result<T> = std::result::Result<T, Error>;
 

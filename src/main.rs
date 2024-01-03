@@ -1,7 +1,7 @@
 #![warn(clippy::pedantic)]
 
-use std::fs::File;
-use std::io::Read;
+use std::fs::{self, File};
+use std::io::{self, Read};
 use std::path::PathBuf;
 
 use clap::Parser;
@@ -9,19 +9,14 @@ use eyre::{ensure, Result, WrapErr};
 use gameboy::core::dmg::Dimensions;
 use gameboy::dmg::cart::Cartridge;
 use gameboy::dmg::{Boot, GameBoy, SCREEN};
-use log::{info, warn};
-#[cfg(feature = "gbd")]
-use tracing_subscriber::fmt::Layer;
-#[cfg(feature = "gbd")]
-use tracing_subscriber::layer::Layered;
-#[cfg(feature = "gbd")]
-use tracing_subscriber::{reload, EnvFilter, Registry};
+use log::{info, trace, warn};
+use sysexits::ExitCode;
+use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::EnvFilter;
 
 use crate::app::App;
-#[cfg(feature = "debug")]
-use crate::app::Debug;
-use crate::cfg::Settings;
-use crate::cli::Args;
+use crate::cfg::Config;
+use crate::cli::Cli;
 #[cfg(feature = "doctor")]
 use crate::doc::Doctor;
 #[cfg(feature = "gbd")]
@@ -40,34 +35,66 @@ mod gbd;
 mod gui;
 mod pal;
 
-#[cfg(feature = "gbd")]
-type Handle = reload::Handle<EnvFilter, Layered<Layer<Registry>, Registry>>;
-
 /// Game Boy main clock frequency, set to 4,194,304 Hz.
-const FREQ: u32 = 0x0040_0000;
+const FREQUENCY: u32 = 4_194_304;
 
 fn main() -> Result<()> {
     // Install panic and error report handlers
     color_eyre::install()?;
     // Parse args
-    let args = Args::parse();
+    let args = Cli::parse();
+    // Parse conf
+    let conf: Config = {
+        // Read file
+        let path = &args.conf;
+        match fs::read_to_string(path) {
+            Ok(read) => Ok(read),
+            Err(err) => match err.kind() {
+                io::ErrorKind::NotFound => Ok(String::default()),
+                _ => Err(err).with_context(|| format!("could not read: `{}`", path.display())),
+            },
+        }
+        // Parse conf
+        .map(|read| match toml::from_str(&read) {
+            Ok(conf) => conf,
+            Err(err) => {
+                tell::error!("{err}");
+                ExitCode::Config.exit();
+            }
+        })
+    }
+    .context("unable to load config")?;
     // Initialize logger
     let log = tracing_subscriber::fmt()
-        .with_env_filter(&args.log)
+        .with_env_filter({
+            let filter = args.log.as_deref().unwrap_or_default();
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::WARN.into())
+                .parse(filter)
+                .with_context(|| format!("failed to parse: \"{filter}\""))?
+        })
         .with_filter_reloading();
     #[cfg(feature = "gbd")]
     let handle = log.reload_handle();
     log.init();
+    // Log previous steps
+    trace!("args: {args:#?}");
+    trace!("conf: {conf:#?}");
 
     // Read the boot ROM
-    let boot = boot(args.boot)?;
+    let boot = boot(args.hw.boot.or(conf.hw.boot))?;
     // Read the cartridge
-    let cart = cart(args.rom, args.chk, args.force)?;
+    let cart = cart(args.cart.rom, args.cart.chk, args.cart.force)?;
     let title = match cart.header().title.replace('\0', " ").trim() {
         "" => "Untitled",
         title => title,
     } // extract title from cartridge
     .to_string();
+
+    // Exit early on `--exit`
+    if args.exit {
+        return Ok(());
+    }
 
     // Create emulator instance
     let mut emu = if let Some(boot) = boot {
@@ -78,26 +105,22 @@ fn main() -> Result<()> {
     // Load the cartridge into the emulator
     emu.load(cart);
 
-    // Exit after loading
-    if args.exit {
-        return Ok(());
-    }
-
     // Initialize UI
-    let gui = if args.headless {
+    let gui = if args.gui.headless {
         None
     } else {
         let Dimensions { width, height } = SCREEN;
         Some(Gui {
             main: Window::new(&title, width, height)?,
             #[cfg(feature = "view")]
-            view: args.view.then_some(View::new()?),
+            view: args.dbg.view.then_some(View::new()?),
         })
     };
 
     #[cfg(feature = "doctor")]
     // Open doctor logfile
     let doc = args
+        .dbg
         .doc
         .map(|path| -> Result<_> {
             // Create logfile
@@ -111,25 +134,25 @@ fn main() -> Result<()> {
     // Declare debugger
     #[cfg(feature = "gbd")]
     let gbd = args
+        .dbg
         .gbd
         .then_some(Debugger::new())
         .map(|gdb| gdb.set_log(handle));
 
-    // Prepare settings
-    let Args { pal, speed, .. } = args;
-    let cfg = Settings {
-        pal: pal.into(),
-        spd: speed.into(),
+    // Construct app options
+    let cfg = app::Options {
+        pal: args.gui.pal.unwrap_or(conf.gui.pal).into(),
+        spd: args.gui.speed.unwrap_or(conf.gui.speed).into(),
     };
-    // Prepare debug info
+    // Construct debug options
     #[cfg(feature = "debug")]
-    let debug = Debug {
+    let debug = app::Debug {
         #[cfg(feature = "doctor")]
         doc,
         #[cfg(feature = "gbd")]
         gbd,
     };
-    // Prepare application
+    // Construct application
     let app = App {
         title,
         cfg,

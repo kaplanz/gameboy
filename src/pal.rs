@@ -4,6 +4,7 @@ use std::fmt::{Debug, Display};
 use std::ops::Index;
 use std::str::FromStr;
 
+use serde::Deserialize;
 use thiserror::Error;
 
 mod decl {
@@ -57,8 +58,8 @@ mod decl {
     /// [author]: https://lospec.com/kerrielake
     /// [source]: https://lospec.com/palette-list/rustic-gb
     pub const RUSTIC: Palette = Palette([
-        Color(0xa96868),
         Color(0xedb4a1),
+        Color(0xa96868),
         Color(0x764462),
         Color(0x2c2137),
     ]);
@@ -82,7 +83,7 @@ pub use self::decl::*;
 /// Use [24-bit] color (stored as `0x00RRGGBB_u32`)
 ///
 /// [24-bit]: https://en.wikipedia.org/wiki/List_of_monochrome_and_RGB_color_formats#24-bit_RGB
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Copy, Clone, Debug, Default, Deserialize)]
 pub struct Color(u32);
 
 impl Display for Color {
@@ -106,7 +107,7 @@ impl From<Color> for u32 {
 }
 
 /// Color palette.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Palette([Color; 4]);
 
 impl Display for Palette {

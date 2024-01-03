@@ -1,20 +1,51 @@
+use std::path::PathBuf;
+
 use clap::ValueEnum;
+use serde::Deserialize;
 
-use crate::pal::{self, Palette};
-use crate::FREQ;
+use crate::{pal, FREQUENCY};
 
-/// Emulation configuration.
-#[derive(Debug)]
-pub struct Settings {
-    /// Palette.
+/// Configuration directory path.
+pub fn dir() -> PathBuf {
+    dirs::config_dir().unwrap().join("gameboy")
+}
+
+/// Emulator configuration.
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Config {
+    pub gui: Gui,
+    pub hw: Hardware,
+}
+
+/// Graphical user interface.
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Gui {
+    #[serde(rename = "palette")]
     pub pal: Palette,
-    /// Frequency.
-    pub spd: Option<u32>,
+    pub speed: Speed,
+}
+
+/// Console hardware description.
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Hardware {
+    pub boot: Option<PathBuf>,
+}
+
+/// Console hardware model.
+#[derive(Clone, Debug, Default, Deserialize, ValueEnum)]
+pub enum Model {
+    /// Game Boy
+    #[default]
+    Dmg,
 }
 
 /// Emulator palette selection.
-#[derive(Clone, Debug, Default, ValueEnum)]
-pub enum Theme {
+#[derive(Clone, Debug, Default, Deserialize, ValueEnum)]
+#[serde(rename_all = "kebab-case")]
+pub enum Palette {
     /// Chrome palette.
     #[default]
     Chrome,
@@ -29,25 +60,26 @@ pub enum Theme {
     /// Custom palette.
     #[allow(unused)]
     #[clap(skip)]
-    Custom(Palette),
+    Custom(pal::Palette),
 }
 
 #[rustfmt::skip]
-impl From<Theme> for Palette {
-    fn from(value: Theme) -> Self {
+impl From<Palette> for pal::Palette {
+    fn from(value: Palette) -> Self {
         match value {
-            Theme::Chrome => pal::CHROME,
-            Theme::Legacy => pal::LEGACY,
-            Theme::Mystic => pal::MYSTIC,
-            Theme::Rustic => pal::RUSTIC,
-            Theme::Winter => pal::WINTER,
-            Theme::Custom(pal) => pal,
+            Palette::Chrome => pal::CHROME,
+            Palette::Legacy => pal::LEGACY,
+            Palette::Mystic => pal::MYSTIC,
+            Palette::Rustic => pal::RUSTIC,
+            Palette::Winter => pal::WINTER,
+            Palette::Custom(pal) => pal,
         }
     }
 }
 
 /// Emulation speed modifier.
-#[derive(Clone, Debug, Default, PartialEq, ValueEnum)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, ValueEnum)]
+#[serde(rename_all = "kebab-case")]
 pub enum Speed {
     /// 30 fps.
     Half,
@@ -70,10 +102,10 @@ pub enum Speed {
 impl From<Speed> for Option<u32> {
     fn from(value: Speed) -> Self {
         match value {
-            Speed::Half        => Some(FREQ / 2),
-            Speed::Full        => Some(FREQ),
-            Speed::Double      => Some(FREQ * 2),
-            Speed::Triple      => Some(FREQ * 3),
+            Speed::Half        => Some(FREQUENCY / 2),
+            Speed::Full        => Some(FREQUENCY),
+            Speed::Double      => Some(FREQUENCY * 2),
+            Speed::Triple      => Some(FREQUENCY * 3),
             Speed::Max         => None,
             Speed::Custom(spd) => Some(spd),
         }

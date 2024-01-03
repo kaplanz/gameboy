@@ -16,33 +16,55 @@ use minifb::Key;
 use parking_lot::Mutex;
 use remus::{Clock, Machine};
 
-use crate::cfg::Settings;
 #[cfg(feature = "doctor")]
 use crate::doc::Doctor;
 #[cfg(feature = "gbd")]
 use crate::gbd::{self, Debugger};
 use crate::gui::Gui;
-use crate::FREQ;
+use crate::pal::Palette;
+use crate::FREQUENCY;
 
 // Clock divider for more efficient synchronization.
 const DIVIDER: u32 = 0x100;
 
+/// App internals.
 #[derive(Debug)]
 pub struct App {
+    /// Window title.
     pub title: String,
-    pub cfg: Settings,
-    pub emu: GameBoy,
-    pub gui: Option<Gui>,
+
+    /// Runtime options.
+    pub cfg: Options,
+
     #[cfg(feature = "debug")]
+    /// Debug options.
     pub dbg: Debug,
+
+    /// Emulator instance.
+    pub emu: GameBoy,
+
+    /// User-interface handle.
+    pub gui: Option<Gui>,
 }
 
+/// Runtime options.
+#[derive(Debug)]
+pub struct Options {
+    /// Palette.
+    pub pal: Palette,
+    /// Frequency.
+    pub spd: Option<u32>,
+}
+
+/// Debug options.
 #[cfg(feature = "debug")]
 #[derive(Debug)]
 pub struct Debug {
     #[cfg(feature = "doctor")]
+    /// Introspective logging.
     pub doc: Option<Doctor>,
     #[cfg(feature = "gbd")]
+    /// Interactive debugger.
     pub gbd: Option<Debugger>,
 }
 
@@ -54,10 +76,10 @@ impl App {
         let Self {
             title,
             cfg,
-            mut emu,
-            mut gui,
             #[cfg(feature = "debug")]
             mut dbg,
+            mut emu,
+            mut gui,
         } = self;
 
         // Construct clock for emulator sync
@@ -69,11 +91,11 @@ impl App {
         let mut stamp = 0;
         let mut frame = 0;
 
-        // Enable doctor when used
+        // Enable doctor
         #[cfg(feature = "doctor")]
         emu.doctor(dbg.doc.is_some());
 
-        // Prepare debugger when used
+        // Prepare debugger
         #[cfg(feature = "gbd")]
         let mut gbd = dbg.gbd.map(Mutex::new).map(Arc::new);
         #[cfg(feature = "gbd")]
@@ -114,7 +136,7 @@ impl App {
                 // Calculate stats
                 let iters = cycle - stamp; // iterations since last probe
                 let freq = f64::from(iters) / now.elapsed().as_secs_f64();
-                let speedup = freq / f64::from(FREQ);
+                let speedup = freq / f64::from(FREQUENCY);
                 let fps = 60. * speedup;
                 // Log stats
                 debug!(
