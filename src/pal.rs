@@ -4,8 +4,8 @@ use std::fmt::{Debug, Display};
 use std::ops::Index;
 use std::str::FromStr;
 
-use serde::Deserialize;
-use thiserror::Error;
+use serde::{Deserialize, Serialize};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 mod decl {
     #![allow(clippy::unreadable_literal)]
@@ -80,10 +80,25 @@ mod decl {
 
 pub use self::decl::*;
 
+/// 2-bit color palette.
+///
+/// Used for the DMG model console; the 2-bit color depth supports a total of
+/// four colors.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Palette([Color; 4]);
+
+impl Index<usize> for Palette {
+    type Output = Color;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
 /// Use [24-bit] color (stored as `0x00RRGGBB_u32`)
 ///
 /// [24-bit]: https://en.wikipedia.org/wiki/List_of_monochrome_and_RGB_color_formats#24-bit_RGB
-#[derive(Copy, Clone, Debug, Default, Deserialize)]
+#[derive(Copy, Clone, Debug, Default, DeserializeFromStr, SerializeDisplay)]
 pub struct Color(u32);
 
 impl Display for Color {
@@ -104,55 +119,4 @@ impl From<Color> for u32 {
     fn from(value: Color) -> Self {
         value.0
     }
-}
-
-/// Color palette.
-#[derive(Clone, Debug, Deserialize)]
-pub struct Palette([Color; 4]);
-
-impl Display for Palette {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(
-            &format!("{},{},{},{}", self.0[0], self.0[1], self.0[2], self.0[3]),
-            f,
-        )
-    }
-}
-
-impl FromStr for Palette {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let pal: Vec<Color> = s
-            .split(',')
-            .map(str::parse::<Color>)
-            .collect::<Result<_, _>>()
-            .map_err(Error::Parse)?;
-        let pal: [Color; 4] = pal.try_into().map_err(|err: Vec<_>| match err.len() {
-            len @ 0..=3 => Error::Missing(len),
-            len @ 5.. => Error::Extra(len),
-            _ => unreachable!(),
-        })?;
-
-        Ok(Self(pal))
-    }
-}
-
-impl Index<usize> for Palette {
-    type Output = Color;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.0[index]
-    }
-}
-
-/// A type specifying categories of [`Color`] errors.
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error(transparent)]
-    Parse(#[from] chex::Error),
-    #[error("missing palette colors: (found {0}, expected 4)")]
-    Missing(usize),
-    #[error("extra palette colors: (found {0}, expected 4)")]
-    Extra(usize),
 }
