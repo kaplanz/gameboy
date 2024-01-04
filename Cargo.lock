@@ -226,6 +226,37 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
 
 [[package]]
+name = "cli"
+version = "0.1.0"
+dependencies = [
+ "bytecount",
+ "clap",
+ "color-eyre",
+ "ctrlc",
+ "derange",
+ "dirs",
+ "displaydoc",
+ "eyre",
+ "gameboy",
+ "indexmap 2.1.0",
+ "log",
+ "minifb",
+ "num",
+ "parking_lot",
+ "pest",
+ "pest_derive",
+ "phex",
+ "remus",
+ "rustyline",
+ "serde",
+ "sysexits",
+ "tell",
+ "thiserror",
+ "toml",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "clipboard-win"
 version = "4.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -587,33 +618,12 @@ dependencies = [
 name = "gameboy"
 version = "0.1.0"
 dependencies = [
- "bytecount",
  "chex",
- "clap",
- "color-eyre",
- "ctrlc",
- "derange",
- "dirs",
- "displaydoc",
- "eyre",
  "gameboy-core",
- "indexmap 2.1.0",
- "log",
- "minifb",
- "num",
- "parking_lot",
- "pest",
- "pest_derive",
- "phex",
  "remus",
- "rustyline",
  "serde",
  "serde_with",
- "sysexits",
- "tell",
  "thiserror",
- "toml",
- "tracing-subscriber",
 ]
 
 [[package]]

@@ -32,3 +32,5 @@
 #![warn(clippy::pedantic)]
 
 pub use gameboy_core as core;
+
+pub mod api;
