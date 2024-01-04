@@ -1,9 +1,10 @@
 use std::path::PathBuf;
 
 use clap::ValueEnum;
+use gameboy::api::pal;
 use serde::Deserialize;
 
-use crate::{pal, FREQUENCY};
+use crate::FREQUENCY;
 
 /// Configuration directory path.
 pub fn dir() -> PathBuf {

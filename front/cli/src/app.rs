@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use eyre::Context;
+use gameboy::api::pal::Palette;
 use gameboy::core::dmg::{Button, GameBoy, Screen};
 use gameboy::core::{dmg, Emulator};
 use log::debug;
@@ -19,7 +20,6 @@ use crate::doc::Doctor;
 #[cfg(feature = "gbd")]
 use crate::gbd::{self, Debugger};
 use crate::gui::Gui;
-use crate::pal::Palette;
 use crate::FREQUENCY;
 
 // Clock divider for more efficient synchronization.

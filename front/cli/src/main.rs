@@ -32,7 +32,6 @@ mod doc;
 #[cfg(feature = "gbd")]
 mod gbd;
 mod gui;
-mod pal;
 
 /// Game Boy main clock frequency, set to 4,194,304 Hz.
 const FREQUENCY: u32 = 4_194_304;
