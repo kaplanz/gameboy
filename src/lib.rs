@@ -34,3 +34,5 @@
 pub use gameboy_core as core;
 
 pub mod api;
+#[cfg(feature = "gbd")]
+pub mod gbd;

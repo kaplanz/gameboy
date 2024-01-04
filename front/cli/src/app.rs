@@ -7,8 +7,12 @@ use std::time::Duration;
 
 use eyre::Context;
 use gameboy::api::pal::Palette;
+#[cfg(feature = "debug")]
+use gameboy::core::dmg;
 use gameboy::core::dmg::{Button, GameBoy, Screen};
-use gameboy::core::{dmg, Emulator};
+use gameboy::core::Emulator;
+#[cfg(feature = "gbd")]
+use gameboy::gbd::{self, Debugger};
 use log::debug;
 use minifb::Key;
 #[cfg(feature = "gbd")]
@@ -17,8 +21,6 @@ use remus::{Clock, Machine};
 
 #[cfg(feature = "doctor")]
 use crate::doc::Doctor;
-#[cfg(feature = "gbd")]
-use crate::gbd::{self, Debugger};
 use crate::gui::Gui;
 use crate::FREQUENCY;
 

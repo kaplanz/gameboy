@@ -3,11 +3,11 @@
 use std::io::Read;
 
 use derange::Derange;
-use gameboy::core::dmg::cpu::Processor;
 use remus::{Block, Location as _};
 
 use super::lang::{Keyword, Location, Value};
 use super::{Debugger, Error, GameBoy, Mode, Result};
+use crate::core::dmg::cpu::Processor;
 use crate::gbd::Breakpoint;
 
 pub fn r#break(gbd: &mut Debugger, addr: u16) -> Result<()> {
@@ -165,15 +165,15 @@ pub fn list(gbd: &Debugger, emu: &GameBoy) -> Result<()> {
 #[allow(clippy::needless_pass_by_value)]
 pub fn log(gbd: &mut Debugger, filter: Option<String>) -> Result<()> {
     // Extract the reload handle
-    let handle = gbd.log.as_mut().ok_or(Error::MissingReloadHandle)?;
+    let log = gbd.log.as_mut().ok_or(Error::MissingReloadHandle)?;
 
     // Change the tracing filter
     if let Some(filter) = filter {
-        handle.reload(filter)?;
+        (log.set)(filter);
     }
 
     // Print the current filter
-    handle.with_current(|filter| tell::info!("filter: {filter}"))?;
+    tell::info!("filter: {}", (log.get)());
 
     Ok(())
 }
