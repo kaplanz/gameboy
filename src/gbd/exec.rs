@@ -3,7 +3,7 @@
 use std::io::Read;
 
 use derange::Derange;
-use gameboy::dmg::cpu::Processor;
+use gameboy::core::dmg::cpu::Processor;
 use remus::{Block, Location as _};
 
 use super::lang::{Keyword, Location, Value};

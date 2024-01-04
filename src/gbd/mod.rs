@@ -2,8 +2,8 @@
 
 use std::fmt::{Display, Write};
 
-use gameboy::dmg::cpu::{reg, Stage};
-use gameboy::dmg::GameBoy;
+use gameboy::core::dmg::cpu::{reg, Stage};
+use gameboy::core::dmg::GameBoy;
 use indexmap::IndexMap;
 use log::debug;
 use remus::{Block, Clock, Location, Machine};

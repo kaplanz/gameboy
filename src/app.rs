@@ -6,10 +6,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use eyre::Context;
-use gameboy::core::Emulator;
-#[allow(unused_imports)]
-use gameboy::dmg;
-use gameboy::dmg::{Button, GameBoy, Screen};
+use gameboy::core::dmg::{Button, GameBoy, Screen};
+use gameboy::core::{dmg, Emulator};
 use log::debug;
 use minifb::Key;
 #[cfg(feature = "gbd")]

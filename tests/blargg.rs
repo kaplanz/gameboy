@@ -1,7 +1,7 @@
 use std::io::Read;
 
-use gameboy::dmg::cart::Cartridge;
-use gameboy::dmg::GameBoy;
+use gameboy::core::dmg::cart::Cartridge;
+use gameboy::core::dmg::GameBoy;
 use remus::Machine;
 use thiserror::Error;
 
