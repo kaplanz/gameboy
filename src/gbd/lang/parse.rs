@@ -3,7 +3,6 @@ use std::num::ParseIntError;
 use std::ops::RangeInclusive;
 
 use derange::Derange;
-use gameboy::core::dmg::{cpu, pic, ppu, serial, timer};
 use log::trace;
 use num::traits::WrappingSub;
 use num::{Bounded, Integer};
@@ -13,6 +12,7 @@ use pest_derive::Parser;
 use thiserror::Error;
 
 use super::{Command, Keyword, Location, Mode, Program, Value};
+use crate::core::dmg::{cpu, pic, ppu, serial, timer};
 
 pub fn prog(src: &str) -> Result<Program, Error> {
     Language::prog(src)

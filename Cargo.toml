@@ -23,10 +23,39 @@ authors = ["Zakhary Kaplan <me@zakhary.dev>"]
 repository = "https://github.com/kaplanz/gameboy"
 license = "MIT OR Apache-2.0"
 
+[features]
+default = ["gbd"]
+debug = []
+gbd = [
+    "debug",
+    "dep:bytecount",
+    "dep:derange",
+    "dep:displaydoc",
+    "dep:indexmap",
+    "dep:log",
+    "dep:num",
+    "dep:pest",
+    "dep:pest_derive",
+    "dep:phex",
+    "dep:rustyline",
+    "dep:tell",
+]
+
 [dependencies]
+bytecount = { version = "0.6.7", optional = true }
 chex = { version = "0.1.0", path = "crates/chex" }
+derange = { version = "0.1.0", path = "crates/derange", optional = true }
+displaydoc = { version = "0.2.4", optional = true }
 gameboy-core = { path = "core" }
+indexmap = { version = "2.1.0", optional = true }
+log = { version = "0.4.20", optional = true }
+num = { version = "0.4.1", optional = true }
+pest = { version = "2.7.6", optional = true }
+pest_derive = { version = "2.7.6", optional = true }
+phex = { version = "0.1.0", path = "crates/phex", optional = true }
 remus = { git = "https://github.com/kaplanz/remus.git" }
+rustyline = { version = "13.0.0", optional = true }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_with = "3.4.0"
+tell = { version = "0.1.0", path = "crates/tell", optional = true }
 thiserror = "1.0.50"

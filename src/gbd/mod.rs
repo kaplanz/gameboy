@@ -1,9 +1,7 @@
 #![allow(clippy::result_large_err)]
 
-use std::fmt::{Display, Write};
+use std::fmt::{Debug, Display, Write};
 
-use gameboy::core::dmg::cpu::{reg, Stage};
-use gameboy::core::dmg::GameBoy;
 use indexmap::IndexMap;
 use log::debug;
 use remus::{Block, Clock, Location, Machine};
@@ -11,16 +9,13 @@ use rustyline::error::ReadlineError;
 use rustyline::history::History;
 use rustyline::DefaultEditor as Readline;
 use thiserror::Error;
-use tracing_subscriber::fmt::Layer;
-use tracing_subscriber::layer::Layered;
-use tracing_subscriber::{reload, EnvFilter, Registry};
 
 use self::lang::{Command, Program};
+use crate::core::dmg::cpu::{reg, Stage};
+use crate::core::dmg::GameBoy;
 
 mod exec;
 mod lang;
-
-pub(crate) type Handle = reload::Handle<EnvFilter, Layered<Layer<Registry>, Registry>>;
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -72,11 +67,27 @@ impl Display for Mode {
     }
 }
 
+/// An abstract to a get and set a computed value.
+pub struct Portal<T> {
+    //. Get the value.
+    pub get: Box<dyn Fn() -> T + Send>,
+    /// Set the value.
+    pub set: Box<dyn FnMut(T) + Send>,
+}
+
+impl<T: Debug> Debug for Portal<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Portal")
+            .field(&format!("{:?}", (self.get)()))
+            .finish()
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct Debugger {
     // Application
     cycle: usize,
-    log: Option<Handle>,
+    log: Option<Portal<String>>,
     // Console
     pc: u16,
     state: Stage,
@@ -92,11 +103,16 @@ pub struct Debugger {
 
 impl Debugger {
     /// Constructs a new `Debugger` instance.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Runs interactive debugger.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the debugger failed.
     pub fn run(&mut self, emu: &mut GameBoy, clk: &mut Option<Clock>) -> Result<()> {
         // Provide information to user before prompting for command
         self.inform(emu);
@@ -165,9 +181,8 @@ impl Debugger {
     /// Sets the logging handle.
     ///
     /// Used to change the logging level filter.
-    pub fn set_log(mut self, handle: Handle) -> Self {
-        self.log = Some(handle);
-        self
+    pub fn logger(&mut self, log: Portal<String>) {
+        self.log = Some(log);
     }
 
     /// Enables the debugger.
@@ -186,6 +201,7 @@ impl Debugger {
     }
 
     /// Checks if the console is paused.
+    #[must_use]
     pub fn paused(&self) -> bool {
         !self.play
     }
@@ -198,6 +214,10 @@ impl Debugger {
     }
 
     /// Informs the user of the current emulation context.
+    ///
+    /// # Panics
+    ///
+    /// Cannot panic.
     pub fn inform(&self, emu: &GameBoy) {
         // Give context if recently paused
         if self.play {
@@ -206,6 +226,14 @@ impl Debugger {
     }
 
     /// Prompts the user for a debugger program.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the prompt failed.
+    ///
+    /// # Panics
+    ///
+    /// Cannot panic.
     pub fn prompt(&mut self) -> Result<()> {
         // Lazily initialize prompt
         let line = if let Some(line) = &mut self.line {
@@ -249,6 +277,14 @@ impl Debugger {
     }
 
     /// Executes a debugger command.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the command execution failed.
+    ///
+    /// # Panics
+    ///
+    /// Cannot panic.
     #[rustfmt::skip]
     #[allow(clippy::enum_glob_use)]
     pub fn exec(&mut self, emu: &mut GameBoy, cmd: Command) -> Result<()> {
@@ -358,8 +394,6 @@ pub enum Error {
     PointNotFound,
     #[error("quit requested by user")]
     Quit,
-    #[error(transparent)]
-    Tracing(#[from] reload::Error),
     #[error("unsupported keyword")]
     Unsupported,
     #[error("serial I/O failed")]

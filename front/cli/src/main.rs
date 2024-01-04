@@ -8,6 +8,8 @@ use clap::Parser;
 use eyre::{ensure, Result, WrapErr};
 use gameboy::core::dmg::cart::Cartridge;
 use gameboy::core::dmg::{Boot, Dimensions, GameBoy, SCREEN};
+#[cfg(feature = "gbd")]
+use gameboy::gbd::{Debugger, Portal};
 use log::{info, trace, warn};
 use sysexits::ExitCode;
 use tracing_subscriber::filter::LevelFilter;
@@ -18,8 +20,6 @@ use crate::cfg::Config;
 use crate::cli::Cli;
 #[cfg(feature = "doctor")]
 use crate::doc::Doctor;
-#[cfg(feature = "gbd")]
-use crate::gbd::Debugger;
 #[cfg(feature = "view")]
 use crate::gui::view::View;
 use crate::gui::{Gui, Window};
@@ -29,13 +29,12 @@ mod cfg;
 mod cli;
 #[cfg(feature = "doctor")]
 mod doc;
-#[cfg(feature = "gbd")]
-mod gbd;
 mod gui;
 
 /// Game Boy main clock frequency, set to 4,194,304 Hz.
 const FREQUENCY: u32 = 4_194_304;
 
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<()> {
     // Install panic and error report handlers
     color_eyre::install()?;
@@ -131,11 +130,22 @@ fn main() -> Result<()> {
 
     // Declare debugger
     #[cfg(feature = "gbd")]
-    let gbd = args
-        .dbg
-        .gbd
-        .then_some(Debugger::new())
-        .map(|gdb| gdb.set_log(handle));
+    let gbd = args.dbg.gbd.then_some(Debugger::new()).map(|mut gdb| {
+        gdb.logger({
+            Portal {
+                get: {
+                    let handle = handle.clone();
+                    Box::new(move || {
+                        handle
+                            .with_current(std::string::ToString::to_string)
+                            .unwrap()
+                    })
+                },
+                set: Box::new(move |filter: String| handle.reload(filter).unwrap()),
+            }
+        });
+        gdb
+    });
 
     // Construct app options
     let cfg = app::Options {
