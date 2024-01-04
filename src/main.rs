@@ -6,9 +6,8 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use eyre::{ensure, Result, WrapErr};
-use gameboy::core::dmg::Dimensions;
-use gameboy::dmg::cart::Cartridge;
-use gameboy::dmg::{Boot, GameBoy, SCREEN};
+use gameboy::core::dmg::cart::Cartridge;
+use gameboy::core::dmg::{Boot, Dimensions, GameBoy, SCREEN};
 use log::{info, trace, warn};
 use sysexits::ExitCode;
 use tracing_subscriber::filter::LevelFilter;

@@ -1,13 +1,13 @@
 //! # Game Boy
 //!
 //! Emulator implementations for the following Game Boy models:
-//! - [`DMG`](crate::dmg): [Game Boy]
+//! - [`DMG`](crate::core::dmg): [Game Boy]
 //!
 //! # Examples
 //!
 //! ```
-//! use gameboy::dmg::cart::Cartridge;
-//! use gameboy::dmg::GameBoy;
+//! use gameboy::core::dmg::cart::Cartridge;
+//! use gameboy::core::dmg::GameBoy;
 //! use remus::Machine; // for `Machine::cycle`
 //!
 //! // Instantiate a `Cartridge`
@@ -57,5 +57,3 @@
 #![warn(clippy::pedantic)]
 
 pub use gameboy_core as core;
-
-pub use crate::core::dmg;

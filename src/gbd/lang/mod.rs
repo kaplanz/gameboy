@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use derange::Derange;
 use displaydoc::Display;
-use gameboy::dmg::{cpu, pic, ppu, serial, timer};
+use gameboy::core::dmg::{cpu, pic, ppu, serial, timer};
 
 use super::Mode;
 

@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 
+use gameboy::core::dmg::cart::Cartridge;
 use gameboy::core::dmg::cpu::Cpu;
-use gameboy::dmg::cart::Cartridge;
-use gameboy::dmg::GameBoy;
+use gameboy::core::dmg::GameBoy;
 use remus::{Location, Machine};
 use thiserror::Error;
 
