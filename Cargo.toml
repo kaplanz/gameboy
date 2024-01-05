@@ -56,6 +56,5 @@ phex = { version = "0.1.0", path = "crates/phex", optional = true }
 remus = { git = "https://github.com/kaplanz/remus.git" }
 rustyline = { version = "13.0.0", optional = true }
 serde = { version = "1.0.193", features = ["derive"] }
-serde_with = "3.4.0"
 tell = { version = "0.1.0", path = "crates/tell", optional = true }
 thiserror = "1.0.50"

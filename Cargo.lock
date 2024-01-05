@@ -618,7 +618,6 @@ dependencies = [
  "remus",
  "rustyline",
  "serde",
- "serde_with",
  "tell",
  "thiserror",
 ]
