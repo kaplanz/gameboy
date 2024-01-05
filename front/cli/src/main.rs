@@ -128,10 +128,13 @@ fn main() -> Result<()> {
         })
         .transpose()?;
 
-    // Declare debugger
+    // Construct debugger
     #[cfg(feature = "gbd")]
-    let gbd = args.dbg.gbd.then_some(Debugger::new()).map(|mut gdb| {
-        gdb.logger({
+    let gbd = args.dbg.gbd.then(|| {
+        // Construct a new `Debugger`
+        let mut gbd = Debugger::new();
+        // Initialize the logger handle
+        gbd.logger({
             Portal {
                 get: {
                     let handle = handle.clone();
@@ -144,7 +147,8 @@ fn main() -> Result<()> {
                 set: Box::new(move |filter: String| handle.reload(filter).unwrap()),
             }
         });
-        gdb
+        // Return the constructed debugger
+        gbd
     });
 
     // Construct app options
