@@ -47,18 +47,38 @@ pub enum Model {
 #[derive(Clone, Debug, Default, Deserialize, ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 pub enum Palette {
-    /// Chrome palette.
-    #[default]
-    Chrome,
-    /// Legacy palette.
+    /// Nostalgic autumn sunsets.
+    AutumnChill,
+    /// Aquatic blues.
+    BlkAqu,
+    /// Winter snowstorm blues.
+    BlueDream,
+    /// Combining cool and warm tones.
+    Coldfire,
+    /// Soft and pastel coral hues.
+    Coral,
+    /// Cold metallic darks with warm dated plastic lights.
+    Demichrome,
+    /// Greens and warm browns with an earthy feel.
+    Earth,
+    /// Creamsicle inspired orange.
+    IceCream,
+    /// Old-school dot-matrix display.
     Legacy,
-    /// Mystic palette.
-    Mystic,
-    /// Rustic palette.
+    /// Misty forest greens.
+    Mist,
+    /// Simple blacks and whites.
+    #[default]
+    Mono,
+    /// William Morris's rural palette.
+    Morris,
+    /// Waterfront at dawn.
+    PurpleDawn,
+    /// Rusty red and brown hues.
     Rustic,
-    /// Winter palette.
-    Winter,
-    /// Custom palette.
+    /// Deep and passionate purples.
+    VelvetCherry,
+    /// Whatever colors you want!
     #[allow(unused)]
     #[clap(skip)]
     Custom(pal::Palette),
@@ -68,12 +88,22 @@ pub enum Palette {
 impl From<Palette> for pal::Palette {
     fn from(value: Palette) -> Self {
         match value {
-            Palette::Chrome => pal::CHROME,
-            Palette::Legacy => pal::LEGACY,
-            Palette::Mystic => pal::MYSTIC,
-            Palette::Rustic => pal::RUSTIC,
-            Palette::Winter => pal::WINTER,
-            Palette::Custom(pal) => pal,
+            Palette::AutumnChill  => pal::AUTUMN_CHILL,
+            Palette::BlkAqu       => pal::BLK_AQU,
+            Palette::BlueDream    => pal::BLUE_DREAM,
+            Palette::Coldfire     => pal::COLDFIRE,
+            Palette::Coral        => pal::CORAL,
+            Palette::Demichrome   => pal::DEMICHROME,
+            Palette::Earth        => pal::EARTH,
+            Palette::IceCream     => pal::ICE_CREAM,
+            Palette::Legacy       => pal::LEGACY,
+            Palette::Mist         => pal::MIST,
+            Palette::Mono         => pal::MONO,
+            Palette::Morris       => pal::MORRIS,
+            Palette::PurpleDawn   => pal::PURPLE_DAWN,
+            Palette::Rustic       => pal::RUSTIC,
+            Palette::VelvetCherry => pal::VELVET_CHERRY,
+            Palette::Custom(pal)  => pal,
         }
     }
 }
