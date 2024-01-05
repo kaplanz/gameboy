@@ -50,13 +50,13 @@ pub struct Color(u32);
 impl Color {
     /// Constructs a new `Color` with the provided integer value.
     #[must_use]
-    pub fn new(color: u32) -> Self {
+    pub const fn new(color: u32) -> Self {
         Self(color)
     }
 
     /// Constructs a new `Color` with the provided RGB values.
     #[must_use]
-    pub fn rgb(r: u8, g: u8, b: u8) -> Self {
+    pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self(u32::from_be_bytes([0x00, r, g, b]))
     }
 }
