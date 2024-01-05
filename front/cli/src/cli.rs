@@ -113,7 +113,7 @@ pub struct Interface {
     /// Defines the 2-bit color palette for the DMG-01 Game Boy model. The
     /// palette must be specified as a list of hex color values from lightest to
     /// darkest.
-    #[arg(long = "palette")]
+    #[arg(short, long = "palette")]
     #[arg(value_enum)]
     pub pal: Option<Palette>,
 
