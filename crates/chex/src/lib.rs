@@ -74,7 +74,12 @@ impl FromStr for Color {
                 let input = s.get(1..).ok_or(Error::Unsupported)?;
                 let hex = u32::from_str_radix(input, 16).map_err(Error::ParseInt)?;
                 match input.len() {
-                    3 => Ok(Self(hex << 12 | hex)),
+                    3 => Ok({
+                        let r = (hex & 0xf00) * 0x1100;
+                        let g = (hex & 0x0f0) * 0x0110;
+                        let b = (hex & 0x00f) * 0x0011;
+                        Self(r | g | b)
+                    }),
                     6 => Ok(Self(hex)),
                     _ => Err(Error::Unsupported),
                 }
@@ -105,11 +110,12 @@ pub enum Error {
 mod tests {
     use super::*;
 
+    #[rustfmt::skip]
     #[test]
     fn parse_works() {
-        assert_eq!("#123".parse::<Color>().unwrap(), Color(0x0012_3123));
-        assert_eq!("#123456".parse::<Color>().unwrap(), Color(0x0012_3456));
-        assert_eq!("#AbCdEf".parse::<Color>().unwrap(), Color(0x00ab_cdef));
+        assert_eq!(   "#123".parse::<Color>().unwrap(), Color(0x112233));
+        assert_eq!("#123456".parse::<Color>().unwrap(), Color(0x123456));
+        assert_eq!("#AbCdEf".parse::<Color>().unwrap(), Color(0xabcdef));
     }
 
     #[test]
