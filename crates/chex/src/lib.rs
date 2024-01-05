@@ -27,10 +27,24 @@ use std::fmt::Display;
 use std::num::ParseIntError;
 use std::str::FromStr;
 
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 use thiserror::Error;
 
-/// 32-bit color.
-#[derive(Copy, Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
+/// Use [24-bit] color (stored as `0x00RRGGBB_u32`)
+///
+/// [24-bit]: https://en.wikipedia.org/wiki/List_of_monochrome_and_RGB_color_formats#24-bit_RGB
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Default,
+    DeserializeFromStr,
+    Eq,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    SerializeDisplay,
+)]
 pub struct Color(u32);
 
 impl Color {
