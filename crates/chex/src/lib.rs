@@ -124,6 +124,11 @@ pub enum Error {
 mod tests {
     use super::*;
 
+    #[test]
+    fn rgb_works() {
+        assert_eq!(Color::rgb(0x11, 0x22, 0x33), Color(0x112233));
+    }
+
     #[rustfmt::skip]
     #[test]
     fn parse_works() {
