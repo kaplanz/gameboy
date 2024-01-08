@@ -110,7 +110,11 @@ fn main() -> Result<()> {
         Some(Gui {
             main: Window::new(&title, width, height)?,
             #[cfg(feature = "view")]
-            view: args.dbg.view.then_some(View::new()?),
+            view: args
+                .dbg
+                .view
+                .then(|| View::new().context("failed to initialize debug view"))
+                .transpose()?,
         })
     };
 
