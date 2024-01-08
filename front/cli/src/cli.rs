@@ -102,9 +102,7 @@ pub struct Hardware {
 pub struct Interface {
     /// Run without UI.
     ///
-    /// Starts the emulator without initializing and opening the UI. When
-    /// compiled with GBD support, the emulator will also present a debugging
-    /// prompt (implies `--gbd`).
+    /// Starts the emulator without initializing and opening the UI.
     #[arg(short = 'H', long)]
     pub headless: bool,
 
