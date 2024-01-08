@@ -179,6 +179,11 @@ pub fn log(gbd: &mut Debugger, filter: Option<String>) -> Result<()> {
 }
 
 #[allow(clippy::needless_pass_by_value)]
+pub fn loads(emu: &GameBoy, locs: Vec<Location>) -> Result<()> {
+    locs.into_iter().try_for_each(|loc| load(emu, loc))
+}
+
+#[allow(clippy::needless_pass_by_value)]
 pub fn load(emu: &GameBoy, loc: Location) -> Result<()> {
     // Perform the load
     match loc {
@@ -270,6 +275,12 @@ pub fn step(gbd: &mut Debugger, many: Option<usize>) -> Result<()> {
     gbd.resume(); // resume console
 
     Ok(())
+}
+
+#[allow(clippy::needless_pass_by_value)]
+pub fn stores(emu: &mut GameBoy, locs: Vec<Location>, value: Value) -> Result<()> {
+    locs.into_iter()
+        .try_for_each(|loc| store(emu, loc, value.clone()))
 }
 
 #[allow(clippy::needless_pass_by_value)]

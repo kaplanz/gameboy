@@ -304,7 +304,7 @@ impl Debugger {
             Info(what)              => exec::info(self, what),
             Jump(addr)              => exec::jump(self, emu, addr),
             List                    => exec::list(self, emu),
-            Load(loc)               => exec::load(emu, loc),
+            Load(loc)               => exec::loads(emu, loc),
             Log(filter)             => exec::log(self, filter),
             Quit                    => exec::quit(),
             Read(addr)              => exec::read(emu, addr),
@@ -312,7 +312,7 @@ impl Debugger {
             Reset                   => exec::reset(self, emu),
             Serial                  => exec::serial(emu),
             Step(many)              => exec::step(self, many),
-            Store(loc, value)       => exec::store(emu, loc, value),
+            Store(loc, value)       => exec::stores(emu, loc, value),
             Write(addr, byte)       => exec::write(emu, addr, byte),
             WriteRange(range, byte) => exec::write_range(emu, range, byte),
         }

@@ -67,7 +67,7 @@ pub enum Command {
     Info(Option<Keyword>),
     Jump(u16),
     List,
-    Load(Location),
+    Load(Vec<Location>),
     Log(Option<String>),
     Quit,
     Read(u16),
@@ -75,7 +75,7 @@ pub enum Command {
     Serial,
     Reset,
     Step(Option<usize>),
-    Store(Location, Value),
+    Store(Vec<Location>, Value),
     Write(u16, u8),
     WriteRange(Derange<u16>, u8),
 }
@@ -252,9 +252,9 @@ pub enum Keyword {
      */
     List,
     /**
-     * `load <REGISTER>`
+     * `load <REGISTER...>`
      *
-     * Load the value of the specified register and print.
+     * Load the value of the specified register(s) and print.
      *
      * If specified using the `lb` or `lw` alias, the specified resister must be
      * either byte or word size respectively.
@@ -335,9 +335,9 @@ pub enum Keyword {
      */
     Step,
     /**
-     * `store <REGISTER> <VALUE>`
+     * `store <REGISTER...> <VALUE>`
      *
-     * Store a value to the specified register and print.
+     * Store a value to the specified register(s) and print.
      *
      * If specified using the `sb` or `sw` alias, the specified resister must be
      * either byte or word size respectively.
