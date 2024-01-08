@@ -102,7 +102,7 @@ impl Language {
             }
             Rule::List => Command::List,
             Rule::Load => {
-                let loc = Self::loc(args.next().ok_or(Error::ExpectedRule)?)?;
+                let loc = args.map(Self::loc).collect::<Result<Vec<_>, _>>()?;
                 Command::Load(loc)
             }
             Rule::Log => {
@@ -135,9 +135,13 @@ impl Language {
                 Command::Step(many)
             }
             Rule::Store => {
-                let loc = Self::loc(args.next().ok_or(Error::ExpectedRule)?)?;
+                let mut args = args.rev(); // must extract the value first
                 let value = args.next().ok_or(Error::ExpectedRule)?;
-                let value = match loc {
+                let locs = args
+                    .rev() // undo previous reverse to perform stores in order
+                    .map(Self::loc)
+                    .collect::<Result<Vec<_>, _>>()?;
+                let value = match locs.first().ok_or(Error::ExpectedRule)? {
                     Location::Byte(_) | Location::Pic(_) | Location::Ppu(_) | Location::Serial(_) | Location::Timer(_) => Value::Byte(
                         Self::int(value.clone()) // attempt both `u8` and `i8`
                             .or_else(|_| Self::int::<i8>(value).map(|int| int as u8))?,
@@ -147,7 +151,7 @@ impl Language {
                             .or_else(|_| Self::int::<i16>(value).map(|int| int as u16))?,
                     ),
                 };
-                Command::Store(loc, value)
+                Command::Store(locs, value)
             }
             Rule::Write => {
                 let what = args.next().ok_or(Error::ExpectedRule)?;
