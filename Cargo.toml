@@ -55,6 +55,6 @@ pest_derive = { version = "2.7.6", optional = true }
 phex = { version = "0.1.0", path = "crates/phex", optional = true }
 remus = { git = "https://github.com/kaplanz/remus.git" }
 rustyline = { version = "13.0.0", optional = true }
-serde = { version = "1.0.193", features = ["derive"] }
+serde = { version = "1.0.195", features = ["derive"] }
 tell = { version = "0.1.0", path = "crates/tell", optional = true }
-thiserror = "1.0.50"
+thiserror = "1.0.56"
