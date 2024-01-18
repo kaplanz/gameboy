@@ -16,6 +16,8 @@
 
 ---
 
+[![dependency status][deps.badge]][deps.hyper]
+
 A cycle accurate emulator of the original 1989 Nintendo Game Boy.
 
 ## Progress
@@ -83,3 +85,7 @@ project below.
 [gbdev]:     https://gbdev.io
 [gbedg]:     http://pixelbits.16-b.it/GBEDG/
 [pandocs]:   https://gbdev.io/pandocs/
+
+<!-- Reference-style badges -->
+[deps.badge]: https://deps.rs/repo/github/kaplanz/gameboy/status.svg
+[deps.hyper]: https://deps.rs/repo/github/kaplanz/gameboy
