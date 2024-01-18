@@ -16,19 +16,19 @@ gbd = ["debug", "dep:ctrlc", "dep:parking_lot"]
 view = ["debug"]
 
 [dependencies]
-clap = { version = "4.4.8", features = ["derive", "env", "wrap_help"] }
+clap = { version = "4.4.18", features = ["derive", "env", "wrap_help"] }
 color-eyre = { version = "0.6.2" }
 ctrlc = { version = "3.4.2", optional = true }
 dirs = "5.0.1"
-eyre = "0.6.9"
+eyre = "0.6.11"
 gameboy = { version = "0.1.0", path = "../.." }
 log = "0.4.20"
 minifb = "0.25.0"
 parking_lot = { version = "0.12.1", optional = true }
 remus = { git = "https://github.com/kaplanz/remus.git" }
-serde = { version = "1.0.193", features = ["derive"] }
-sysexits = "0.7.7"
+serde = { version = "1.0.195", features = ["derive"] }
+sysexits = "0.7.10"
 tell = { version = "0.1.0", path = "../../crates/tell" }
-thiserror = "1.0.50"
+thiserror = "1.0.56"
 toml = "0.8.8"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
