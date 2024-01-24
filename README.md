@@ -20,32 +20,92 @@
 
 A cycle accurate emulator of the original 1989 Nintendo Game Boy.
 
+> [!IMPORTANT]
+>
+> Consider this to be pre-alpha software. I make no guarantee of the stability
+> of any documented APIs until the first official release.
+
+## Goal
+
+This project aims to provide high-accuracy emulation of all major components in
+the SM83-based Nintendo Game Boy family of consoles. (Note that at this time,
+there are no plans to support the later Game Boy Advance, which has an entirely
+different architecture.) Each components is modular, enabling them to be easily
+substituted for one another. In turn, this leads to emulator instances
+supporting multiple implementations of core components with different
+accuracy/performance margins.
+
+## Organization
+
+In accordance with the preference for modularity outlined above, the project is
+partitioned into the [core](./core), and various emulator [frontends](./front).
+Useful supporting [crates](./crates) are independently available as well. Also
+packaged in this repository are several open-source [ROMs](./roms). These are
+used internally for testing and to demo project functionality.
+
+### Workspace
+
+Cargo — Rust's package manager — allows for a workspace of several crates to be
+specified within its [manifest](./Cargo.toml). Within this project, workspace
+crates are used with the structure as follows:
+
+```
+./
+├── Cargo.lock       # cargo lockfile
+├── Cargo.toml       # cargo manifest
+├── Justfile         # useful development commands
+├── README.md        # this document
+├── ...
+├── core/            # emulation core
+├── crates/          # support crates
+├── docs/            # documentation
+├── front/           # frontend apps
+├── roms/            # open-source ROMs
+├── src/             # emulation library
+└── tests/           # integration tests
+```
+
+> [!TIP]
+>
+> For downstream library users, I recommend using the top-level `gameboy` crate
+> rather than directly using `gameboy-core`, as it better structured for end
+> users and includes useful supporting modules.
+
 ## Progress
 
 ### Core
 
-- [ ] Implement audio
-- [ ] Implement cartridges
-  - [ ] Save RAM to disk
-  - [ ] Support MBCs
-    - [x] MBC1
-    - [ ] MBC3
-    - [x] MBC5
-- [x] Implement CPU
-  - [x] Instruction correctness
-  - [x] Cycle accuracy
-  - [x] Timed memory accesses
-- [x] Implement interrupts
-- [x] Implement joypad
-- [x] Implement PPU
-  - [x] Background drawing
-  - [x] Window drawing
-  - [x] Sprite rendering
-- [x] Implement timer
-  - [x] Functional correctness
-  - [x] Implementation accuracy
+- [ ] Implementation
+  - [ ] Audio (APU)
+  - [x] Cartridges
+    - [ ] Save RAM to disk
+    - [ ] Support hardware
+      - [x] MBC1
+      - [ ] MBC3
+      - [x] MBC5
+  - [x] Interrupts (PIC)
+  - [x] Graphics (PPU)
+    - [x] Functional correctness
+      - [x] Background drawing
+      - [x] Window overlay
+      - [x] Sprite rendering
+    - [ ] Implementation accuracy
+  - [x] Joypad
+  - [x] Processor (CPU)
+    - [x] Functional correctness
+    - [ ] Implementation accuracy
+      - [x] Multi-cycle instructions
+      - [x] Timed memory accesses
+      - [ ] Timing precision
+  - [x] Timer
+    - [x] Functional correctness
+    - [x] Implementation accuracy
 - [ ] Performance enhancements
+  - [x] Real-time emulation
   - [ ] Benchmark tests
+- [ ] Testing
+  - [ ] Blargg (17/45)
+  - [ ] Mooneye (19/69)
 
 ### Application
 
@@ -69,21 +129,54 @@ project below.
 
 ### Documentation
 
-- [Pan Docs][pandocs]
-- [The Gameboy Emulator Development Guide][gbedg]
-- [Game Boy Architecture by Rodrigo Copetti][gbarch]
+- [Pan Docs][pandocs]: Go-to community resource documenting the inner workings
+  of the Game Boy. "The single most comprehensive technical reference to Game
+  Boy available to the public."
+- [Game Boy Architecture by Rodrigo Copetti][gbarch]: High-level practical
+  analysis of the Game Boy.
+  - Includes a helpful introduction to the PPU rendering pipeline.
+- [Game Boy: Complete Technical Reference][gbctr]: Summation of [Gekkio]'s
+  comprehensive Game Boy research.
+  - Used for exact instruction timing breakdown.
+- [The Gameboy Emulator Development Guide][gbedg]: Documentation intended to
+  assist with development of emulators for the original DMG Game Boy.
+  - Used extensively for the initial PPU and timer implementations.
+- [Nitty Gritty Gameboy Cycle Timing][nitty]: Down and dirty timing of the Game
+  Boy's video hardware.
 
-### ROMs
+### Hardware
 
-- [Test ROMs by Shay Green (a.k.a. Blargg)][blargg]
-- [dmg-acid2 by Matt Curie][dmg-acid2]
+- [Emu-Russia's DMG-01 SM83 Core Research][dmgcpu]: Verilog model with
+  invaluable accompanying diagrams of the SM83 core.
+
+### Software
+
+- [Test ROMs by Shay Green (a.k.a. Blargg)][blargg]: Classic introductory
+  collection of test ROMs.
+- [Mooneye Test Suite][mooneye]: Comprehensive test suite for individual niche
+  behaviours.
+- [dmg-acid2 by Matt Curie][dmg-acid2]: Clever re-imagining of the Web Standards
+  Project's Acid2 rendering test for the Game Boy's PPU.
+
+## License
+
+This project is dual-licensed under both [MIT License][mit] and [Apache License
+2.0][apache2]. You have permission to use this code under the conditions of
+either license pursuant to the rights granted by the chosen license.
 
 <!-- Reference-style links -->
+[apache2]:   ./LICENSE-APACHE
 [blargg]:    https://github.com/retrio/gb-test-roms
 [dmg-acid2]: https://github.com/mattcurrie/dmg-acid2
+[dmgcpu]:    https://github.com/emu-russia/dmgcpu
 [gbarch]:    https://www.copetti.org/writings/consoles/game-boy
+[gbctr]:     https://gekkio.fi/files/gb-docs/gbctr.pdf
 [gbdev]:     https://gbdev.io
-[gbedg]:     http://pixelbits.16-b.it/GBEDG/
+[gbedg]:     https://hacktix.github.io/GBEDG/
+[gekkio]:    https://gekkio.fi
+[mit]:       ./LICENSE-MIT
+[mooneye]:   https://github.com/Gekkio/mooneye-test-suite
+[nitty]:     http://blog.kevtris.org/blogfiles/Nitty%20Gritty%20Gameboy%20VRAM%20Timing.txt
 [pandocs]:   https://gbdev.io/pandocs/
 
 <!-- Reference-style badges -->
