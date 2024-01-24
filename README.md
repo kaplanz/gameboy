@@ -103,7 +103,7 @@ crates are used with the structure as follows:
 - [ ] Performance enhancements
   - [x] Real-time emulation
   - [ ] Benchmark tests
-- [ ] Testing
+- [ ] [Testing]
   - [ ] Blargg (17/45)
   - [ ] Mooneye (19/69)
 
@@ -178,6 +178,7 @@ either license pursuant to the rights granted by the chosen license.
 [mooneye]:   https://github.com/Gekkio/mooneye-test-suite
 [nitty]:     http://blog.kevtris.org/blogfiles/Nitty%20Gritty%20Gameboy%20VRAM%20Timing.txt
 [pandocs]:   https://gbdev.io/pandocs/
+[testing]:   ./docs/TESTING.md
 
 <!-- Reference-style badges -->
 [deps.badge]: https://deps.rs/repo/github/kaplanz/gameboy/status.svg
