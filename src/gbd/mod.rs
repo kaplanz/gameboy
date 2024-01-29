@@ -404,21 +404,21 @@ impl Machine for Debugger {
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
-    Readline(#[from] ReadlineError),
-    #[error("no input provided")]
-    NoInput,
-    #[error(transparent)]
     Language(#[from] lang::Error),
-    #[error("value mismatch")]
-    ValueMismatch,
     #[error("missing reload handle")]
     MissingReloadHandle,
+    #[error("no input provided")]
+    NoInput,
     #[error("breakpoint not found")]
     PointNotFound,
     #[error("quit requested by user")]
     Quit,
-    #[error("unsupported keyword")]
-    Unsupported,
+    #[error(transparent)]
+    Readline(#[from] ReadlineError),
     #[error("serial I/O failed")]
     Serial(#[from] std::io::Error),
+    #[error("unsupported keyword")]
+    Unsupported,
+    #[error("value mismatch")]
+    ValueMismatch,
 }
