@@ -1,7 +1,7 @@
 //! Serial chip.
 
 use std::collections::VecDeque;
-use std::io::Read;
+use std::io::{Read, Write};
 
 use log::{debug, trace, warn};
 use remus::bus::Mux;
@@ -180,6 +180,16 @@ impl Machine for Serial {
 impl Read for Serial {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         self.tx.read(buf)
+    }
+}
+
+impl Write for Serial {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.rx.write(buf)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.rx.flush()
     }
 }
 

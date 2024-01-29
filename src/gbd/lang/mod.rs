@@ -72,7 +72,7 @@ pub enum Command {
     Quit,
     Read(u16),
     ReadRange(Derange<u16>),
-    Serial,
+    Serial(Option<Vec<u8>>),
     Reset,
     Step(Option<usize>),
     Store(Vec<Location>, Value),
