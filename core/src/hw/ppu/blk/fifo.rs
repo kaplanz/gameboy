@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use super::pixel::{Meta, Pixel};
 use super::tile::Row;
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Fifo(VecDeque<Pixel>);
 
 impl Fifo {

@@ -5,7 +5,7 @@ use std::str::FromStr;
 use derange::Derange;
 use displaydoc::Display;
 
-use super::Mode;
+use super::Freq;
 use crate::core::dmg::{cpu, pic, ppu, serial, timer};
 
 mod parse;
@@ -60,7 +60,7 @@ pub enum Command {
     Delete(usize),
     Disable(usize),
     Enable(usize),
-    Freq(Mode),
+    Freq(Option<Freq>),
     Goto(u16),
     Help(Option<Keyword>),
     Ignore(usize, usize),
@@ -164,17 +164,20 @@ pub enum Keyword {
      */
     Enable,
     /**
-     * `frequency <MODE>`
+     * `frequency [MODE]`
      *
-     * Change the debugger's execution frequency.
+     * Print or set the debugger's execution frequency.
      *
      * Mode must be one of:
-     * * dot:         Quickest frequency, and that at which the PPU operates;
-     * -------------- equal to 4 MiHz at full-speed.
-     * * machine:     Default frequency, used primarily by the CPU; equal to 4
-     * -------------- dots.
-     * * instruction: Variable frequency, with a duration equal to the
-     * -------------- instruction currently being executed.
+     * * `d`, `dot`:   Maximum frequency, equal to 4 MiHz at full-speed; used as
+     * :               PPU clock.
+     * * `m`, `mach`:  Default frequency, equal to 1 MiHz; used as CPU clock.
+     * * `i`, `insn`:  Variable frequency, depends on the cycle length of
+     * :               instruction currently being executed.
+     * * `l`, `line`:  Scanline, equal to the time taken to draw a
+     * :               single line on the screen.
+     * * `r`, `frame`: Frame rate, equal to the time taken to draw a single
+     * :               frame on the screen.
      *
      * Aliases: `freq`, `f`
      *

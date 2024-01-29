@@ -8,7 +8,7 @@ use super::sprite::Sprite;
 use super::vblank::VBlank;
 use super::{Lcdc, Mode, Ppu};
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Scan {
     pub(super) idx: usize,
     pub(super) objs: Vec<Sprite>,

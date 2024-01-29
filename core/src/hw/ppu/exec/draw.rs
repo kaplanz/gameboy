@@ -7,7 +7,7 @@ use super::scan::Scan;
 use super::sprite::Sprite;
 use super::{Mode, Ppu, SCREEN};
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Draw {
     pub(crate) pipe: Pipeline,
     pub(crate) objs: Vec<Sprite>,

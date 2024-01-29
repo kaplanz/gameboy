@@ -7,7 +7,6 @@ use remus::mem::Ram;
 use remus::reg::Register;
 use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
 
-use self::exec::Mode;
 use self::pixel::{Meta, Palette, Pixel};
 use self::tile::Tile;
 use super::dma::Control as Dma;
@@ -22,6 +21,7 @@ mod screen;
 mod sprite;
 mod tile;
 
+pub use self::exec::Mode;
 pub use self::pixel::Color;
 pub use self::screen::Screen;
 
@@ -164,12 +164,6 @@ impl Ppu {
         Debug::new(self)
     }
 
-    /// Get a reference to the PPU's screen.
-    #[must_use]
-    pub fn screen(&self) -> &Screen {
-        &self.lcd
-    }
-
     /// Check if the screen is ready to be redrawn.
     #[must_use]
     pub fn ready(&self) -> bool {
@@ -184,6 +178,24 @@ impl Ppu {
         enabled && topline && firstdot
     }
 
+    /// Gets the current exxecution cycle.
+    #[must_use]
+    pub fn dot(&self) -> usize {
+        self.dot
+    }
+
+    /// Gets the current execution mode.
+    #[must_use]
+    pub fn mode(&self) -> &Mode {
+        &self.mode
+    }
+
+    /// Get a reference to the PPU's screen.
+    #[must_use]
+    pub fn screen(&self) -> &Screen {
+        &self.lcd
+    }
+
     /// Gets a shared reference to the PPU's video RAM.
     #[must_use]
     pub fn vram(&self) -> Shared<Vram> {
@@ -194,78 +206,6 @@ impl Ppu {
     #[must_use]
     pub fn oam(&self) -> Shared<Oam> {
         self.oam.clone()
-    }
-
-    /// Gets a shared reference to the PPU's LCD control register.
-    #[must_use]
-    pub fn lcdc(&self) -> Shared<Register<u8>> {
-        self.file.lcdc.clone()
-    }
-
-    /// Gets a shared reference to the PPU's LCD status register.
-    #[must_use]
-    pub fn stat(&self) -> Shared<Register<u8>> {
-        self.file.stat.clone()
-    }
-
-    /// Gets a shared reference to the PPU's scroll Y register.
-    #[must_use]
-    pub fn scy(&self) -> Shared<Register<u8>> {
-        self.file.scy.clone()
-    }
-
-    /// Gets a shared reference to the PPU's scroll X register.
-    #[must_use]
-    pub fn scx(&self) -> Shared<Register<u8>> {
-        self.file.scx.clone()
-    }
-
-    /// Gets a shared reference to the PPU's LCD Y register.
-    #[must_use]
-    pub fn ly(&self) -> Shared<Register<u8>> {
-        self.file.ly.clone()
-    }
-
-    /// Gets a shared reference to the PPU's LY compare register.
-    #[must_use]
-    pub fn lyc(&self) -> Shared<Register<u8>> {
-        self.file.lyc.clone()
-    }
-
-    /// Gets a shared reference to the PPU's DMA start register.
-    #[must_use]
-    pub fn dma(&self) -> Shared<Dma> {
-        self.file.dma.clone()
-    }
-
-    /// Gets a shared reference to the PPU's BG palette register.
-    #[must_use]
-    pub fn bgp(&self) -> Shared<Register<u8>> {
-        self.file.bgp.clone()
-    }
-
-    /// Gets a shared reference to the PPU's OBJ palette 0 register.
-    #[must_use]
-    pub fn obp0(&self) -> Shared<Register<u8>> {
-        self.file.obp0.clone()
-    }
-
-    /// Gets a shared reference to the PPU's OBJ palette 1 register.
-    #[must_use]
-    pub fn obp1(&self) -> Shared<Register<u8>> {
-        self.file.obp1.clone()
-    }
-
-    /// Gets a shared reference to the PPU's window Y register.
-    #[must_use]
-    pub fn wy(&self) -> Shared<Register<u8>> {
-        self.file.wy.clone()
-    }
-
-    /// Gets a shared reference to the PPU's window X register.
-    #[must_use]
-    pub fn wx(&self) -> Shared<Register<u8>> {
-        self.file.wx.clone()
     }
 
     /// Color a pixel according to the ppu's palette configuration.

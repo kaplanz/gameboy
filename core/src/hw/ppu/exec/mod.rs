@@ -14,7 +14,7 @@ mod hblank;
 mod scan;
 mod vblank;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Mode {
     Scan(Scan),
     Draw(Draw),
@@ -23,7 +23,8 @@ pub enum Mode {
 }
 
 impl Mode {
-    pub fn exec(self, ppu: &mut Ppu) -> Self {
+    #[must_use]
+    pub(super) fn exec(self, ppu: &mut Ppu) -> Self {
         // Handle previous state
         {
             // Update STAT
