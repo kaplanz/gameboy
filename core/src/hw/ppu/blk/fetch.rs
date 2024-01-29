@@ -7,7 +7,7 @@ use super::tile::Row;
 use super::{Lcdc, Ppu};
 
 /// PPU's pixel fetcher.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Fetch {
     busy: bool,
     xidx: u8,
@@ -128,7 +128,7 @@ pub enum Location {
     Sprite,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub enum Stage {
     #[default]
     ReadTile,

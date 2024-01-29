@@ -11,16 +11,17 @@ use rustyline::DefaultEditor as Readline;
 use thiserror::Error;
 
 use self::lang::{Command, Program};
-use crate::core::dmg::cpu::{reg, Stage};
-use crate::core::dmg::GameBoy;
+use crate::core::dmg::cpu::{self, reg};
+use crate::core::dmg::{ppu, GameBoy};
 
 mod exec;
 mod lang;
 
 type Result<T> = std::result::Result<T, Error>;
 
+/// Debugging breakpoint metadata.
 #[derive(Clone, Debug, Default)]
-struct Breakpoint {
+pub struct Breakpoint {
     disable: bool,
     ignore: usize,
 }
@@ -45,26 +46,40 @@ impl Breakpoint {
     }
 }
 
+/// Debugger frequency.
 #[derive(Clone, Copy, Debug, Default)]
-pub enum Mode {
+pub enum Freq {
     Dot,
     #[default]
     Mach,
     Insn,
+    Line,
+    Frame,
 }
 
-impl Display for Mode {
+#[rustfmt::skip]
+impl Display for Freq {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{}",
             match self {
-                Self::Dot => "dot",
-                Self::Mach => "machine",
-                Self::Insn => "instruction",
+                Self::Dot   => "dot",
+                Self::Mach  => "mach",
+                Self::Insn  => "instruction",
+                Self::Line  => "scanline",
+                Self::Frame => "frame",
             }
         )
     }
+}
+
+/// Emulation state.
+#[derive(Debug, Default)]
+struct State {
+    cpu: cpu::Stage,
+    dot: usize,
+    ppu: ppu::Mode,
 }
 
 /// An abstract to a get and set a computed value.
@@ -90,10 +105,10 @@ pub struct Debugger {
     log: Option<Portal<String>>,
     // Console
     pc: u16,
-    state: Stage,
+    state: State,
     // Internal
     play: bool,
-    freq: Mode,
+    freq: Freq,
     step: Option<usize>,
     line: Option<Readline>,
     prog: Option<Program>,
@@ -210,7 +225,11 @@ impl Debugger {
     pub fn sync(&mut self, emu: &GameBoy) {
         // Update program counter
         self.pc = emu.cpu().load(reg::Word::PC);
-        self.state = emu.cpu().stage().clone();
+        self.state = State {
+            cpu: emu.cpu().stage().clone(),
+            dot: emu.ppu().dot(),
+            ppu: emu.ppu().mode().clone(),
+        };
     }
 
     /// Informs the user of the current emulation context.
@@ -322,14 +341,18 @@ impl Debugger {
     ///
     /// Depending on the [`Debugger`]'s frequency setting, the definition of an
     /// edge may differ.
+    #[rustfmt::skip]
     fn edge(&self) -> bool {
         // Pre-calculate machine cycle
         let mcycle = self.cycle % 4 == 0;
+        let ppudot = self.state.dot == 0;
         // Check if this is an edge cycle
         match self.freq {
-            Mode::Dot => true,
-            Mode::Mach => mcycle,
-            Mode::Insn => mcycle && matches!(self.state, Stage::Done),
+            Freq::Dot   => true,
+            Freq::Mach  => mcycle,
+            Freq::Insn  => mcycle && matches!(self.state.cpu, cpu::Stage::Done),
+            Freq::Line  => ppudot,
+            Freq::Frame => ppudot && matches!(self.state.ppu, ppu::Mode::Scan(_)),
         }
     }
 }

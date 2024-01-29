@@ -5,7 +5,7 @@ use remus::Cell;
 use super::hblank::HBlank;
 use super::{Mode, Ppu, SCREEN};
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct VBlank;
 
 impl VBlank {

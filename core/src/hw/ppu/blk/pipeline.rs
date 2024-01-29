@@ -7,7 +7,7 @@ use super::sprite::Sprite;
 use super::{Lcdc, Ppu};
 
 /// PPU's pixel pipeline.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Pipeline {
     ready: bool,
     discard: u8,
@@ -133,7 +133,7 @@ impl Pipeline {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 struct Channel {
     loc: Location,
     fetch: Fetch,

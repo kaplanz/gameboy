@@ -11,7 +11,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error;
 
-use super::{Command, Keyword, Location, Mode, Program, Value};
+use super::{Command, Freq, Keyword, Location, Program, Value};
 use crate::core::dmg::{cpu, pic, ppu, serial, timer};
 
 pub fn prog(src: &str) -> Result<Program, Error> {
@@ -69,14 +69,16 @@ impl Language {
                 let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
                 Command::Enable(index)
             }
+            #[rustfmt::skip]
             Rule::Freq => {
-                let pair = args.next().ok_or(Error::ExpectedRule)?;
-                let mode = match pair.as_rule() {
-                    Rule::Dot => Mode::Dot,
-                    Rule::Mach => Mode::Mach,
-                    Rule::Insn => Mode::Insn,
+                let mode = args.next().map(|pair| match pair.as_rule() {
+                    Rule::Dot   => Freq::Dot,
+                    Rule::Mach  => Freq::Mach,
+                    Rule::Insn  => Freq::Insn,
+                    Rule::Line  => Freq::Line,
+                    Rule::Frame => Freq::Frame,
                     rule => unreachable!("invalid rule: {rule:?}"),
-                };
+                });
                 Command::Freq(mode)
             }
             Rule::Goto => {
