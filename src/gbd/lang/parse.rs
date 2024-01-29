@@ -134,7 +134,36 @@ impl Language {
                 }
             }
             Rule::Reset => Command::Reset,
-            Rule::Serial => Command::Serial,
+            Rule::Serial => {
+                let data = args
+                    .next()
+                    .map(|pair| -> Result<_> {
+                        match pair.as_rule() {
+                            Rule::Bytes => {
+                                pair
+                                    // extract inner
+                                    .into_inner()
+                                    // parse each byte
+                                    .map(Self::integer)
+                                    // collect into a vec
+                                    .collect()
+                            }
+                            Rule::String => {
+                                pair
+                                    // extract inner
+                                    .into_inner()
+                                    // find only argument
+                                    .next()
+                                    .except()
+                                    // parse as string
+                                    .map(|inner| inner.as_str().as_bytes().to_vec())
+                            }
+                            rule => unreachable!("invalid rule: {rule:?}"),
+                        }
+                    })
+                    .transpose()?;
+                Command::Serial(data)
+            }
             Rule::Step => {
                 let many = args.next().map(Self::integer).transpose()?;
                 Command::Step(many)

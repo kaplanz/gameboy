@@ -1,6 +1,6 @@
 #![allow(clippy::unnecessary_wraps)]
 
-use std::io::Read;
+use std::io::{Read, Write};
 
 use derange::Derange;
 use remus::{Block, Location as _};
@@ -257,17 +257,31 @@ pub fn reset(gbd: &mut Debugger, emu: &mut GameBoy) -> Result<()> {
     Ok(())
 }
 
-pub fn serial(emu: &mut GameBoy) -> Result<()> {
-    // Receive serial data
-    let mut tx = Vec::new();
-    let nbytes = emu.serial_mut().read_to_end(&mut tx)?;
-    // Get string representation of data
-    let repr = String::from_utf8_lossy(&tx);
-    // Display results
-    tell::info!("received {nbytes} bytes");
-    if nbytes > 0 {
-        tell::debug!("raw: {tx:?}");
-        tell::debug!("repr: {repr:?}");
+pub fn serial(emu: &mut GameBoy, data: Option<Vec<u8>>) -> Result<()> {
+    if let Some(data) = data {
+        // Transmit serial data
+        let nbytes = emu.serial_mut().write(&data)?;
+        let extra = data.len() - nbytes;
+        // Display results
+        tell::info!("transmitted {nbytes} bytes");
+        if extra > 0 {
+            tell::warn!("could not transmit {extra} bytes");
+        }
+    } else {
+        // Receive serial data
+        let mut data = Vec::new();
+        let nbytes = emu.serial_mut().read_to_end(&mut data)?;
+        // Decode assuming ASCII representation
+        let text = std::str::from_utf8(&data);
+        // Display results
+        tell::info!("received {nbytes} bytes");
+        if nbytes > 0 {
+            tell::debug!("raw: {data:?}");
+            match text {
+                Ok(text) => tell::debug!("txt: {text:?}"),
+                Err(err) => tell::warn!("could not decode: {err}"),
+            }
+        }
     }
 
     Ok(())
