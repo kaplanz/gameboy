@@ -1,6 +1,5 @@
 use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut};
-use std::str::FromStr;
 
 use derange::Derange;
 use displaydoc::Display;
@@ -16,6 +15,7 @@ pub use self::parse::Error;
 pub struct Program(VecDeque<Command>);
 
 impl Program {
+    #[allow(unused)]
     pub fn new(prog: impl Iterator<Item = Command>) -> Self {
         Self(prog.collect())
     }
@@ -32,14 +32,6 @@ impl Deref for Program {
 impl DerefMut for Program {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
-    }
-}
-
-impl FromStr for Program {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse::prog(s)
     }
 }
 
