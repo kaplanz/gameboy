@@ -1,6 +1,7 @@
 use std::fmt::Display;
 use std::num::ParseIntError;
 use std::ops::RangeInclusive;
+use std::panic;
 
 use derange::Derange;
 use log::trace;
@@ -14,7 +15,9 @@ use thiserror::Error;
 use super::{Command, Freq, Keyword, Location, Program, Value};
 use crate::core::dmg::{cpu, pic, ppu, serial, timer};
 
-pub fn prog(src: &str) -> Result<Program, Error> {
+type Result<T, E = Error> = std::result::Result<T, E>;
+
+pub fn prog(src: &str) -> Result<Program> {
     Language::prog(src)
         .map(IntoIterator::into_iter)
         .map(Program::new)
@@ -25,25 +28,25 @@ pub fn prog(src: &str) -> Result<Program, Error> {
 struct Language;
 
 impl Language {
-    fn prog(src: &str) -> Result<Vec<Command>, Error> {
+    fn prog(src: &str) -> Result<Vec<Command>> {
         // Parse program string
         let pairs = Language::parse(Rule::Program, src)
             .map_err(|err| err.renamed_rules(ToString::to_string))?;
         // Extract individual commands
         pairs
             .filter(|pair| !matches!(pair.as_rule(), Rule::EOI))
-            .map(Self::cmd)
+            .map(Self::command)
             .collect()
     }
 
     #[allow(clippy::cast_sign_loss)]
     #[allow(clippy::similar_names)]
     #[allow(clippy::too_many_lines)]
-    fn cmd(input: Pair<Rule>) -> Result<Command, Error> {
+    fn command(input: Pair<Rule>) -> Result<Command> {
         // Extract keyword and args
         let rule = input.as_rule();
         let mut args = input.into_inner();
-        let kword = args.next().ok_or(Error::ExpectedRule)?;
+        let kword = args.next().except()?;
         trace!(
             "keyword: {kword:?}, args: {args:?}",
             kword = kword.as_rule(),
@@ -53,24 +56,24 @@ impl Language {
         // Parse individual command
         let cmd = match rule {
             Rule::Break => {
-                let addr = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                let addr = args.next().except().and_then(Self::integer)?;
                 Command::Break(addr)
             }
             Rule::Continue => Command::Continue,
             Rule::Delete => {
-                let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                let index = args.next().except().and_then(Self::integer)?;
                 Command::Delete(index)
             }
             Rule::Disable => {
-                let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                let index = args.next().except().and_then(Self::integer)?;
                 Command::Disable(index)
             }
             Rule::Enable => {
-                let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                let index = args.next().except().and_then(Self::integer)?;
                 Command::Enable(index)
             }
-            #[rustfmt::skip]
             Rule::Freq => {
+                #[rustfmt::skip]
                 let mode = args.next().map(|pair| match pair.as_rule() {
                     Rule::Dot   => Freq::Dot,
                     Rule::Mach  => Freq::Mach,
@@ -82,29 +85,29 @@ impl Language {
                 Command::Freq(mode)
             }
             Rule::Goto => {
-                let addr = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                let addr = args.next().except().and_then(Self::integer)?;
                 Command::Goto(addr)
             }
             Rule::Help => {
-                let what = args.next().map(Self::kword).transpose()?;
+                let what = args.next().map(Self::keyword).transpose()?;
                 Command::Help(what)
             }
             Rule::Ignore => {
-                let index = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
-                let many = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
-                Command::Ignore(index, many)
+                let index = args.next().except().and_then(Self::integer)?;
+                let count = args.next().except().and_then(Self::integer)?;
+                Command::Ignore(index, count)
             }
             Rule::Info => {
-                let what = args.next().map(Self::kword).transpose()?;
+                let what = args.next().map(Self::keyword).transpose()?;
                 Command::Info(what)
             }
             Rule::Jump => {
-                let addr = Self::int(args.next().ok_or(Error::ExpectedRule)?)?;
+                let addr = args.next().except().and_then(Self::integer)?;
                 Command::Jump(addr)
             }
             Rule::List => Command::List,
             Rule::Load => {
-                let loc = args.map(Self::loc).collect::<Result<Vec<_>, _>>()?;
+                let loc = args.map(Self::location).collect::<Result<_, _>>()?;
                 Command::Load(loc)
             }
             Rule::Log => {
@@ -113,17 +116,17 @@ impl Language {
             }
             Rule::Quit => Command::Quit,
             Rule::Read => {
-                let what = args.next().ok_or(Error::ExpectedRule)?;
+                let what = args.next().except()?;
                 // Match on address (range)
                 match what.as_rule() {
                     Rule::UInt => {
-                        let addr = Self::int(what)?;
+                        let addr = Self::integer(what)?;
                         Command::Read(addr)
                     }
                     Rule::RangeBounds => {
                         let mut pairs = what.into_inner();
                         // Match on range bounds
-                        let pair = pairs.next().ok_or(Error::ExpectedRule)?;
+                        let pair = pairs.next().except()?;
                         let range = Self::range(pair)?;
                         Command::ReadRange(range)
                     }
@@ -133,44 +136,44 @@ impl Language {
             Rule::Reset => Command::Reset,
             Rule::Serial => Command::Serial,
             Rule::Step => {
-                let many = args.next().map(Self::int).transpose()?;
+                let many = args.next().map(Self::integer).transpose()?;
                 Command::Step(many)
             }
             Rule::Store => {
                 let mut args = args.rev(); // must extract the value first
-                let value = args.next().ok_or(Error::ExpectedRule)?;
+                let value = args.next().except()?;
                 let locs = args
                     .rev() // undo previous reverse to perform stores in order
-                    .map(Self::loc)
+                    .map(Self::location)
                     .collect::<Result<Vec<_>, _>>()?;
-                let value = match locs.first().ok_or(Error::ExpectedRule)? {
+                let value = match locs.first().except()? {
                     Location::Byte(_) | Location::Pic(_) | Location::Ppu(_) | Location::Serial(_) | Location::Timer(_) => Value::Byte(
-                        Self::int(value.clone()) // attempt both `u8` and `i8`
-                            .or_else(|_| Self::int::<i8>(value).map(|int| int as u8))?,
+                        Self::integer(value.clone()) // attempt both `u8` and `i8`
+                            .or_else(|_| Self::integer::<i8>(value).map(|int| int as u8))?,
                     ),
                     Location::Word(_) => Value::Word(
-                        Self::int(value.clone()) // attempt both `u16` and `i16`
-                            .or_else(|_| Self::int::<i16>(value).map(|int| int as u16))?,
+                        Self::integer(value.clone()) // attempt both `u16` and `i16`
+                            .or_else(|_| Self::integer::<i16>(value).map(|int| int as u16))?,
                     ),
                 };
                 Command::Store(locs, value)
             }
             Rule::Write => {
-                let what = args.next().ok_or(Error::ExpectedRule)?;
+                let what = args.next().except()?;
                 // Match on data byte
-                let pair = args.next().ok_or(Error::ExpectedRule)?;
-                let byte = Self::int(pair.clone()) // attempt both `u8` and `i8`
-                    .or_else(|_| Self::int::<i8>(pair).map(|int| int as u8))?;
+                let pair = args.next().except()?;
+                let byte = Self::integer(pair.clone()) // attempt both `u8` and `i8`
+                    .or_else(|_| Self::integer::<i8>(pair).map(|int| int as u8))?;
                 // Match on address (range)
                 match what.as_rule() {
                     Rule::UInt => {
-                        let addr = Self::int(what)?;
+                        let addr = Self::integer(what)?;
                         Command::Write(addr, byte)
                     }
                     Rule::RangeBounds => {
                         let mut pairs = what.into_inner();
                         // Match on range bounds
-                        let pair = pairs.next().ok_or(Error::ExpectedRule)?;
+                        let pair = pairs.next().except()?;
                         let range = Self::range(pair)?;
                         Command::WriteRange(range, byte)
                     }
@@ -183,7 +186,7 @@ impl Language {
         Ok(cmd)
     }
 
-    fn int<I>(pair: Pair<Rule>) -> Result<I, Error>
+    fn integer<I>(pair: Pair<Rule>) -> Result<I>
     where
         I: Integer<FromStrRadixErr = ParseIntError>,
     {
@@ -191,7 +194,7 @@ impl Language {
         let mut int = pair
             .into_inner() // `Int` is composed of `Sign` and `Num`
             .rev(); // since sign is optional, reverse to process it last
-        let num = int.next().ok_or(Error::ExpectedRule)?;
+        let num = int.next().except()?;
         let sign = int.next().map_or("", |rule| rule.as_str()).to_string();
         // Parse into an integer type
         match num.as_rule() {
@@ -204,7 +207,7 @@ impl Language {
         .map_err(Error::ParseInt)
     }
 
-    fn range<I>(pair: Pair<Rule>) -> Result<Derange<I>, Error>
+    fn range<I>(pair: Pair<Rule>) -> Result<Derange<I>>
     where
         I: Bounded
             + Clone
@@ -219,11 +222,11 @@ impl Language {
             Rule::Range => {
                 let mut range = pair.into_inner();
                 // Extract
-                let stx = range.next().ok_or(Error::ExpectedRule)?;
-                let end = range.next().ok_or(Error::ExpectedRule)?;
+                let stx = range.next().except()?;
+                let end = range.next().except()?;
                 // Parse
-                let stx = Self::int(stx)?;
-                let end = Self::int(end)?;
+                let stx = Self::integer(stx)?;
+                let end = Self::integer(end)?;
                 // Define
                 let range = Derange::from(stx..end);
                 Ok(range)
@@ -231,9 +234,9 @@ impl Language {
             Rule::RangeFrom => {
                 let mut range = pair.into_inner();
                 // Extract
-                let stx = range.next().ok_or(Error::ExpectedRule)?;
+                let stx = range.next().except()?;
                 // Parse
-                let stx = Self::int(stx)?;
+                let stx = Self::integer(stx)?;
                 // Define
                 let range = Derange::from(stx..);
                 Ok(range)
@@ -246,11 +249,11 @@ impl Language {
             Rule::RangeInc => {
                 let mut range = pair.into_inner();
                 // Extract
-                let stx = range.next().ok_or(Error::ExpectedRule)?;
-                let end = range.next().ok_or(Error::ExpectedRule)?;
+                let stx = range.next().except()?;
+                let end = range.next().except()?;
                 // Parse
-                let stx = Self::int(stx)?;
-                let end = Self::int(end)?;
+                let stx = Self::integer(stx)?;
+                let end = Self::integer(end)?;
                 // Define
                 let range = Derange::from(stx..=end);
                 Ok(range)
@@ -258,9 +261,9 @@ impl Language {
             Rule::RangeTo => {
                 let mut range = pair.into_inner();
                 // Extract
-                let end = range.next().ok_or(Error::ExpectedRule)?;
+                let end = range.next().except()?;
                 // Parse
-                let end = Self::int(end)?;
+                let end = Self::integer(end)?;
                 // Define
                 let range = Derange::from(..end);
                 Ok(range)
@@ -268,9 +271,9 @@ impl Language {
             Rule::RangeToInc => {
                 let mut range = pair.into_inner();
                 // Extract
-                let end = range.next().ok_or(Error::ExpectedRule)?;
+                let end = range.next().except()?;
                 // Parse
-                let end = Self::int(end)?;
+                let end = Self::integer(end)?;
                 // Define
                 let range = Derange::from(..=end);
                 Ok(range)
@@ -282,7 +285,7 @@ impl Language {
     #[rustfmt::skip]
     #[allow(clippy::needless_pass_by_value)]
     #[allow(clippy::unnecessary_wraps)]
-    fn kword(pair: Pair<Rule>) -> Result<Keyword, Error> {
+    fn keyword(pair: Pair<Rule>) -> Result<Keyword> {
         // Extract the keyword rule
         Ok(match pair.as_rule() {
             Rule::KBreak    => Keyword::Break,
@@ -313,11 +316,11 @@ impl Language {
     #[rustfmt::skip]
     #[allow(clippy::needless_pass_by_value)]
     #[allow(clippy::unnecessary_wraps)]
-    fn loc(pair: Pair<Rule>) -> Result<Location, Error> {
+    fn location(pair: Pair<Rule>) -> Result<Location> {
         // Extract the register rule
         Ok(match pair.as_rule() {
             Rule::Byte => {
-                let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
+                let reg = pair.into_inner().next().except()?;
                 Location::Byte(match reg.as_rule() {
                     Rule::A => cpu::reg::Byte::A,
                     Rule::F => cpu::reg::Byte::F,
@@ -331,7 +334,7 @@ impl Language {
                 })
             }
             Rule::Word => {
-                let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
+                let reg = pair.into_inner().next().except()?;
                 Location::Word(match reg.as_rule() {
                     Rule::AF   => cpu::reg::Word::AF,
                     Rule::BC   => cpu::reg::Word::BC,
@@ -343,7 +346,7 @@ impl Language {
                 })
             }
             Rule::Pic => {
-                let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
+                let reg = pair.into_inner().next().except()?;
                 Location::Pic(match reg.as_rule() {
                     Rule::If => pic::Control::If,
                     Rule::Ie => pic::Control::Ie,
@@ -351,7 +354,7 @@ impl Language {
                 })
             }
             Rule::Ppu => {
-                let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
+                let reg = pair.into_inner().next().except()?;
                 Location::Ppu(match reg.as_rule() {
                     Rule::Lcdc => ppu::Control::Lcdc,
                     Rule::Stat => ppu::Control::Stat,
@@ -369,7 +372,7 @@ impl Language {
                 })
             }
             Rule::SerialX => {
-                let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
+                let reg = pair.into_inner().next().except()?;
                 Location::Serial(match reg.as_rule() {
                     Rule::Sb => serial::Control::Sb,
                     Rule::Sc => serial::Control::Sc,
@@ -377,7 +380,7 @@ impl Language {
                 })
             }
             Rule::Timer => {
-                let reg = pair.into_inner().next().ok_or(Error::ExpectedRule)?;
+                let reg = pair.into_inner().next().except()?;
                 Location::Timer(match reg.as_rule() {
                     Rule::Div  => timer::Control::Div,
                     Rule::Tima => timer::Control::Tima,
@@ -431,10 +434,29 @@ impl Display for Rule {
 /// A type specifying categories of [`Language`] errors.
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error(transparent)]
-    Pest(#[from] pest::error::Error<Rule>),
+    #[error("internal error: {0}")]
+    Internal(&'static panic::Location<'static>),
     #[error(transparent)]
     ParseInt(#[from] ParseIntError),
-    #[error("expected rule")]
-    ExpectedRule,
+    #[error(transparent)]
+    Pest(#[from] pest::error::Error<Rule>),
+}
+
+/// Exception shorthand for [`Language`] errors.
+trait Except<T> {
+    type Error: std::error::Error;
+
+    /// Transforms `Self` into a [`Result<T, Self::Error>`].
+    fn except(self) -> Result<T, Self::Error>;
+}
+
+impl<T> Except<T> for Option<T> {
+    type Error = Error;
+
+    /// Transforms the [`Option<T>`] into a [`Result<T, E>`], mapping
+    /// [`Some(v)`] to [`Ok(v)`] and [`None`] to [`Err(Error::Internal(_))`].
+    #[track_caller]
+    fn except(self) -> Result<T, Self::Error> {
+        self.ok_or(Error::Internal(panic::Location::caller()))
+    }
 }
