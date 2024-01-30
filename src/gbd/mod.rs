@@ -5,24 +5,25 @@ use std::fmt::{Debug, Display, Write};
 use indexmap::IndexMap;
 use log::debug;
 use remus::{Block, Clock, Location, Machine};
-use rustyline::error::ReadlineError;
-use rustyline::history::History;
-use rustyline::DefaultEditor as Readline;
 use thiserror::Error;
 
 use self::lang::{Command, Program};
+use self::prompt::Prompt;
 use crate::core::dmg::cpu::{self, reg};
 use crate::core::dmg::{ppu, GameBoy};
+
+pub mod prompt;
 
 mod exec;
 mod lang;
 
-type Result<T> = std::result::Result<T, Error>;
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug, Default)]
 pub struct Debugger {
     // Application
     cycle: usize,
+    line: Option<Box<dyn Prompt>>,
     log: Option<Portal<String>>,
     // Console
     pc: u16,
@@ -31,7 +32,6 @@ pub struct Debugger {
     play: bool,
     freq: Freq,
     step: Option<usize>,
-    line: Option<Readline>,
     prog: Option<Program>,
     prev: Option<Program>,
     bpts: IndexMap<u16, Option<Breakpoint>>,
@@ -44,11 +44,69 @@ impl Debugger {
         Self::default()
     }
 
+    /// Sets the logging handle.
+    ///
+    /// Used to change the logging level filter.
+    pub fn logger(&mut self, log: Portal<String>) {
+        self.log = Some(log);
+    }
+
+    /// Sets the prompt handle.
+    ///
+    /// Used to change the logging level filter.
+    pub fn prompt(&mut self, line: Box<dyn Prompt>) {
+        self.line = Some(line);
+    }
+
+    /// Enables the debugger.
+    pub fn enable(&mut self) {
+        self.step = Some(0);
+    }
+
+    /// Resumes console emulation.
+    pub fn resume(&mut self) {
+        self.play = true;
+    }
+
+    /// Pauses console emulation.
+    pub fn pause(&mut self) {
+        self.play = false;
+    }
+
+    /// Checks if the console is paused.
+    #[must_use]
+    pub fn paused(&self) -> bool {
+        !self.play
+    }
+
+    /// Synchronizes the debugger with the console.
+    pub fn sync(&mut self, emu: &GameBoy) {
+        // Update program counter
+        self.pc = emu.cpu().load(reg::Word::PC);
+        self.state = State {
+            cpu: emu.cpu().stage().clone(),
+            dot: emu.ppu().dot(),
+            ppu: emu.ppu().mode().clone(),
+        };
+    }
+
+    /// Informs the user of the current emulation context.
+    ///
+    /// # Panics
+    ///
+    /// Cannot panic.
+    pub fn inform(&self, emu: &GameBoy) {
+        // Give context if recently paused
+        if self.play {
+            exec::list(self, emu).unwrap();
+        }
+    }
+
     /// Runs interactive debugger.
     ///
     /// # Errors
     ///
-    /// Errors if the debugger failed.
+    /// Errors if the debugger failed to fetch, parse, or execute a command.
     pub fn run(&mut self, emu: &mut GameBoy, clk: &mut Option<Clock>) -> Result<()> {
         // Provide information to user before prompting for command
         self.inform(emu);
@@ -68,7 +126,7 @@ impl Debugger {
                             // Pause clock while awaiting user input
                             clk.as_mut().map(Clock::pause);
                             // Present the prompt
-                            self.prompt()
+                            self.readline()
                         } {
                             // Program input; fetch next iteration
                             Ok(()) => continue 'gbd,
@@ -114,57 +172,6 @@ impl Debugger {
         Ok(())
     }
 
-    /// Sets the logging handle.
-    ///
-    /// Used to change the logging level filter.
-    pub fn logger(&mut self, log: Portal<String>) {
-        self.log = Some(log);
-    }
-
-    /// Enables the debugger.
-    pub fn enable(&mut self) {
-        self.step = Some(0);
-    }
-
-    /// Resumes console emulation.
-    pub fn resume(&mut self) {
-        self.play = true;
-    }
-
-    /// Pauses console emuulation.
-    pub fn pause(&mut self) {
-        self.play = false;
-    }
-
-    /// Checks if the console is paused.
-    #[must_use]
-    pub fn paused(&self) -> bool {
-        !self.play
-    }
-
-    /// Synchronizes the debugger with the console.
-    pub fn sync(&mut self, emu: &GameBoy) {
-        // Update program counter
-        self.pc = emu.cpu().load(reg::Word::PC);
-        self.state = State {
-            cpu: emu.cpu().stage().clone(),
-            dot: emu.ppu().dot(),
-            ppu: emu.ppu().mode().clone(),
-        };
-    }
-
-    /// Informs the user of the current emulation context.
-    ///
-    /// # Panics
-    ///
-    /// Cannot panic.
-    pub fn inform(&self, emu: &GameBoy) {
-        // Give context if recently paused
-        if self.play {
-            exec::list(self, emu).unwrap();
-        }
-    }
-
     /// Prompts the user for a debugger program.
     ///
     /// # Errors
@@ -174,23 +181,16 @@ impl Debugger {
     /// # Panics
     ///
     /// Cannot panic.
-    pub fn prompt(&mut self) -> Result<()> {
-        // Lazily initialize prompt
-        let line = if let Some(line) = &mut self.line {
-            line
-        } else {
-            self.line = Some(Readline::new()?);
-            self.line.as_mut().unwrap()
-        };
+    pub fn readline(&mut self) -> Result<()> {
+        // Extract the prompt handle
+        let line = self.line.as_mut().ok_or(Error::ConfigurePrompt)?;
 
         // Present the prompt; get input
         let fmt = format!("(#{} @ {:#06x})> ", self.cycle, self.pc);
-        let input = match line.readline(&fmt) {
-            Err(ReadlineError::Interrupted) => return Ok(()),
-            Err(ReadlineError::Eof) => return Err(Error::Quit),
+        let input = match line.prompt(&fmt) {
+            Err(prompt::Error::Quit) => return Err(Error::Quit),
             res => res?,
         };
-        line.history_mut().add(&input)?; // add input to history
 
         // Parse input
         let prog: Program = input.trim().parse()?;
@@ -384,7 +384,7 @@ struct State {
     ppu: ppu::Mode,
 }
 
-/// An abstract to a get and set a computed value.
+/// An opaque [getter](Self::get) and [setter](Self::set) for a computed value.
 pub struct Portal<T> {
     //. Get the value.
     pub get: Box<dyn Fn() -> T + Send>,
@@ -403,22 +403,24 @@ impl<T: Debug> Debug for Portal<T> {
 /// A type specifying categories of [`Debugger`] errors.
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("breakpoint not found")]
+    Breakpoint,
+    #[error("prompt not configured")]
+    ConfigurePrompt,
+    #[error("logger not configured")]
+    ConfigureLogger,
     #[error(transparent)]
     Language(#[from] lang::Error),
-    #[error("missing reload handle")]
-    MissingReloadHandle,
     #[error("no input provided")]
     NoInput,
-    #[error("breakpoint not found")]
-    PointNotFound,
+    #[error(transparent)]
+    Prompt(#[from] prompt::Error),
     #[error("quit requested by user")]
     Quit,
-    #[error(transparent)]
-    Readline(#[from] ReadlineError),
     #[error("serial I/O failed")]
     Serial(#[from] std::io::Error),
-    #[error("unsupported keyword")]
+    #[error("operation not supported")]
     Unsupported,
-    #[error("value mismatch")]
-    ValueMismatch,
+    #[error("value does not match")]
+    Value,
 }
