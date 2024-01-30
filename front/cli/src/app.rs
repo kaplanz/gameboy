@@ -20,7 +20,7 @@ use parking_lot::Mutex;
 use remus::{Clock, Machine};
 
 #[cfg(feature = "doctor")]
-use crate::doc::Doctor;
+use crate::dbg::doc::Doctor;
 use crate::gui::Gui;
 use crate::FREQUENCY;
 

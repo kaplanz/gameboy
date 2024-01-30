@@ -3,6 +3,7 @@
 use std::fs::{self, File};
 use std::io::{self, Read};
 use std::path::PathBuf;
+use std::string::ToString;
 
 use clap::Parser;
 use eyre::{ensure, Result, WrapErr};
@@ -19,7 +20,9 @@ use crate::app::App;
 use crate::cfg::Config;
 use crate::cli::Cli;
 #[cfg(feature = "doctor")]
-use crate::doc::Doctor;
+use crate::dbg::doc::Doctor;
+#[cfg(feature = "gbd")]
+use crate::dbg::gbd::Readline;
 #[cfg(feature = "view")]
 use crate::gui::view::View;
 use crate::gui::{Gui, Window};
@@ -27,8 +30,8 @@ use crate::gui::{Gui, Window};
 mod app;
 mod cfg;
 mod cli;
-#[cfg(feature = "doctor")]
-mod doc;
+#[cfg(feature = "debug")]
+mod dbg;
 mod gui;
 
 /// Game Boy main clock frequency, set to 4,194,304 Hz.
@@ -134,26 +137,33 @@ fn main() -> Result<()> {
 
     // Construct debugger
     #[cfg(feature = "gbd")]
-    let gbd = args.dbg.gbd.then(|| {
-        // Construct a new `Debugger`
-        let mut gbd = Debugger::new();
-        // Initialize the logger handle
-        gbd.logger({
-            Portal {
-                get: {
-                    let handle = handle.clone();
-                    Box::new(move || {
-                        handle
-                            .with_current(std::string::ToString::to_string)
-                            .unwrap()
-                    })
-                },
-                set: Box::new(move |filter: String| handle.reload(filter).unwrap()),
-            }
-        });
-        // Return the constructed debugger
-        gbd
-    });
+    let gbd = args
+        .dbg
+        .gbd
+        .then(|| -> Result<_> {
+            // Construct a new `Debugger`
+            let mut gbd = Debugger::new();
+            // Initialize the prompt handle
+            gbd.prompt(Box::new(
+                Readline::new().context("failed to initialize readline")?,
+            ));
+            // Initialize the logger handle
+            gbd.logger({
+                Portal {
+                    get: {
+                        let handle = handle.clone();
+                        Box::new(move || handle.with_current(ToString::to_string).unwrap())
+                    },
+                    set: {
+                        let handle = handle.clone();
+                        Box::new(move |filter: String| handle.reload(filter).unwrap())
+                    },
+                }
+            });
+            // Return the constructed debugger
+            Ok(gbd)
+        })
+        .transpose()?;
 
     // Construct app options
     let cfg = app::Options {

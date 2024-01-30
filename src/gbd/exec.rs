@@ -34,7 +34,7 @@ pub fn r#continue(gbd: &mut Debugger) -> Result<()> {
 pub fn delete(gbd: &mut Debugger, point: usize) -> Result<()> {
     // Find the specified breakpoint
     let Some((&addr, bpt @ Some(_))) = gbd.bpts.get_index_mut(point) else {
-        return Err(Error::PointNotFound);
+        return Err(Error::Breakpoint);
     };
     // Mark it as deleted
     *bpt = None;
@@ -46,7 +46,7 @@ pub fn delete(gbd: &mut Debugger, point: usize) -> Result<()> {
 pub fn disable(gbd: &mut Debugger, point: usize) -> Result<()> {
     // Find the specified breakpoint
     let Some((&addr, Some(bpt))) = gbd.bpts.get_index_mut(point) else {
-        return Err(Error::PointNotFound);
+        return Err(Error::Breakpoint);
     };
     // Disable it
     bpt.disable = true;
@@ -58,7 +58,7 @@ pub fn disable(gbd: &mut Debugger, point: usize) -> Result<()> {
 pub fn enable(gbd: &mut Debugger, point: usize) -> Result<()> {
     // Find the specified breakpoint
     let Some((&addr, Some(bpt))) = gbd.bpts.get_index_mut(point) else {
-        return Err(Error::PointNotFound);
+        return Err(Error::Breakpoint);
     };
     // Enable it
     bpt.disable = false;
@@ -109,7 +109,7 @@ pub fn jump(gbd: &mut Debugger, emu: &mut GameBoy, addr: u16) -> Result<()> {
 pub fn ignore(gbd: &mut Debugger, point: usize, many: usize) -> Result<()> {
     // Find the specified breakpoint
     let Some((&addr, Some(bpt))) = gbd.bpts.get_index_mut(point) else {
-        return Err(Error::PointNotFound);
+        return Err(Error::Breakpoint);
     };
     // Update ignore count
     bpt.ignore = many;
@@ -167,8 +167,8 @@ pub fn list(gbd: &Debugger, emu: &GameBoy) -> Result<()> {
 
 #[allow(clippy::needless_pass_by_value)]
 pub fn log(gbd: &mut Debugger, filter: Option<String>) -> Result<()> {
-    // Extract the reload handle
-    let log = gbd.log.as_mut().ok_or(Error::MissingReloadHandle)?;
+    // Extract the logger handle
+    let log = gbd.log.as_mut().ok_or(Error::ConfigureLogger)?;
 
     // Change the tracing filter
     if let Some(filter) = filter {
@@ -306,7 +306,7 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
         Location::Byte(reg) => {
             // Extract the byte
             let Value::Byte(byte) = value else {
-                return Err(Error::ValueMismatch);
+                return Err(Error::Value);
             };
             // Perform the store
             emu.cpu_mut().store(reg, byte);
@@ -314,7 +314,7 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
         Location::Word(reg) => {
             // Extract the byte
             let Value::Word(word) = value else {
-                return Err(Error::ValueMismatch);
+                return Err(Error::Value);
             };
             // Perform the store
             emu.cpu_mut().store(reg, word);
@@ -322,7 +322,7 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
         Location::Pic(reg) => {
             // Extract the byte
             let Value::Byte(byte) = value else {
-                return Err(Error::ValueMismatch);
+                return Err(Error::Value);
             };
             // Perform the store
             emu.pic_mut().store(reg, byte);
@@ -330,7 +330,7 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
         Location::Ppu(reg) => {
             // Extract the byte
             let Value::Byte(byte) = value else {
-                return Err(Error::ValueMismatch);
+                return Err(Error::Value);
             };
             // Perform the store
             emu.ppu_mut().store(reg, byte);
@@ -338,7 +338,7 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
         Location::Serial(reg) => {
             // Extract the byte
             let Value::Byte(byte) = value else {
-                return Err(Error::ValueMismatch);
+                return Err(Error::Value);
             };
             // Perform the store
             emu.serial_mut().store(reg, byte);
@@ -346,7 +346,7 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
         Location::Timer(reg) => {
             // Extract the byte
             let Value::Byte(byte) = value else {
-                return Err(Error::ValueMismatch);
+                return Err(Error::Value);
             };
             // Perform the store
             emu.timer_mut().store(reg, byte);
