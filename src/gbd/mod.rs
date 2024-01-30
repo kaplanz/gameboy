@@ -19,85 +19,6 @@ mod lang;
 
 type Result<T> = std::result::Result<T, Error>;
 
-/// Debugging breakpoint metadata.
-#[derive(Clone, Debug, Default)]
-pub struct Breakpoint {
-    disable: bool,
-    ignore: usize,
-}
-
-impl Breakpoint {
-    fn display(&self, point: usize, addr: u16) -> impl Display {
-        let &Self { disable, ignore } = self;
-
-        // Prepare format string
-        let mut f = String::new();
-
-        // Format the point, addr
-        write!(f, "breakpoint {point} @ {addr:#06x}").unwrap();
-        // Format characteristics
-        if disable {
-            write!(f, ": disabled").unwrap();
-        } else if ignore > 0 {
-            write!(f, ": will ignore next {ignore} crossings").unwrap();
-        }
-
-        f
-    }
-}
-
-/// Debugger frequency.
-#[derive(Clone, Copy, Debug, Default)]
-pub enum Freq {
-    Dot,
-    #[default]
-    Mach,
-    Insn,
-    Line,
-    Frame,
-}
-
-#[rustfmt::skip]
-impl Display for Freq {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Dot   => "dot",
-                Self::Mach  => "mach",
-                Self::Insn  => "instruction",
-                Self::Line  => "scanline",
-                Self::Frame => "frame",
-            }
-        )
-    }
-}
-
-/// Emulation state.
-#[derive(Debug, Default)]
-struct State {
-    cpu: cpu::Stage,
-    dot: usize,
-    ppu: ppu::Mode,
-}
-
-/// An abstract to a get and set a computed value.
-pub struct Portal<T> {
-    //. Get the value.
-    pub get: Box<dyn Fn() -> T + Send>,
-    /// Set the value.
-    pub set: Box<dyn FnMut(T) + Send>,
-}
-
-impl<T: Debug> Debug for Portal<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Portal")
-            .field(&format!("{:?}", (self.get)()))
-            .finish()
-    }
-}
-
 #[derive(Debug, Default)]
 pub struct Debugger {
     // Application
@@ -397,6 +318,85 @@ impl Machine for Debugger {
             // Decrement ignore count
             bpt.ignore = bpt.ignore.saturating_sub(1);
         }
+    }
+}
+
+/// Debugging breakpoint metadata.
+#[derive(Clone, Debug, Default)]
+pub struct Breakpoint {
+    disable: bool,
+    ignore: usize,
+}
+
+impl Breakpoint {
+    fn display(&self, point: usize, addr: u16) -> impl Display {
+        let &Self { disable, ignore } = self;
+
+        // Prepare format string
+        let mut f = String::new();
+
+        // Format the point, addr
+        write!(f, "breakpoint {point} @ {addr:#06x}").unwrap();
+        // Format characteristics
+        if disable {
+            write!(f, ": disabled").unwrap();
+        } else if ignore > 0 {
+            write!(f, ": will ignore next {ignore} crossings").unwrap();
+        }
+
+        f
+    }
+}
+
+/// Debugger frequency.
+#[derive(Clone, Copy, Debug, Default)]
+pub enum Freq {
+    Dot,
+    #[default]
+    Mach,
+    Insn,
+    Line,
+    Frame,
+}
+
+#[rustfmt::skip]
+impl Display for Freq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Dot   => "dot",
+                Self::Mach  => "mach",
+                Self::Insn  => "instruction",
+                Self::Line  => "scanline",
+                Self::Frame => "frame",
+            }
+        )
+    }
+}
+
+/// Emulation state.
+#[derive(Debug, Default)]
+struct State {
+    cpu: cpu::Stage,
+    dot: usize,
+    ppu: ppu::Mode,
+}
+
+/// An abstract to a get and set a computed value.
+pub struct Portal<T> {
+    //. Get the value.
+    pub get: Box<dyn Fn() -> T + Send>,
+    /// Set the value.
+    pub set: Box<dyn FnMut(T) + Send>,
+}
+
+impl<T: Debug> Debug for Portal<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Portal")
+            .field(&format!("{:?}", (self.get)()))
+            .finish()
     }
 }
 

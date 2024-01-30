@@ -339,12 +339,12 @@ pub fn location(pair: Pair<Rule>) -> Result<Location> {
         Rule::Word => {
             let reg = pair.into_inner().next().exception()?;
             Location::Word(match reg.as_rule() {
-                Rule::AF   => cpu::reg::Word::AF,
-                Rule::BC   => cpu::reg::Word::BC,
-                Rule::DE   => cpu::reg::Word::DE,
-                Rule::HL   => cpu::reg::Word::HL,
-                Rule::SP   => cpu::reg::Word::SP,
-                Rule::PC   => cpu::reg::Word::PC,
+                Rule::AF => cpu::reg::Word::AF,
+                Rule::BC => cpu::reg::Word::BC,
+                Rule::DE => cpu::reg::Word::DE,
+                Rule::HL => cpu::reg::Word::HL,
+                Rule::SP => cpu::reg::Word::SP,
+                Rule::PC => cpu::reg::Word::PC,
                 rule => return rule.exception(),
             })
         }
