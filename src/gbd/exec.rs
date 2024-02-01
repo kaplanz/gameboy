@@ -1,11 +1,11 @@
 #![allow(clippy::unnecessary_wraps)]
 
-use std::io::{Read, Write};
+use std::io::{BufRead, Read, Write};
 
 use derange::Derange;
 use remus::{Block, Location as _};
 
-use super::lang::{Keyword, Location, Value};
+use super::lang::{Keyword, Location, Serial, Value};
 use super::{Debugger, Error, Freq, GameBoy, Result};
 use crate::core::dmg::cpu::Processor;
 use crate::gbd::Breakpoint;
@@ -257,29 +257,41 @@ pub fn reset(gbd: &mut Debugger, emu: &mut GameBoy) -> Result<()> {
     Ok(())
 }
 
-pub fn serial(emu: &mut GameBoy, data: Option<Vec<u8>>) -> Result<()> {
-    if let Some(data) = data {
-        // Transmit serial data
-        let nbytes = emu.serial_mut().write(&data)?;
-        let extra = data.len() - nbytes;
-        // Display results
-        tell::info!("transmitted {nbytes} bytes");
-        if extra > 0 {
-            tell::warn!("could not transmit {extra} bytes");
+pub fn serial(emu: &mut GameBoy, mode: Serial) -> Result<()> {
+    match mode {
+        Serial::Peek | Serial::Recv => {
+            // Receive serial data
+            let mut data = Vec::new();
+            let nbytes = match mode {
+                // Peek without draining output buffer
+                Serial::Peek => {
+                    data.extend_from_slice(emu.serial_mut().fill_buf()?);
+                    data.len()
+                }
+                // Read, consuming output buffer
+                Serial::Recv => emu.serial_mut().read_to_end(&mut data)?,
+                Serial::Send(_) => unreachable!(),
+            };
+            // Decode assuming ASCII representation
+            let text = std::str::from_utf8(&data);
+            // Display results
+            tell::info!("received {nbytes} bytes");
+            if nbytes > 0 {
+                tell::debug!("raw: {data:?}");
+                match text {
+                    Ok(text) => tell::debug!("txt: {text:?}"),
+                    Err(err) => tell::warn!("could not decode: {err}"),
+                }
+            }
         }
-    } else {
-        // Receive serial data
-        let mut data = Vec::new();
-        let nbytes = emu.serial_mut().read_to_end(&mut data)?;
-        // Decode assuming ASCII representation
-        let text = std::str::from_utf8(&data);
-        // Display results
-        tell::info!("received {nbytes} bytes");
-        if nbytes > 0 {
-            tell::debug!("raw: {data:?}");
-            match text {
-                Ok(text) => tell::debug!("txt: {text:?}"),
-                Err(err) => tell::warn!("could not decode: {err}"),
+        Serial::Send(data) => {
+            // Transmit serial data
+            let nbytes = emu.serial_mut().write(&data)?;
+            let extra = data.len() - nbytes;
+            // Display results
+            tell::info!("transmitted {nbytes} bytes");
+            if extra > 0 {
+                tell::warn!("could not transmit {extra} bytes");
             }
         }
     }

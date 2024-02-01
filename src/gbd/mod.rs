@@ -250,7 +250,7 @@ impl Debugger {
             Read(addr)              => exec::read(emu, addr),
             ReadRange(range)        => exec::read_range(emu, range),
             Reset                   => exec::reset(self, emu),
-            Serial(data)            => exec::serial(emu, data),
+            Serial(mode)            => exec::serial(emu, mode),
             Step(many)              => exec::step(self, many),
             Store(loc, value)       => exec::stores(emu, loc, value),
             Write(addr, byte)       => exec::write(emu, addr, byte),
