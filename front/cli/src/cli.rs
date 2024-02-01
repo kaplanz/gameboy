@@ -36,19 +36,19 @@ pub struct Cli {
     pub exit: bool,
 
     /// Cartridge options.
-    #[command(flatten)]
+    #[clap(flatten)]
     pub cart: Cartridge,
 
     /// Hardware options.
-    #[command(flatten)]
+    #[clap(flatten)]
     pub hw: Hardware,
 
     /// User interface options.
-    #[command(flatten)]
+    #[clap(flatten)]
     pub gui: Interface,
 
     /// Debugging options.
-    #[command(flatten)]
+    #[clap(flatten)]
     pub dbg: Debug,
 }
 
