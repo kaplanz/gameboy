@@ -182,10 +182,10 @@ fn main() -> Result<()> {
     let app = App {
         title,
         cfg,
-        emu,
-        gui,
         #[cfg(feature = "debug")]
         dbg: debug,
+        emu,
+        gui,
     };
 
     // Run the app

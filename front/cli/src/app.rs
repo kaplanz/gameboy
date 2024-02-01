@@ -13,7 +13,7 @@ use gameboy::core::dmg::{Button, GameBoy, Screen};
 use gameboy::core::Emulator;
 #[cfg(feature = "gbd")]
 use gameboy::gbd::{self, Debugger};
-use log::debug;
+use log::trace;
 use minifb::Key;
 #[cfg(feature = "gbd")]
 use parking_lot::Mutex;
@@ -32,17 +32,13 @@ const DIVIDER: u32 = 0x100;
 pub struct App {
     /// Window title.
     pub title: String,
-
     /// Runtime options.
     pub cfg: Options,
-
-    #[cfg(feature = "debug")]
     /// Debug options.
+    #[cfg(feature = "debug")]
     pub dbg: Debug,
-
     /// Emulator instance.
     pub emu: GameBoy,
-
     /// User-interface handle.
     pub gui: Option<Gui>,
 }
@@ -60,11 +56,11 @@ pub struct Options {
 #[cfg(feature = "debug")]
 #[derive(Debug)]
 pub struct Debug {
-    #[cfg(feature = "doctor")]
     /// Introspective logging.
+    #[cfg(feature = "doctor")]
     pub doc: Option<Doctor>,
-    #[cfg(feature = "gbd")]
     /// Interactive debugger.
+    #[cfg(feature = "gbd")]
     pub gbd: Option<Debugger>,
 }
 
@@ -139,7 +135,7 @@ impl App {
                 let speedup = freq / f64::from(FREQUENCY);
                 let fps = 60. * speedup;
                 // Log stats
-                debug!(
+                trace!(
                     "frequency: {freq:>7.4} MHz, speedup: {speedup:>5.1}%, frame rate: {fps:>6.2} Hz",
                     freq = freq / 1e6, speedup = 100. * speedup,
                 );
@@ -239,17 +235,22 @@ impl App {
                 // NOTE: Input is sampled every 64 cycles.
                 if cycle % 0x40 == 0 {
                     #[rustfmt::skip]
-                let keys = gui.main.get_keys().into_iter().filter_map(|key| match key {
-                    Key::Z     => Some(Button::A),
-                    Key::X     => Some(Button::B),
-                    Key::Space => Some(Button::Select),
-                    Key::Enter => Some(Button::Start),
-                    Key::Right => Some(Button::Right),
-                    Key::Left  => Some(Button::Left),
-                    Key::Up    => Some(Button::Up),
-                    Key::Down  => Some(Button::Down),
-                    _ => None
-                }).collect::<Vec<_>>();
+                    let keys = gui
+                        .main
+                        .get_keys()
+                        .into_iter()
+                        .filter_map(|key| match key {
+                            Key::Z     => Some(Button::A),
+                            Key::X     => Some(Button::B),
+                            Key::Space => Some(Button::Select),
+                            Key::Enter => Some(Button::Start),
+                            Key::Right => Some(Button::Right),
+                            Key::Left  => Some(Button::Left),
+                            Key::Up    => Some(Button::Up),
+                            Key::Down  => Some(Button::Down),
+                            _ => None,
+                        })
+                        .collect::<Vec<_>>();
                     emu.send(&keys);
                 }
             }
