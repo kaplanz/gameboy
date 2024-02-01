@@ -14,7 +14,7 @@ pub struct Cli {
     ///
     /// Options specified in the configuration file have lower precedence to
     /// those specified in the environment or on the command line.
-    #[arg(long)]
+    #[arg(long, value_name = "PATH")]
     #[arg(default_value_os_t = cfg::dir().join("config.toml"))]
     #[arg(value_hint = ValueHint::FilePath)]
     pub conf: PathBuf,
@@ -36,20 +36,24 @@ pub struct Cli {
     #[arg(short = 'x', long)]
     pub exit: bool,
 
+    /// User interface options.
+    #[clap(flatten)]
+    #[clap(next_help_heading = "Application")]
+    pub gui: Interface,
+
     /// Cartridge options.
     #[clap(flatten)]
+    #[clap(next_help_heading = "Cartridge")]
     pub cart: Cartridge,
 
     /// Hardware options.
     #[clap(flatten)]
+    #[clap(next_help_heading = "Hardware")]
     pub hw: Hardware,
-
-    /// User interface options.
-    #[clap(flatten)]
-    pub gui: Interface,
 
     /// Debugging options.
     #[clap(flatten)]
+    #[clap(next_help_heading = "Debug")]
     pub dbg: Debug,
 }
 
@@ -60,6 +64,7 @@ pub struct Cartridge {
     ///
     /// A cartridge will be constructed from the data specified in the ROM. The
     /// cartridge header specifies precisely what hardware will be instantiated.
+    #[arg(help_heading = None)]
     #[arg(required_unless_present("force"))]
     #[arg(value_hint = ValueHint::FilePath)]
     pub rom: Option<PathBuf>,
@@ -81,25 +86,28 @@ pub struct Cartridge {
 }
 
 /// Hardware options.
-#[derive(Args, Debug, Default)]
+#[derive(Args, Debug)]
 pub struct Hardware {
     /// Boot ROM image file.
     ///
     /// Embedded firmware ROM executed upon booting.
-    #[arg(short, long)]
+    #[arg(short, long, value_name = "PATH")]
     #[arg(value_hint = ValueHint::FilePath)]
     pub boot: Option<PathBuf>,
+
+    #[clap(flatten)]
+    pub link: Option<Link>,
 
     /// Game Boy hardware model.
     ///
     /// Console and revision specification.
-    #[arg(long)]
+    #[arg(skip)]
     #[arg(value_enum)]
     pub model: Option<Model>,
 }
 
 /// User interface options.
-#[derive(Args, Debug, Default)]
+#[derive(Args, Debug)]
 pub struct Interface {
     /// Run without UI.
     ///
@@ -109,23 +117,17 @@ pub struct Interface {
 
     /// DMG color palette.
     ///
-    /// Defines the 2-bit color palette for the DMG-01 Game Boy model. The
-    /// palette must be specified as a list of hex color values from lightest to
-    /// darkest.
-    #[arg(short, long = "palette")]
+    /// Select from a list of preset 2-bit color palettes for the DMG model.
+    #[arg(short, long = "palette", value_name = "COLOR")]
     #[arg(value_enum)]
     pub pal: Option<Palette>,
 
     /// Simulated clock speed.
     ///
-    /// Causes the emulator to run at the maximum possible speed the host
-    /// machine supports.
+    /// Select from a list of possible speeds to simulate the emulator's clock.
     #[arg(short, long)]
     #[arg(value_enum)]
     pub speed: Option<Speed>,
-
-    #[clap(flatten)]
-    pub link: Option<Link>,
 }
 
 /// Serial connection.
@@ -133,14 +135,17 @@ pub struct Interface {
 pub struct Link {
     /// Link cable local address.
     ///
-    /// Binds a local UDP socket to the specified address for serial communications.
-    #[arg(long)]
+    /// Binds a local UDP socket to the specified address for serial
+    /// communications.
+    #[arg(long, value_name = "ADDR")]
+    #[arg(required = false, requires = "peer")]
     pub host: SocketAddr,
 
     /// Link cable peer address.
     ///
     /// Opens a UDP socket for serial communications at the specified address.
-    #[arg(long)]
+    #[arg(long, value_name = "ADDR")]
+    #[arg(required = false, requires = "host")]
     pub peer: SocketAddr,
 }
 
@@ -152,17 +157,16 @@ pub struct Debug {
     ///
     /// Enables logging at the provided path of the emulator's state after every
     /// instruction in the format used by Gameboy Doctor.
-    #[arg(long = "doctor")]
-    #[arg(help_heading = "Debug")]
+    #[arg(long, value_name = "PATH")]
     #[arg(value_hint = ValueHint::FilePath)]
     pub doc: Option<PathBuf>,
 
     #[cfg(feature = "gbd")]
     /// Enable interactive Game Boy Debugger.
     ///
-    /// Starts emulation with the Game Boy Debugger (GBD) enabled, prompting after .
+    /// Starts emulation with the Game Boy Debugger (GBD) enabled, prompting
+    /// after.
     #[arg(short = 'i', long)]
-    #[arg(help_heading = "Debug")]
     pub gbd: bool,
 
     #[cfg(feature = "view")]
@@ -171,6 +175,5 @@ pub struct Debug {
     /// Causes the emulator to open the debug views, providing graphical
     /// rendering of video RAM contents.
     #[arg(long)]
-    #[arg(help_heading = "Debug")]
     pub view: bool,
 }

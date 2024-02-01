@@ -124,7 +124,7 @@ fn main() -> Result<()> {
 
     // Open serial link socket
     let link = args
-        .gui
+        .hw
         .link
         .map(|cli::Link { host, peer }| -> Result<_> {
             // Bind host to local address
