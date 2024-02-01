@@ -2,6 +2,7 @@
 
 use std::fs::{self, File};
 use std::io::{self, Read};
+use std::net::UdpSocket;
 use std::path::PathBuf;
 use std::string::ToString;
 
@@ -121,6 +122,25 @@ fn main() -> Result<()> {
         })
     };
 
+    // Open serial link socket
+    let link = args
+        .gui
+        .link
+        .map(|cli::Link { host, peer }| -> Result<_> {
+            // Bind host to local address
+            let sock = UdpSocket::bind(host)
+                .with_context(|| format!("failed to bind local socket: `{host}`"))?;
+            // Connect to peer address
+            sock.connect(peer)
+                .with_context(|| format!("failed to connect to peer: `{peer}`"))?;
+            // Set socket options
+            sock.set_nonblocking(true)
+                .context("failed to set non-blocking")?;
+            // Return completed link
+            Ok(sock)
+        })
+        .transpose()?;
+
     #[cfg(feature = "doctor")]
     // Open doctor logfile
     let doc = args
@@ -178,12 +198,15 @@ fn main() -> Result<()> {
         #[cfg(feature = "gbd")]
         gbd,
     };
+    // Construct peripherals
+    let dev = app::Devices { link };
     // Construct application
     let app = App {
         title,
         cfg,
         #[cfg(feature = "debug")]
         dbg: debug,
+        dev,
         emu,
         gui,
     };
