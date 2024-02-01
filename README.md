@@ -107,16 +107,44 @@ crates are used with the structure as follows:
   - [ ] Blargg (17/45)
   - [ ] Mooneye (19/69)
 
-### Application
+### Library
 
-- [x] Basic app
-  - [x] Screen pixel buffer window
-  - [x] Configurable palette
-  - [x] Static debug mode
-- [ ] Full GUI
-  - [ ] Dynamic cycle speed modifiers
-  - [ ] Re-mappable joypad
-  - [ ] Interactive debug menu
+- [x] Color palette API
+- [x] Debugger API
+  - [x] Breakpoints
+    - [x] Instruction address (PC)
+    - [ ] Instruction opocode
+    - [ ] I/O operation (read/write)
+    - [ ] Softbreak (`ld b, b`)
+    - [ ] Dynamic condition
+  - [x] Memory peek/poke
+  - [x] Register manipulation
+    - [ ] APU
+    - [x] CPU
+    - [x] Interrupts
+    - [x] PPU
+    - [x] Serial
+    - [x] Timer
+  - [x] Peripheral control
+    - [x] Serial interface
+- [x] Exposed core API
+- [x] Frontend API
+
+### Frontend
+
+- [x] Command-line
+  - [x] Configuration file
+    - [ ] Re-mappable joypad
+  - [x] Debugging support
+    - [x] Interactive debugging
+    - [x] CPU logging
+    - [x] Memory rendering
+    - [ ] Dynamic speed changing
+- [ ] Cross platform (SDL)
+- [ ] Native
+  - [ ] iOS
+  - [ ] macOS
+- [ ] Web (WASM)
 
 ## References
 
