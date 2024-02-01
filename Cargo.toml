@@ -25,9 +25,7 @@ license = "MIT OR Apache-2.0"
 
 [features]
 default = ["gbd"]
-debug = []
 gbd = [
-    "debug",
     "dep:bytecount",
     "dep:derange",
     "dep:displaydoc",

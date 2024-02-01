@@ -17,6 +17,7 @@ gbd = [
     "dep:ctrlc",
     "dep:parking_lot",
     "dep:rustyline",
+    "gameboy/gbd",
 ]
 view = ["debug"]
 

@@ -1,4 +1,3 @@
-#[cfg(feature = "doctor")]
 use std::io::Write;
 use std::io::{self, Read};
 use std::net::UdpSocket;
@@ -9,7 +8,7 @@ use std::time::Duration;
 
 use eyre::Context;
 use gameboy::api::pal::Palette;
-#[cfg(feature = "debug")]
+#[cfg(any(feature = "doctor", feature = "view"))]
 use gameboy::core::dmg;
 use gameboy::core::dmg::{Button, GameBoy, Screen};
 use gameboy::core::Emulator;
