@@ -64,7 +64,7 @@ pub enum Command {
     Quit,
     Read(u16),
     ReadRange(Derange<u16>),
-    Serial(Option<Vec<u8>>),
+    Serial(Serial),
     Reset,
     Step(Option<usize>),
     Store(Vec<Location>, Value),
@@ -251,8 +251,8 @@ pub enum Keyword {
      *
      * Load the value of the specified register(s) and print.
      *
-     * If specified using the `lb` or `lw` alias, the specified resister must be
-     * either byte or word size respectively.
+     * If specified using the special `lb` or `lw` alias, the specified resister
+     * must be either byte or word size respectively.
      *
      * Valid 8-bit (byte) registers are:
      * * CPU: A, F, B, C, D, E, H, L
@@ -263,6 +263,7 @@ pub enum Keyword {
      * * CPU: AF, BC, DE, HL, SP, PC
      *
      * Aliases: `ld`
+     * Special: `lb`, `lw`
      *
      * See also: `store`
      */
@@ -312,9 +313,15 @@ pub enum Keyword {
      */
     Reset,
     /**
-     * `serial`
+     * `serial[!] [DATA]`
      *
-     * Receive data sent to the serial port and print.
+     * Receive or transmit data to the serial port.
+     *
+     * To read and drain the send data buffer, pass the `!` argument.
+     *
+     * Data to be transmitted must be in one of the following forms:
+     * * Buffer: A byte array, e.g. `[0x44, 0x61, 0x74, 0x61]`
+     * * String: ASCII string, e.g. `"Hello, world!"`
      *
      * Aliases: `sx`
      */
@@ -334,8 +341,8 @@ pub enum Keyword {
      *
      * Store a value to the specified register(s) and print.
      *
-     * If specified using the `sb` or `sw` alias, the specified resister must be
-     * either byte or word size respectively.
+     * If specified using the special `sb` or `sw` alias, the specified resister
+     * must be either byte or word size respectively.
      *
      * Valid 8-bit (byte) registers are:
      * * CPU: A, F, B, C, D, E, H, L
@@ -346,6 +353,7 @@ pub enum Keyword {
      * * CPU: AF, BC, DE, HL, SP, PC
      *
      * Aliases: `sr`
+     * Special: `sb`, `sw`
      *
      * See also: `load`
      */
@@ -387,4 +395,11 @@ pub enum Location {
 pub enum Value {
     Byte(u8),
     Word(u16),
+}
+
+#[derive(Clone, Debug)]
+pub enum Serial {
+    Peek,
+    Recv,
+    Send(Vec<u8>),
 }

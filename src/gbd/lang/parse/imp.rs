@@ -9,7 +9,7 @@ use num::{Bounded, Integer};
 use pest::iterators::Pair;
 use thiserror::Error;
 
-use super::{Command, Freq, Keyword, Location, Result, Rule, Value};
+use super::{Command, Freq, Keyword, Location, Result, Rule, Serial, Value};
 use crate::core::dmg::{cpu, pic, ppu, serial, timer};
 
 #[allow(clippy::cast_sign_loss)]
@@ -113,12 +113,15 @@ pub fn command(input: Pair<Rule>) -> Result<Command> {
         }
         Rule::Reset => Command::Reset,
         Rule::Serial => {
-            let data = args
-                .next()
-                .map(|pair| -> Result<_> {
-                    match pair.as_rule() {
+            let pair = args.next().exception()?;
+            let mode = match pair.as_rule() {
+                Rule::Peek => Serial::Peek,
+                Rule::Recv => Serial::Recv,
+                Rule::Send => Serial::Send({
+                    let data = pair.into_inner().next().exception()?;
+                    match data.as_rule() {
                         Rule::Bytes => {
-                            pair
+                            data
                                 // extract inner
                                 .into_inner()
                                 // parse each byte
@@ -127,7 +130,7 @@ pub fn command(input: Pair<Rule>) -> Result<Command> {
                                 .collect()
                         }
                         Rule::String => {
-                            pair
+                            data
                                 // extract inner
                                 .into_inner()
                                 // find only argument
@@ -137,10 +140,11 @@ pub fn command(input: Pair<Rule>) -> Result<Command> {
                                 .map(|inner| inner.as_str().as_bytes().to_vec())
                         }
                         rule => rule.exception(),
-                    }
-                })
-                .transpose()?;
-            Command::Serial(data)
+                    }?
+                }),
+                rule => return rule.exception(),
+            };
+            Command::Serial(mode)
         }
         Rule::Step => {
             let many = args.next().map(self::integer).transpose()?;

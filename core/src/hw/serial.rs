@@ -1,7 +1,7 @@
 //! Serial chip.
 
 use std::collections::VecDeque;
-use std::io::{Read, Write};
+use std::io::{BufRead, Read, Write};
 
 use log::{debug, trace, warn};
 use remus::bus::Mux;
@@ -70,6 +70,22 @@ impl Serial {
             // Shared
             pic,
         }
+    }
+
+    /// Gets the external serial receiver handle.
+    #[must_use]
+    pub fn rx(&mut self) -> &mut impl BufRead {
+        // NOTE: We return `tx`, since the internal transmitter is the external
+        //       receiver.
+        &mut self.tx
+    }
+
+    /// Gets the external serial transmitter handle.
+    #[must_use]
+    pub fn tx(&mut self) -> &mut impl Write {
+        // NOTE: We return `rx`, since the internal receiver is the external
+        //       transmitter.
+        &mut self.rx
     }
 
     /// Perform a tick of the external clock.
@@ -177,19 +193,29 @@ impl Machine for Serial {
     }
 }
 
+impl BufRead for Serial {
+    fn fill_buf(&mut self) -> std::io::Result<&[u8]> {
+        self.rx().fill_buf()
+    }
+
+    fn consume(&mut self, amt: usize) {
+        self.rx().consume(amt);
+    }
+}
+
 impl Read for Serial {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        self.tx.read(buf)
+        self.rx().read(buf)
     }
 }
 
 impl Write for Serial {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.rx.write(buf)
+        self.tx().write(buf)
     }
 
     fn flush(&mut self) -> std::io::Result<()> {
-        self.rx.flush()
+        self.tx().flush()
     }
 }
 

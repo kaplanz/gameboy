@@ -1,5 +1,4 @@
-use std::io::Write;
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::net::UdpSocket;
 #[cfg(feature = "gbd")]
 use std::sync::Arc;
