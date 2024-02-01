@@ -1,3 +1,4 @@
+use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use clap::{Args, Parser, ValueHint};
@@ -122,6 +123,25 @@ pub struct Interface {
     #[arg(short, long)]
     #[arg(value_enum)]
     pub speed: Option<Speed>,
+
+    #[clap(flatten)]
+    pub link: Option<Link>,
+}
+
+/// Serial connection.
+#[derive(Args, Debug)]
+pub struct Link {
+    /// Link cable local address.
+    ///
+    /// Binds a local UDP socket to the specified address for serial communications.
+    #[arg(long)]
+    pub host: SocketAddr,
+
+    /// Link cable peer address.
+    ///
+    /// Opens a UDP socket for serial communications at the specified address.
+    #[arg(long)]
+    pub peer: SocketAddr,
 }
 
 /// Debugging options.

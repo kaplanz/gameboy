@@ -1,5 +1,7 @@
 #[cfg(feature = "doctor")]
 use std::io::Write;
+use std::io::{self, Read};
+use std::net::UdpSocket;
 #[cfg(feature = "gbd")]
 use std::sync::Arc;
 #[cfg(feature = "gbd")]
@@ -13,7 +15,7 @@ use gameboy::core::dmg::{Button, GameBoy, Screen};
 use gameboy::core::Emulator;
 #[cfg(feature = "gbd")]
 use gameboy::gbd::{self, Debugger};
-use log::trace;
+use log::{debug, trace};
 use minifb::Key;
 #[cfg(feature = "gbd")]
 use parking_lot::Mutex;
@@ -37,6 +39,8 @@ pub struct App {
     /// Debug options.
     #[cfg(feature = "debug")]
     pub dbg: Debug,
+    /// Connected peripherals.
+    pub dev: Devices,
     /// Emulator instance.
     pub emu: GameBoy,
     /// User-interface handle.
@@ -64,6 +68,13 @@ pub struct Debug {
     pub gbd: Option<Debugger>,
 }
 
+/// Connected peripherals.
+#[derive(Debug)]
+pub struct Devices {
+    /// Link cable.
+    pub link: Option<UdpSocket>,
+}
+
 impl App {
     /// Runs the application.
     #[allow(clippy::too_many_lines)]
@@ -74,6 +85,7 @@ impl App {
             cfg,
             #[cfg(feature = "debug")]
             mut dbg,
+            mut dev,
             mut emu,
             mut gui,
         } = self;
@@ -252,6 +264,53 @@ impl App {
                         })
                         .collect::<Vec<_>>();
                     emu.send(&keys);
+                }
+            }
+
+            // Stream serial data
+            if let Some(link) = dev.link.as_mut() {
+                // NOTE: Data is streamed at 1 Hz.
+                if cycle % FREQUENCY == 0 {
+                    // emu -> link
+                    'tx: {
+                        // Download from emulator
+                        let mut buf = Vec::new();
+                        let read = emu
+                            .serial_mut()
+                            .read_to_end(&mut buf)
+                            .context("failed to download serial data from emulator")?;
+                        if read == 0 {
+                            break 'tx;
+                        }
+                        // Transmit data to link
+                        let sent = link
+                            .send(&buf)
+                            .context("failed to transmit serial data to network")?;
+                        debug!("transmitted {sent} bytes ({read} downloaded)");
+                        trace!("serial tx: {buf:?}");
+                    }
+                    // link -> emu
+                    'rx: {
+                        // Receive data from link
+                        let mut buf = [0; 0x10]; // use fixed-size buffer
+                        let recvd = match link.recv(&mut buf) {
+                            // Explicitly ignore would block error
+                            Err(err) if err.kind() == io::ErrorKind::WouldBlock => Ok(0),
+                            res => res,
+                        }
+                        .context("failed to receive serial data from network")?;
+                        let buf = &buf[..recvd]; // truncate to valid data
+                        if recvd == 0 {
+                            break 'rx;
+                        }
+                        // Upload to emulator
+                        let wrote = emu
+                            .serial_mut()
+                            .write(buf)
+                            .context("failed to upload serial data to emulator")?;
+                        debug!("received {recvd} bytes ({wrote} uploaded)");
+                        trace!("serial rx: {buf:?}");
+                    }
                 }
             }
 
