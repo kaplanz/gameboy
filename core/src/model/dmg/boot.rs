@@ -9,6 +9,7 @@ use remus::{mem, Address, Block, Board, Cell, Shared};
 use crate::arch::Bus;
 use crate::dev::ReadOnly;
 
+/// Boot RAM model.
 pub type Boot = mem::Rom<u8, 0x100>;
 
 /// Boot ROM.
