@@ -1,4 +1,4 @@
-//! DMG-01: [Game Boy]
+//! DMG-01: [Game Boy].
 //!
 //! [Game Boy]: https://en.wikipedia.org/wiki/Game_Boy
 
@@ -37,7 +37,9 @@ pub use crate::hw::joypad::Button;
 pub use crate::hw::ppu::Screen;
 pub use crate::hw::{cart, pic, ppu, serial, timer};
 
+/// Work RAM model.
 pub type Wram = Ram<u8, 0x2000>;
+/// High RAM model.
 pub type Hram = Ram<u8, 0x007f>;
 
 /// DMG-01 screen specification.
