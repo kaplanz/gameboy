@@ -16,10 +16,10 @@ impl Readline {
 }
 
 impl Prompt for Readline {
-    fn prompt(&mut self, ask: &str) -> Result<String, Error> {
+    fn prompt(&mut self, msg: &str) -> Result<String, Error> {
         // Prompt the user for input
         let line = loop {
-            match self.0.readline(ask) {
+            match self.0.readline(msg) {
                 Ok(line) => break line,
                 Err(err) => match err {
                     ReadlineError::Interrupted => continue,

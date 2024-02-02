@@ -7,7 +7,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error;
 
-use super::{Command, Freq, Keyword, Location, Program, Serial, Value};
+use super::{Command, Keyword, Location, Program, Serial, Tick, Value};
 
 mod imp;
 

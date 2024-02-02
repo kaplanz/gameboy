@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use derange::Derange;
 use displaydoc::Display;
 
-use super::Freq;
+use super::Tick;
 use crate::core::dmg::{cpu, pic, ppu, serial, timer};
 
 mod parse;
@@ -45,33 +45,59 @@ impl IntoIterator for Program {
     }
 }
 
+/// Debugger commands.
 #[derive(Clone, Debug)]
 pub enum Command {
+    /// Set a [breakpoint][`Keyword::Break`].
     Break(u16),
+    /// [Continue][`Keyword::Continue`] execution.
     Continue,
+    /// [Delete][`Keyword::Delete`] a breakpoint.
     Delete(usize),
+    /// [Disable][`Keyword::Disable`] a breakpoint.
     Disable(usize),
+    /// [Enable][`Keyword::Enable`] a breakpoint.
     Enable(usize),
-    Freq(Option<Freq>),
+    /// Change debugger [frequency][`Keyword::Freq`].
+    Freq(Option<Tick>),
+    /// [Go-to][`Keyword::Goto`] an address.
     Goto(u16),
+    /// Print debugger [help][`Keyword::Help`].
     Help(Option<Keyword>),
+    /// [Ignore][`Keyword::Ignore`] crossings of a breakpoint.
     Ignore(usize, usize),
+    /// Print [info][`Keyword::Info`] about debugger state.
     Info(Option<Keyword>),
+    /// [Jump][`Keyword::Jump`] and [continue][`Keyword::Continue`] execution at
+    /// an address.
     Jump(u16),
+    /// [List][`Keyword::List`] the current instruction.
     List,
+    /// [Load][`Keyword::Load`] a register's value.
     Load(Vec<Location>),
+    /// Change the [log][`Keyword::Log`] level.
     Log(Option<String>),
+    /// [Quit][`Keyword::Load`] the emulator.
     Quit,
+    /// [Read][`Keyword::Read`] a memory address.
     Read(u16),
+    /// [Read][`Keyword::Read`] a range of memory addresses.
     ReadRange(Derange<u16>),
+    /// Perform a [serial][`Keyword::Serial`] operation.
     Serial(Serial),
+    /// [Reset][`Keyword::Reset`] the emulator.
     Reset,
+    /// Perform a single execution [step][`Keyword::Step`].
     Step(Option<usize>),
+    /// [Store][`Keyword::Load`] a value to a register.
     Store(Vec<Location>, Value),
+    /// [Write][`Keyword::Write`] a value to a memory address.
     Write(u16, u8),
+    /// [Write][`Keyword::Write`] a value to a range of memory addresses.
     WriteRange(Derange<u16>, u8),
 }
 
+/// Debugger keyword help.
 #[derive(Clone, Debug, Display)]
 pub enum Keyword {
     /**
@@ -156,20 +182,20 @@ pub enum Keyword {
      */
     Enable,
     /**
-     * `frequency [MODE]`
+     * `frequency [TICK]`
      *
      * Print or set the debugger's execution frequency.
      *
-     * Mode must be one of:
-     * * `d`, `dot`:   Maximum frequency, equal to 4 MiHz at full-speed; used as
-     * :               PPU clock.
-     * * `m`, `mach`:  Default frequency, equal to 1 MiHz; used as CPU clock.
-     * * `i`, `insn`:  Variable frequency, depends on the cycle length of
-     * :               instruction currently being executed.
-     * * `l`, `line`:  Scanline, equal to the time taken to draw a
-     * :               single line on the screen.
-     * * `r`, `frame`: Frame rate, equal to the time taken to draw a single
-     * :               frame on the screen.
+     * `TICK` must be one of:
+     * * `d`, `dot`:   True system clock, notably used by the PPU; occurs at a
+     *                 frequency of 4 MiHz.
+     * * `m`, `mach`:  Default frequency, used by CPU; always exactly 4 dots.
+     * * `i`, `insn`:  Variable frequency, equal to the duration of the current
+     *                 instruction; always 1-6 machine cycles.
+     * * `l`, `line`:  Duration to draw one line of the LCD display; always
+     *                 exactly 456 dots.
+     * * `r`, `frame`: Duration to draw an entire frame of the LCD display;
+     *                 always exactly 154 scanlines.
      *
      * Aliases: `freq`, `f`
      *
@@ -204,7 +230,7 @@ pub enum Keyword {
     /**
      * `ignore <BREAKPOINT> <COUNT>`
      *
-     * Ignore the next <COUNT> crossings of the breakpoint at the specified
+     * Ignore the next `COUNT` crossings of the breakpoint at the specified
      * index.
      *
      * Aliases: `ig`
@@ -213,7 +239,7 @@ pub enum Keyword {
     /**
      * `info [KEYWORD]`
      *
-     * Probe for information about a specified feature.
+     * Print info about the debugger's state.
      *
      * Currently only supports breakpoints, with the `break` keyword.
      *

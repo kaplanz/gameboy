@@ -6,7 +6,7 @@ use derange::Derange;
 use remus::{Block, Location as _};
 
 use super::lang::{Keyword, Location, Serial, Value};
-use super::{Debugger, Error, Freq, GameBoy, Result};
+use super::{Debugger, Error, GameBoy, Result, Tick};
 use crate::core::dmg::cpu::Processor;
 use crate::gbd::Breakpoint;
 
@@ -67,7 +67,7 @@ pub fn enable(gbd: &mut Debugger, point: usize) -> Result<()> {
     Ok(())
 }
 
-pub fn freq(gbd: &mut Debugger, mode: Option<Freq>) -> Result<()> {
+pub fn freq(gbd: &mut Debugger, mode: Option<Tick>) -> Result<()> {
     // Change the current frequency
     if let Some(mode) = mode {
         gbd.freq = mode;
