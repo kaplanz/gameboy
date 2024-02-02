@@ -9,7 +9,7 @@ use num::{Bounded, Integer};
 use pest::iterators::Pair;
 use thiserror::Error;
 
-use super::{Command, Freq, Keyword, Location, Result, Rule, Serial, Value};
+use super::{Command, Keyword, Location, Result, Rule, Serial, Tick, Value};
 use crate::core::dmg::{cpu, pic, ppu, serial, timer};
 
 #[allow(clippy::cast_sign_loss)]
@@ -51,11 +51,11 @@ pub fn command(input: Pair<Rule>) -> Result<Command> {
                 .next()
                 .map(|pair| -> Result<_> {
                     match pair.as_rule() {
-                        Rule::Dot   => Ok(Freq::Dot),
-                        Rule::Mach  => Ok(Freq::Mach),
-                        Rule::Insn  => Ok(Freq::Insn),
-                        Rule::Line  => Ok(Freq::Line),
-                        Rule::Frame => Ok(Freq::Frame),
+                        Rule::Dot   => Ok(Tick::Dot),
+                        Rule::Mach  => Ok(Tick::Mach),
+                        Rule::Insn  => Ok(Tick::Insn),
+                        Rule::Line  => Ok(Tick::Line),
+                        Rule::Frame => Ok(Tick::Frame),
                         rule => rule.exception(),
                     }
                 })

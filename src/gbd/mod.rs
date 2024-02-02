@@ -1,3 +1,5 @@
+//! Game Boy Debugger (GBD).
+
 #![allow(clippy::result_large_err)]
 
 use std::fmt::{Debug, Display, Write};
@@ -7,7 +9,7 @@ use log::debug;
 use remus::{Block, Clock, Location, Machine};
 use thiserror::Error;
 
-use self::lang::{Command, Program};
+use self::lang::Program;
 use self::prompt::Prompt;
 use crate::core::dmg::cpu::{self, reg};
 use crate::core::dmg::{ppu, GameBoy};
@@ -17,8 +19,11 @@ pub mod prompt;
 mod exec;
 mod lang;
 
+pub use self::lang::{Command, Keyword};
+
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// Interactive debugger object.
 #[derive(Debug, Default)]
 pub struct Debugger {
     // Application
@@ -30,7 +35,7 @@ pub struct Debugger {
     state: State,
     // Internal
     play: bool,
-    freq: Freq,
+    freq: Tick,
     step: Option<usize>,
     prog: Option<Program>,
     prev: Option<Program>,
@@ -53,7 +58,7 @@ impl Debugger {
 
     /// Sets the prompt handle.
     ///
-    /// Used to change the logging level filter.
+    /// Used to prompt the user for commands.
     pub fn prompt(&mut self, line: Box<dyn Prompt>) {
         self.line = Some(line);
     }
@@ -177,10 +182,6 @@ impl Debugger {
     /// # Errors
     ///
     /// Errors if the prompt failed.
-    ///
-    /// # Panics
-    ///
-    /// Cannot panic.
     pub fn readline(&mut self) -> Result<()> {
         // Extract the prompt handle
         let line = self.line.as_mut().ok_or(Error::ConfigurePrompt)?;
@@ -269,11 +270,11 @@ impl Debugger {
         let ppudot = self.state.dot == 0;
         // Check if this is an edge cycle
         match self.freq {
-            Freq::Dot   => true,
-            Freq::Mach  => mcycle,
-            Freq::Insn  => mcycle && matches!(self.state.cpu, cpu::Stage::Done),
-            Freq::Line  => ppudot,
-            Freq::Frame => ppudot && matches!(self.state.ppu, ppu::Mode::Scan(_)),
+            Tick::Dot   => true,
+            Tick::Mach  => mcycle,
+            Tick::Insn  => mcycle && matches!(self.state.cpu, cpu::Stage::Done),
+            Tick::Line  => ppudot,
+            Tick::Frame => ppudot && matches!(self.state.ppu, ppu::Mode::Scan(_)),
         }
     }
 }
@@ -323,7 +324,7 @@ impl Machine for Debugger {
 
 /// Debugging breakpoint metadata.
 #[derive(Clone, Debug, Default)]
-pub struct Breakpoint {
+struct Breakpoint {
     disable: bool,
     ignore: usize,
 }
@@ -348,19 +349,38 @@ impl Breakpoint {
     }
 }
 
-/// Debugger frequency.
+/// Debugger progress unit.
 #[derive(Clone, Copy, Debug, Default)]
-pub enum Freq {
+pub enum Tick {
+    /// T-stage.
+    ///
+    /// True system clock notably used by the PPU; occurs at a frequency of 4
+    /// MiHz.
     Dot,
+    /// M-cycle.
+    ///
+    /// Basic clock for the CPU; always exactly 4 [dots][`Tick::Dot`].
     #[default]
     Mach,
+    /// Instruction.
+    ///
+    /// Equal to the duration of the current instruction; always 1-6
+    /// [M-cycles][`Tick::Mach`].
     Insn,
+    /// Scanline.
+    ///
+    /// Duration to draw one line of the LCD display; always exactly 456
+    /// [dots][`Tick::Dot`].
     Line,
+    /// Frame.
+    ///
+    /// Duration to draw an entire frame of the LCD display; always exactly 154
+    /// [scanlines][`Tick::Line`] (due to 10 extra v-blank scanlines).
     Frame,
 }
 
 #[rustfmt::skip]
-impl Display for Freq {
+impl Display for Tick {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -386,7 +406,7 @@ struct State {
 
 /// An opaque [getter](Self::get) and [setter](Self::set) for a computed value.
 pub struct Portal<T> {
-    //. Get the value.
+    /// Get the value.
     pub get: Box<dyn Fn() -> T + Send>,
     /// Set the value.
     pub set: Box<dyn FnMut(T) + Send>,
@@ -403,24 +423,34 @@ impl<T: Debug> Debug for Portal<T> {
 /// A type specifying categories of [`Debugger`] errors.
 #[derive(Debug, Error)]
 pub enum Error {
+    /// Requested breakpoint could not be found.
     #[error("breakpoint not found")]
     Breakpoint,
+    /// Prompt has not been configured.
     #[error("prompt not configured")]
     ConfigurePrompt,
+    /// Logger has not been configured.
     #[error("logger not configured")]
     ConfigureLogger,
+    /// Command parsing error.
     #[error(transparent)]
     Language(#[from] lang::Error),
+    /// Prompt returned empty string.
     #[error("no input provided")]
     NoInput,
+    /// Prompt returned an error.
     #[error(transparent)]
     Prompt(#[from] prompt::Error),
+    /// Quit requested by user.
     #[error("quit requested by user")]
     Quit,
+    /// I/O operation failed.
     #[error("serial I/O failed")]
     Serial(#[from] std::io::Error),
+    /// Attempted an unsupported operation.
     #[error("operation not supported")]
     Unsupported,
-    #[error("value does not match")]
+    /// Provided value does not match expectation.
+    #[error("unexpected value")]
     Value,
 }
