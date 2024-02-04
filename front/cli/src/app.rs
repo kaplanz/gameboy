@@ -6,13 +6,13 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use eyre::Context;
-use gameboy::api::pal::Palette;
 #[cfg(any(feature = "doctor", feature = "view"))]
 use gameboy::core::dmg;
 use gameboy::core::dmg::{Button, GameBoy, Screen};
 use gameboy::core::Emulator;
 #[cfg(feature = "gbd")]
 use gameboy::gbd::{self, Debugger};
+use gameboy::pal::Palette;
 use log::{debug, trace};
 use minifb::Key;
 #[cfg(feature = "gbd")]

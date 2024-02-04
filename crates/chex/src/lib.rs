@@ -33,7 +33,9 @@ use thiserror::Error;
 
 mod names;
 
-/// Use [24-bit] color (stored as `0x00RRGGBB_u32`)
+/// [24-bit] color value.
+///
+/// Stored internally in a `u32` as `0x00RRGGBB`.
 ///
 /// [24-bit]: https://en.wikipedia.org/wiki/List_of_monochrome_and_RGB_color_formats#24-bit_RGB
 #[derive(

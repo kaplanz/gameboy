@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::ValueEnum;
-use gameboy::api::pal;
+use gameboy::pal;
 use serde::Deserialize;
 
 use crate::FREQUENCY;
