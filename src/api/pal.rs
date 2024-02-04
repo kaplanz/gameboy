@@ -1,16 +1,26 @@
-//! Screen color palettes.
+//! Color palettes.
 
 use std::fmt::Debug;
 use std::ops::Index;
 
-use chex::Color;
+pub use chex::Color;
 use serde::{Deserialize, Serialize};
+
+pub use self::decl::*;
 
 /// 2-bit color palette.
 ///
 /// Used by the DMG model; the 2-bit palette depth supports a total of 4 colors.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Palette([Color; 4]);
+
+impl Palette {
+    /// Constructs a new `Palette`.
+    #[must_use]
+    pub fn new(pal: [Color; 4]) -> Self {
+        Self(pal)
+    }
+}
 
 impl Index<usize> for Palette {
     type Output = Color;
@@ -244,5 +254,3 @@ mod decl {
         Color::new(0x2d162c),
     ]);
 }
-
-pub use self::decl::*;

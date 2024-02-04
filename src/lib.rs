@@ -31,8 +31,11 @@
 
 #![warn(clippy::pedantic)]
 
-pub use gameboy_core as core;
+mod api;
 
-pub mod api;
 #[cfg(feature = "gbd")]
 pub mod gbd;
+
+pub use api::*;
+#[doc(inline)]
+pub use gameboy_core as core;

@@ -14,10 +14,10 @@ use self::prompt::Prompt;
 use crate::core::dmg::cpu::{self, reg};
 use crate::core::dmg::{ppu, GameBoy};
 
-pub mod prompt;
-
 mod exec;
 mod lang;
+
+pub mod prompt;
 
 pub use self::lang::{Command, Keyword};
 
