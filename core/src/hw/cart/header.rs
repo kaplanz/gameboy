@@ -44,7 +44,7 @@ impl Header {
     pub(super) fn blank() -> Self {
         Self {
             logo: false,
-            title: "Missing".to_string(),
+            title: "Unknown".to_string(),
             dmg: false,
             cgb: false,
             sgb: false,
