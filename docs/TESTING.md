@@ -61,7 +61,7 @@ Outlined below is current testing results for various integration test suites.
 ### [Mooneye](/tests/mooneye.rs)
 
 ```
-19 passed; 50 failed;
+23 passed; 46 failed;
 ```
 
 | Test                                                | Pass |
@@ -80,15 +80,15 @@ Outlined below is current testing results for various integration test suites.
 | `acceptance/call_cc_timing2.gb`                     |  ❌  |
 | `acceptance/call_timing.gb`                         |  ❌  |
 | `acceptance/call_timing2.gb`                        |  ❌  |
-| `acceptance/di_timing-GS.gb`                        |  ❌  |
+| `acceptance/di_timing-GS.gb`                        |  ✅  |
 | `acceptance/div_timing.gb`                          |  ✅  |
 | `acceptance/ei_sequence.gb`                         |  ✅  |
 | `acceptance/ei_timing.gb`                           |  ✅  |
 | `acceptance/halt_ime0_ei.gb`                        |  ✅  |
-| `acceptance/halt_ime0_nointr_timing.gb`             |  ❌  |
+| `acceptance/halt_ime0_nointr_timing.gb`             |  ✅  |
 | `acceptance/halt_ime1_timing.gb`                    |  ✅  |
-| `acceptance/halt_ime1_timing2-GS.gb`                |  ❌  |
-| `acceptance/if_ie_registers.gb`                     |  ❌  |
+| `acceptance/halt_ime1_timing2-GS.gb`                |  ✅  |
+| `acceptance/if_ie_registers.gb`                     |  ✅  |
 | `acceptance/instr/daa.gb`                           |  ✅  |
 | `acceptance/interrupts/ie_push.gb`                  |  ❌  |
 | `acceptance/intr_timing.gb`                         |  ✅  |
