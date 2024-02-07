@@ -105,7 +105,7 @@ crates are used with the structure as follows:
   - [ ] Benchmark tests
 - [ ] [Testing]
   - [ ] Blargg (17/45)
-  - [ ] Mooneye (19/69)
+  - [ ] Mooneye (23/69)
 
 ### Library
 

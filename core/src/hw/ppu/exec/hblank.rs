@@ -24,9 +24,6 @@ impl HBlank {
             // Reset dot-clock
             ppu.dot = 0;
 
-            // Request an interrupt
-            ppu.pic.borrow_mut().req(Interrupt::VBlank);
-
             // Determine next mode
             if (ly as usize) < SCREEN.height {
                 // Begin next scanline
@@ -34,6 +31,8 @@ impl HBlank {
             } else {
                 // Reset internal window line counter
                 ppu.winln = 0;
+                // Request an interrupt
+                ppu.pic.borrow_mut().req(Interrupt::VBlank);
                 // Enter VBlank
                 Mode::VBlank(self.into())
             }
