@@ -25,7 +25,8 @@ pub struct Config {
 pub struct Gui {
     #[serde(rename = "palette")]
     pub pal: Palette,
-    pub speed: Speed,
+    #[serde(rename = "speed")]
+    pub spd: Speed,
 }
 
 /// Console hardware description.
@@ -108,37 +109,52 @@ impl From<Palette> for pal::Palette {
     }
 }
 
-/// Emulation speed modifier.
+/// Simulated clock frequency.
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, ValueEnum)]
 #[serde(rename_all = "kebab-case")]
 pub enum Speed {
-    /// 30 fps.
+    /// Half speed mode.
+    ///
+    /// Convenience preset resulting in emulation at half speed.
     Half,
-    /// 60 fps.
+    /// Actual hardware speed.
+    ///
+    /// Mimics the actual hardware clock frequency. Equal to 4 MiHz (60 FPS).
     #[default]
-    Full,
-    /// 120 fps.
+    Actual,
+    /// Double speed mode.
+    ///
+    /// Convenience preset resulting in emulation at double speed.
     Double,
-    /// 180 fps.
-    Triple,
-    /// Maximum possible.
-    Max,
-    /// Custom frequency.
-    #[allow(unused)]
+    /// Frame rate.
+    ///
+    /// Frequency that targets supplied frame rate (FPS).
     #[clap(skip)]
-    Custom(u32),
+    #[serde(rename = "fps")]
+    Rate(u8),
+    /// Clock frequency.
+    ///
+    /// Precise frequency (Hz) to clock the emulator.
+    #[clap(skip)]
+    #[serde(rename = "hz")]
+    Freq(u32),
+    /// Maximum possible.
+    ///
+    /// Unconstrained, limited only by the host system's capabilities.
+    Max,
 }
 
-#[rustfmt::skip]
-impl From<Speed> for Option<u32> {
-    fn from(value: Speed) -> Self {
-        match value {
-            Speed::Half        => Some(FREQUENCY / 2),
-            Speed::Full        => Some(FREQUENCY),
-            Speed::Double      => Some(FREQUENCY * 2),
-            Speed::Triple      => Some(FREQUENCY * 3),
-            Speed::Max         => None,
-            Speed::Custom(spd) => Some(spd),
+impl Speed {
+    /// Converts the `Speed` to it's corresponding frequency.
+    #[rustfmt::skip]
+    pub fn freq(self) -> Option<u32> {
+        match self {
+            Speed::Half       => Some(FREQUENCY / 2),
+            Speed::Actual     => Some(FREQUENCY),
+            Speed::Double     => Some(FREQUENCY * 2),
+            Speed::Rate(rate) => Some((FREQUENCY / 60).saturating_mul(rate.into())),
+            Speed::Freq(freq) => Some(freq),
+            Speed::Max        => None,
         }
     }
 }

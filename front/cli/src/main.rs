@@ -188,7 +188,7 @@ fn main() -> Result<()> {
     // Construct app options
     let cfg = app::Options {
         pal: args.gui.pal.unwrap_or(conf.gui.pal).into(),
-        spd: args.gui.speed.unwrap_or(conf.gui.speed).into(),
+        spd: args.gui.spd.unwrap_or(conf.gui.spd).freq(),
     };
     // Construct debug options
     #[cfg(feature = "debug")]
