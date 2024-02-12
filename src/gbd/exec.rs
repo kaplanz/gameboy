@@ -14,11 +14,11 @@ pub fn r#break(gbd: &mut Debugger, addr: u16) -> Result<()> {
     // Check if the breakpoint already exists
     if let Some((point, _, Some(_))) = gbd.bpts.get_full_mut(&addr) {
         // Inform of existing breakpoint
-        tell::warn!("breakpoint {point} already exists at {addr:#06x}");
+        advise::warn!("breakpoint {point} already exists at {addr:#06x}");
     } else {
         // Create a new breakpoint
         let (point, _) = gbd.bpts.insert_full(addr, Some(Breakpoint::default()));
-        tell::info!("breakpoint {point} created");
+        advise::info!("breakpoint {point} created");
     }
 
     Ok(())
@@ -38,7 +38,7 @@ pub fn delete(gbd: &mut Debugger, point: usize) -> Result<()> {
     };
     // Mark it as deleted
     *bpt = None;
-    tell::info!("breakpoint {point} @ {addr:#06x} deleted");
+    advise::info!("breakpoint {point} @ {addr:#06x} deleted");
 
     Ok(())
 }
@@ -50,7 +50,7 @@ pub fn disable(gbd: &mut Debugger, point: usize) -> Result<()> {
     };
     // Disable it
     bpt.disable = true;
-    tell::info!("breakpoint {point} @ {addr:#06x} disabled");
+    advise::info!("breakpoint {point} @ {addr:#06x} disabled");
 
     Ok(())
 }
@@ -62,7 +62,7 @@ pub fn enable(gbd: &mut Debugger, point: usize) -> Result<()> {
     };
     // Enable it
     bpt.disable = false;
-    tell::info!("breakpoint {point} @ {addr:#06x} enabled");
+    advise::info!("breakpoint {point} @ {addr:#06x} enabled");
 
     Ok(())
 }
@@ -73,7 +73,7 @@ pub fn freq(gbd: &mut Debugger, mode: Option<Tick>) -> Result<()> {
         gbd.freq = mode;
     }
     // Print the current frequency
-    tell::info!("frequency set to {mode}", mode = gbd.freq);
+    advise::info!("frequency set to {mode}", mode = gbd.freq);
 
     Ok(())
 }
@@ -91,7 +91,7 @@ pub fn help(what: Option<Keyword>) -> Result<()> {
     // Print help info
     let help = format!("{what}");
     for line in help.split('\n') {
-        tell::info!("{line}");
+        advise::info!("{line}");
     }
 
     Ok(())
@@ -113,7 +113,7 @@ pub fn ignore(gbd: &mut Debugger, point: usize, many: usize) -> Result<()> {
     };
     // Update ignore count
     bpt.ignore = many;
-    tell::info!("{}", bpt.display(point, addr));
+    advise::info!("{}", bpt.display(point, addr));
 
     Ok(())
 }
@@ -122,7 +122,7 @@ pub fn info(gbd: &Debugger, what: Option<Keyword>) -> Result<()> {
     // Extract keyword
     let Some(kword) = what else {
         // Print help message when no keyword supplied
-        tell::error!("missing keyword");
+        advise::error!("missing keyword");
         return help(Some(Keyword::Info));
     };
 
@@ -140,11 +140,11 @@ pub fn info(gbd: &Debugger, what: Option<Keyword>) -> Result<()> {
                 .collect();
             if bpts.is_empty() {
                 // Print empty message
-                tell::info!("no breakpoints set");
+                advise::info!("no breakpoints set");
             } else {
                 // Print each breakpoint
                 for (point, addr, bpt) in bpts {
-                    tell::info!("{}", bpt.display(point, addr));
+                    advise::info!("{}", bpt.display(point, addr));
                 }
             }
         }
@@ -156,7 +156,7 @@ pub fn info(gbd: &Debugger, what: Option<Keyword>) -> Result<()> {
 
 pub fn list(gbd: &Debugger, emu: &GameBoy) -> Result<()> {
     let insn = emu.cpu().insn();
-    tell::info!(
+    advise::info!(
         "{addr:#06x}: {opcode:02X} ; {insn}",
         addr = gbd.pc,
         opcode = insn.opcode()
@@ -176,7 +176,7 @@ pub fn log(gbd: &mut Debugger, filter: Option<String>) -> Result<()> {
     }
 
     // Print the current filter
-    tell::info!("filter: {}", (log.get)());
+    advise::info!("filter: {}", (log.get)());
 
     Ok(())
 }
@@ -192,27 +192,27 @@ pub fn load(emu: &GameBoy, loc: Location) -> Result<()> {
     match loc {
         Location::Byte(reg) => {
             let byte: u8 = emu.cpu().load(reg);
-            tell::info!("{reg:?}: {byte:#04x}");
+            advise::info!("{reg:?}: {byte:#04x}");
         }
         Location::Word(reg) => {
             let word: u16 = emu.cpu().load(reg);
-            tell::info!("{reg:?}: {word:#06x}");
+            advise::info!("{reg:?}: {word:#06x}");
         }
         Location::Pic(reg) => {
             let byte: u8 = emu.pic().load(reg);
-            tell::info!("{reg:?}: {byte:#04x}");
+            advise::info!("{reg:?}: {byte:#04x}");
         }
         Location::Ppu(reg) => {
             let byte: u8 = emu.ppu().load(reg);
-            tell::info!("{reg:?}: {byte:#04x}");
+            advise::info!("{reg:?}: {byte:#04x}");
         }
         Location::Serial(reg) => {
             let byte: u8 = emu.serial().load(reg);
-            tell::info!("{reg:?}: {byte:#04x}");
+            advise::info!("{reg:?}: {byte:#04x}");
         }
         Location::Timer(reg) => {
             let byte: u8 = emu.timer().load(reg);
-            tell::info!("{reg:?}: {byte:#04x}");
+            advise::info!("{reg:?}: {byte:#04x}");
         }
     };
 
@@ -226,7 +226,7 @@ pub fn quit() -> Result<()> {
 pub fn read(emu: &mut GameBoy, addr: u16) -> Result<()> {
     // Perform the read
     let byte = emu.cpu().read(addr);
-    tell::info!("{addr:#06x}: {byte:02x}");
+    advise::info!("{addr:#06x}: {byte:02x}");
 
     Ok(())
 }
@@ -238,7 +238,7 @@ pub fn read_range(emu: &mut GameBoy, range: Derange<u16>) -> Result<()> {
     // Load all reads
     let data: Vec<_> = iter.map(|addr| emu.cpu().read(addr)).collect();
     // Display results
-    tell::info!(
+    advise::info!(
         "read {nbytes} bytes:\n{data}",
         nbytes = data.len(),
         data = phex::Printer::<u8>::new(start.into(), &data)
@@ -275,12 +275,12 @@ pub fn serial(emu: &mut GameBoy, mode: Serial) -> Result<()> {
             // Decode assuming ASCII representation
             let text = std::str::from_utf8(&data);
             // Display results
-            tell::info!("received {nbytes} bytes");
+            advise::info!("received {nbytes} bytes");
             if nbytes > 0 {
-                tell::debug!("raw: {data:?}");
+                advise::debug!("raw: {data:?}");
                 match text {
-                    Ok(text) => tell::debug!("txt: {text:?}"),
-                    Err(err) => tell::warn!("could not decode: {err}"),
+                    Ok(text) => advise::debug!("txt: {text:?}"),
+                    Err(err) => advise::warn!("could not decode: {err}"),
                 }
             }
         }
@@ -289,9 +289,9 @@ pub fn serial(emu: &mut GameBoy, mode: Serial) -> Result<()> {
             let nbytes = emu.serial_mut().write(&data)?;
             let extra = data.len() - nbytes;
             // Display results
-            tell::info!("transmitted {nbytes} bytes");
+            advise::info!("transmitted {nbytes} bytes");
             if extra > 0 {
-                tell::warn!("could not transmit {extra} bytes");
+                advise::warn!("could not transmit {extra} bytes");
             }
         }
     }
@@ -375,7 +375,7 @@ pub fn write(emu: &mut GameBoy, addr: u16, byte: u8) -> Result<()> {
     emu.cpu_mut().write(addr, byte);
     let data = emu.cpu().read(addr);
     if data != byte {
-        tell::warn!("ignored write {addr:#06x} <- {byte:02x} (retained: {data:02x})");
+        advise::warn!("ignored write {addr:#06x} <- {byte:02x} (retained: {data:02x})");
     }
     // Read the written value
     read(emu, addr)?;
@@ -399,10 +399,10 @@ pub fn write_range(emu: &mut GameBoy, range: Derange<u16>, byte: u8) -> Result<(
     // Check if it worked
     let nbytes = bytecount::count(&data, byte);
     if nbytes < data.len() {
-        tell::warn!("ignored some writes in {start:#06x}..{end:04x} <- {byte:02x}");
+        advise::warn!("ignored some writes in {start:#06x}..{end:04x} <- {byte:02x}");
     }
     // Display results
-    tell::info!(
+    advise::info!(
         "wrote {nbytes} bytes:\n{data}",
         data = phex::Printer::<u8>::new(start.into(), &data)
     );
