@@ -22,7 +22,7 @@ gbd = [
 view = ["debug"]
 
 [dependencies]
-clap = { version = "4.4.18", features = ["derive", "env", "wrap_help"] }
+clap = { version = "4.5.0", features = ["derive", "env", "wrap_help"] }
 color-eyre = { version = "0.6.2" }
 ctrlc = { version = "3.4.2", optional = true }
 dirs = "5.0.1"
@@ -36,6 +36,6 @@ rustyline = { version = "13.0.0", optional = true }
 serde = { version = "1.0.196", features = ["derive"] }
 sysexits = "0.7.11"
 tell = { version = "0.1.0", path = "../../crates/tell" }
-thiserror = "1.0.56"
-toml = "0.8.9"
+thiserror = "1.0.57"
+toml = "0.8.10"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
