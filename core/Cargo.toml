@@ -14,4 +14,4 @@ itertools = "0.12.1"
 log = "0.4.20"
 phex = { version = "0.1.0", path = "../crates/phex" }
 remus = { git = "https://github.com/kaplanz/remus.git" }
-thiserror = "1.0.56"
+thiserror = "1.0.57"
