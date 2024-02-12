@@ -125,9 +125,9 @@ pub struct Interface {
     /// Simulated clock speed.
     ///
     /// Select from a list of possible speeds to simulate the emulator's clock.
-    #[arg(short, long)]
+    #[arg(short, long = "speed", value_name = "FREQ")]
     #[arg(value_enum)]
-    pub speed: Option<Speed>,
+    pub spd: Option<Speed>,
 }
 
 /// Serial connection.
