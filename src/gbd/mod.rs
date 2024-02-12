@@ -167,7 +167,7 @@ impl Debugger {
             match res {
                 Ok(()) => (),
                 err @ Err(Error::Quit) => return err,
-                Err(err) => tell::error!("{err}"),
+                Err(err) => advise::error!("{err}"),
             }
         }
 

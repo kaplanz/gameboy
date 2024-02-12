@@ -59,7 +59,7 @@ fn main() -> Result<()> {
         .map(|read| match toml::from_str(&read) {
             Ok(conf) => conf,
             Err(err) => {
-                tell::error!("{err}");
+                advise::error!("{err}");
                 ExitCode::Config.exit();
             }
         })
