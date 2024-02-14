@@ -38,7 +38,7 @@ accuracy/performance margins.
 ## Organization
 
 In accordance with the preference for modularity outlined above, the project is
-partitioned into the [core](./core), and various emulator [frontends](./front).
+partitioned into the [core](./core), and various emulator [frontends](./apps).
 Useful supporting [crates](./crates) are independently available as well. Also
 packaged in this repository are several open-source [ROMs](./roms). These are
 used internally for testing and to demo project functionality.
@@ -56,10 +56,10 @@ crates are used with the structure as follows:
 ├── Justfile         # useful development commands
 ├── README.md        # this document
 ├── ...
+├── apps/            # frontend apps
 ├── core/            # emulation core
 ├── crates/          # support crates
 ├── docs/            # documentation
-├── front/           # frontend apps
 ├── roms/            # open-source ROMs
 ├── src/             # emulation library
 └── tests/           # integration tests
