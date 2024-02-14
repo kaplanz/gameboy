@@ -13,9 +13,9 @@ opt-level = 3
 
 [workspace]
 members = [
+    "apps/*",
     "core",
     "crates/*",
-    "front/*",
 ]
 
 [workspace.package]
