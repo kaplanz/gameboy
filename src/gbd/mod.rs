@@ -126,13 +126,10 @@ impl Debugger {
                         // It worked; use it
                         cmd
                     } else {
+                        // Pause clock while awaiting user input
+                        clk.as_mut().map(Clock::pause);
                         // Couldn't fetch; get program from user
-                        match {
-                            // Pause clock while awaiting user input
-                            clk.as_mut().map(Clock::pause);
-                            // Present the prompt
-                            self.readline()
-                        } {
+                        match self.readline() {
                             // Program input; fetch next iteration
                             Ok(()) => continue 'gbd,
                             // No input; repeat previous program
