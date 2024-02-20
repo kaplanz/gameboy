@@ -40,11 +40,11 @@ pub struct Header {
     pub cgb: bool,
     /// SGB model support.
     pub sgb: bool,
-    /// Cartridge information.
+    /// Cartridge hardware.
     pub cart: Kind,
-    /// Size of this ROM.
+    /// ROM size in bytes.
     pub romsz: usize,
-    /// Size of external RAM.
+    /// ROM size in bytes.
     pub ramsz: usize,
     /// Destination code (Japan/Worldwide)
     pub jpn: bool,
@@ -66,9 +66,9 @@ impl Header {
             dmg: false,
             cgb: false,
             sgb: false,
-            cart: Kind::NoMbc {
+            cart: Kind::Basic {
                 ram: false,
-                battery: false,
+                pwr: false,
             },
             romsz: 0x8000,
             ramsz: 0x00,
@@ -90,27 +90,23 @@ impl Header {
             .get(0x100..0x150)
             .ok_or(Error::Missing)?
             .try_into()
-            .map_err(Error::TryFromSlice)?;
+            .map_err(Error::Slice)?;
 
         // Verify header checksum
         let hchk = header[0x4d];
         let chk = Self::hchk(rom);
         if hchk != chk {
-            return Err(Error::HeaderChecksum {
+            return Err(Error::HeaderChk {
                 found: chk,
                 expected: hchk,
             });
         }
 
         // Verify global checksum
-        let gchk = u16::from_be_bytes(
-            header[0x4e..=0x4f]
-                .try_into()
-                .map_err(Error::TryFromSlice)?,
-        );
+        let gchk = u16::from_be_bytes(header[0x4e..=0x4f].try_into().map_err(Error::Slice)?);
         let chk = Self::gchk(rom);
         if gchk != chk {
-            return Err(Error::GlobalChecksum {
+            return Err(Error::GlobalChk {
                 found: chk,
                 expected: gchk,
             });
@@ -185,12 +181,12 @@ impl TryFrom<&[u8]> for Header {
     type Error = Error;
 
     fn try_from(rom: &[u8]) -> Result<Self, Self::Error> {
-        // Extract the header bytes
+        // Extract header bytes
         let header: &[u8; 0x50] = rom
             .get(0x100..0x150)
             .ok_or(Error::Missing)?
             .try_into()
-            .map_err(Error::TryFromSlice)?;
+            .map_err(Error::Slice)?;
 
         // Compare logo data
         let logo = header[0x04..=0x33] == LOGO;
@@ -209,20 +205,20 @@ impl TryFrom<&[u8]> for Header {
         let cgb = match header[0x43] {
             0x00 | 0x40 => Ok(false),
             0x80 | 0xc0 => Ok(true),
-            byte => Err(Error::CgbFlag(byte)),
+            byte => Err(Error::Color(byte)),
         }?;
         // Parse SGB flag
         let sgb = match header[0x46] {
             0x00 => Ok(false),
             0x03 => Ok(true),
-            byte => Err(Error::SgbFlag(byte)),
+            byte => Err(Error::Super(byte)),
         }?;
         // Parse cartridge kind
         let cart = header[0x47].try_into()?;
         // Parse ROM size
         let romsz = match header[0x48] {
             byte @ 0x00..=0x08 => Ok(0x8000 << byte),
-            byte => Err(Error::RomSize(byte)),
+            byte => Err(Error::Rom(byte)),
         }?;
         // Parse RAM size
         let ramsz = match header[0x49] {
@@ -231,13 +227,13 @@ impl TryFrom<&[u8]> for Header {
             0x03 => Ok(0x8000),
             0x04 => Ok(0x20000),
             0x05 => Ok(0x10000),
-            byte => Err(Error::RamSize(byte)),
+            byte => Err(Error::Ram(byte)),
         }?;
         // Parse RAM size
         let jpn = match header[0x4a] {
             0x00 => Ok(true),
             0x01 => Ok(false),
-            byte => Err(Error::DestinationCode(byte)),
+            byte => Err(Error::Region(byte)),
         }?;
         // Parse mark ROM version number
         let version = header[0x4c];
@@ -249,7 +245,7 @@ impl TryFrom<&[u8]> for Header {
         // Verify header checksum
         let chk = Self::hchk(rom);
         if chk != hchk {
-            return Err(Error::HeaderChecksum {
+            return Err(Error::HeaderChk {
                 found: chk,
                 expected: hchk,
             });
@@ -280,43 +276,43 @@ impl TryFrom<&[u8]> for Header {
 /// Cartridge information.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Kind {
-    NoMbc {
+    Basic {
         ram: bool,
-        battery: bool,
+        pwr: bool,
     },
     Mbc1 {
         ram: bool,
-        battery: bool,
+        pwr: bool,
     },
     Mbc2 {
-        battery: bool,
+        pwr: bool,
     },
     Mmm01 {
         ram: bool,
-        battery: bool,
+        pwr: bool,
     },
     Mbc3 {
-        timer: bool,
+        clk: bool,
         ram: bool,
-        battery: bool,
+        pwr: bool,
     },
     Mbc5 {
         rumble: bool,
         ram: bool,
-        battery: bool,
+        pwr: bool,
     },
     Mbc6,
     Mbc7 {
         sensor: bool,
         rumble: bool,
         ram: bool,
-        battery: bool,
+        pwr: bool,
     },
     Camera,
     HuC3,
     HuC1 {
         ram: bool,
-        battery: bool,
+        pwr: bool,
     },
 }
 
@@ -324,7 +320,7 @@ impl Display for Kind {
     #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NoMbc  { .. } => "ROM",
+            Self::Basic  { .. } => "ROM",
             Self::Mbc1   { .. } => "MBC1",
             Self::Mbc2   { .. } => "MBC2",
             Self::Mmm01  { .. } => "MMM01",
@@ -346,111 +342,111 @@ impl TryFrom<u8> for Kind {
     #[allow(clippy::too_many_lines)]
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0x00 => Ok(Kind::NoMbc {
+            0x00 => Ok(Kind::Basic {
                 ram: false,
-                battery: false,
+                pwr: false,
             }),
             0x01 => Ok(Kind::Mbc1 {
                 ram: false,
-                battery: false,
+                pwr: false,
             }),
             0x02 => Ok(Kind::Mbc1 {
                 ram: true,
-                battery: false,
+                pwr: false,
             }),
             0x03 => Ok(Kind::Mbc1 {
                 ram: true,
-                battery: true,
+                pwr: true,
             }),
-            0x05 => Ok(Kind::Mbc2 { battery: false }),
-            0x06 => Ok(Kind::Mbc2 { battery: true }),
-            0x08 => Ok(Kind::NoMbc {
+            0x05 => Ok(Kind::Mbc2 { pwr: false }),
+            0x06 => Ok(Kind::Mbc2 { pwr: true }),
+            0x08 => Ok(Kind::Basic {
                 ram: true,
-                battery: false,
+                pwr: false,
             }),
-            0x09 => Ok(Kind::NoMbc {
+            0x09 => Ok(Kind::Basic {
                 ram: true,
-                battery: true,
+                pwr: true,
             }),
             0x0b => Ok(Kind::Mmm01 {
                 ram: false,
-                battery: false,
+                pwr: false,
             }),
             0x0c => Ok(Kind::Mmm01 {
                 ram: true,
-                battery: false,
+                pwr: false,
             }),
             0x0d => Ok(Kind::Mmm01 {
                 ram: true,
-                battery: true,
+                pwr: true,
             }),
             0x0f => Ok(Kind::Mbc3 {
-                timer: true,
+                clk: true,
                 ram: false,
-                battery: true,
+                pwr: true,
             }),
             0x10 => Ok(Kind::Mbc3 {
-                timer: true,
+                clk: true,
                 ram: true,
-                battery: true,
+                pwr: true,
             }),
             0x11 => Ok(Kind::Mbc3 {
-                timer: false,
+                clk: false,
                 ram: false,
-                battery: false,
+                pwr: false,
             }),
             0x12 => Ok(Kind::Mbc3 {
-                timer: false,
+                clk: false,
                 ram: true,
-                battery: false,
+                pwr: false,
             }),
             0x13 => Ok(Kind::Mbc3 {
-                timer: false,
+                clk: false,
                 ram: true,
-                battery: true,
+                pwr: true,
             }),
             0x19 => Ok(Kind::Mbc5 {
                 rumble: false,
                 ram: false,
-                battery: false,
+                pwr: false,
             }),
             0x1a => Ok(Kind::Mbc5 {
                 rumble: false,
                 ram: true,
-                battery: false,
+                pwr: false,
             }),
             0x1b => Ok(Kind::Mbc5 {
                 rumble: false,
                 ram: true,
-                battery: true,
+                pwr: true,
             }),
             0x1c => Ok(Kind::Mbc5 {
                 rumble: true,
                 ram: false,
-                battery: false,
+                pwr: false,
             }),
             0x1d => Ok(Kind::Mbc5 {
                 rumble: true,
                 ram: true,
-                battery: false,
+                pwr: false,
             }),
             0x1e => Ok(Kind::Mbc5 {
                 rumble: true,
                 ram: true,
-                battery: true,
+                pwr: true,
             }),
             0x20 => Ok(Kind::Mbc6),
             0x22 => Ok(Kind::Mbc7 {
                 sensor: true,
                 rumble: true,
                 ram: true,
-                battery: true,
+                pwr: true,
             }),
             0xfc => Ok(Kind::Camera),
             0xfe => Ok(Kind::HuC3),
             0xff => Ok(Kind::HuC1 {
                 ram: true,
-                battery: true,
+                pwr: true,
             }),
             value => Err(Error::Kind(value)),
         }
@@ -463,25 +459,25 @@ pub enum Error {
     #[error("missing header")]
     Missing,
     #[error(transparent)]
-    TryFromSlice(#[from] TryFromSliceError),
+    Slice(#[from] TryFromSliceError),
     #[error("could not parse title")]
     Title(#[from] Utf8Error),
-    #[error("invalid CGB flag: {0}")]
-    CgbFlag(u8),
-    #[error("invalid SGB flag: {0}")]
-    SgbFlag(u8),
-    #[error("unknown cartridge kind: {0:#04x}")]
+    #[error("invalid CGB flag: {0:#04x}")]
+    Color(u8),
+    #[error("invalid SGB flag: {0:#04x}")]
+    Super(u8),
+    #[error("unknown hardware: {0:#04x}")]
     Kind(u8),
-    #[error("invalid ROM size: {0}")]
-    RomSize(u8),
-    #[error("invalid RAM size: {0}")]
-    RamSize(u8),
-    #[error("invalid destination code: {0:#04x}")]
-    DestinationCode(u8),
+    #[error("invalid ROM size: {0:#04x}")]
+    Rom(u8),
+    #[error("invalid RAM size: {0:#04x}")]
+    Ram(u8),
+    #[error("invalid region: {0:#04x}")]
+    Region(u8),
     #[error("bad header checksum (found {found:#04x}, expected {expected:#04x})")]
-    HeaderChecksum { found: u8, expected: u8 },
-    #[error("bad global checksum: (found {found:#06x}, (expected {expected:#06x})")]
-    GlobalChecksum { found: u16, expected: u16 },
+    HeaderChk { found: u8, expected: u8 },
+    #[error("bad global checksum (found {found:#06x}, expected {expected:#06x})")]
+    GlobalChk { found: u16, expected: u16 },
 }
 
 #[cfg(test)]
@@ -493,25 +489,21 @@ mod tests {
 
     #[test]
     fn parse_works() {
-        // Parse header fields
+        // Parse header
         let parse = Header::try_from(&HEAD[..]).unwrap();
-        // Manually hard-code header fields
+        // Hard-code expected
         let truth = Header {
             logo: true,
-            title: None,
             dmg: true,
-            cgb: false,
-            sgb: false,
-            cart: Kind::NoMbc {
+            cart: Kind::Basic {
                 ram: true,
-                battery: false,
+                pwr: false,
             },
             romsz: 0x8000,
             ramsz: 0x2000,
-            jpn: false,
-            version: 0,
             hchk: 0xdc,
             gchk: 0x31bb,
+            ..Header::blank()
         };
 
         assert_eq!(parse, truth);

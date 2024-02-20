@@ -230,7 +230,7 @@ impl Cartridge {
 
         // Construct a memory bank controller
         let mbc: Box<dyn Mbc> = match &header.cart {
-            &Kind::NoMbc { ram: has_ram, .. } => {
+            &Kind::Basic { ram: has_ram, .. } => {
                 let ram = [null, ram][has_ram as usize].clone();
                 Box::new(NoMbc::with(rom, ram))
             }
