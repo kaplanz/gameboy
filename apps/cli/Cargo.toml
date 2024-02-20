@@ -22,12 +22,10 @@ gbd = [
 view = ["debug"]
 
 [dependencies]
-clap = { version = "4.5.0", features = ["derive", "env", "wrap_help"] }
+clap = { version = "4.5.0", features = ["cargo", "derive", "env", "wrap_help"] }
 advise = { git = "https://github.com/kaplanz/advise", version = "0.1.0" }
-color-eyre = { version = "0.6.2" }
 ctrlc = { version = "3.4.2", optional = true }
 dirs = "5.0.1"
-eyre = "0.6.12"
 gameboy = { version = "0.1.0", path = "../.." }
 log = "0.4.20"
 minifb = "0.25.0"
@@ -39,3 +37,5 @@ sysexits = "0.7.11"
 thiserror = "1.0.57"
 toml = "0.8.10"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+xdir = { version = "0.1.0", git = "https://github.com/kaplanz/xdir" }
+anyhow = "1.0.80"

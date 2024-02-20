@@ -1,160 +1,83 @@
-use std::path::PathBuf;
+//! Application configuration.
 
-use clap::ValueEnum;
-use gameboy::pal;
+use std::io::ErrorKind::NotFound;
+use std::path::{Path, PathBuf};
+use std::{fs, io};
+
+use clap::Args;
 use serde::Deserialize;
+use thiserror::Error;
+use toml::from_str as parse;
 
-use crate::FREQUENCY;
+use crate::def::{Hardware, Interface};
+use crate::dir;
 
-/// Configuration directory path.
-pub fn dir() -> PathBuf {
-    dirs::config_dir().unwrap().join("gameboy")
+/// Returns the path to the application's configuration file.
+#[must_use]
+pub fn path() -> PathBuf {
+    dir::config().join("config.toml")
 }
 
-/// Emulator configuration.
-#[derive(Debug, Default, Deserialize)]
+/// Configuration data.
+#[derive(Args, Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    pub gui: Gui,
+    /// Hardware options.
+    #[clap(flatten)]
+    #[clap(next_help_heading = None)]
+    #[serde(rename = "hardware")]
     pub hw: Hardware,
+
+    /// Interface options.
+    #[clap(flatten)]
+    #[clap(next_help_heading = "Interface")]
+    #[serde(rename = "interface")]
+    pub ui: Interface,
 }
 
-/// Graphical user interface.
-#[derive(Debug, Default, Deserialize)]
-#[serde(default)]
-pub struct Gui {
-    #[serde(rename = "palette")]
-    pub pal: Palette,
-    #[serde(rename = "speed")]
-    pub spd: Speed,
-}
-
-/// Console hardware description.
-#[derive(Debug, Default, Deserialize)]
-#[serde(default)]
-pub struct Hardware {
-    pub boot: Option<PathBuf>,
-}
-
-/// Console hardware model.
-#[derive(Clone, Debug, Default, Deserialize, ValueEnum)]
-pub enum Model {
-    /// Game Boy
-    #[default]
-    Dmg,
-}
-
-/// Emulator palette selection.
-#[derive(Clone, Debug, Default, Deserialize, ValueEnum)]
-#[serde(rename_all = "kebab-case")]
-pub enum Palette {
-    /// Nostalgic autumn sunsets.
-    AutumnChill,
-    /// Aquatic blues.
-    BlkAqu,
-    /// Winter snowstorm blues.
-    BlueDream,
-    /// Combining cool and warm tones.
-    Coldfire,
-    /// Soft and pastel coral hues.
-    Coral,
-    /// Cold metallic darks with warm dated plastic lights.
-    Demichrome,
-    /// Greens and warm browns with an earthy feel.
-    Earth,
-    /// Creamsicle inspired orange.
-    IceCream,
-    /// Old-school dot-matrix display.
-    Legacy,
-    /// Misty forest greens.
-    Mist,
-    /// Simple blacks and whites.
-    #[default]
-    Mono,
-    /// William Morris's rural palette.
-    Morris,
-    /// Waterfront at dawn.
-    PurpleDawn,
-    /// Rusty red and brown hues.
-    Rustic,
-    /// Deep and passionate purples.
-    VelvetCherry,
-    /// Whatever colors you want!
-    #[allow(unused)]
-    #[clap(skip)]
-    Custom(pal::Palette),
-}
-
-#[rustfmt::skip]
-impl From<Palette> for pal::Palette {
-    fn from(value: Palette) -> Self {
-        match value {
-            Palette::AutumnChill  => pal::AUTUMN_CHILL,
-            Palette::BlkAqu       => pal::BLK_AQU,
-            Palette::BlueDream    => pal::BLUE_DREAM,
-            Palette::Coldfire     => pal::COLDFIRE,
-            Palette::Coral        => pal::CORAL,
-            Palette::Demichrome   => pal::DEMICHROME,
-            Palette::Earth        => pal::EARTH,
-            Palette::IceCream     => pal::ICE_CREAM,
-            Palette::Legacy       => pal::LEGACY,
-            Palette::Mist         => pal::MIST,
-            Palette::Mono         => pal::MONO,
-            Palette::Morris       => pal::MORRIS,
-            Palette::PurpleDawn   => pal::PURPLE_DAWN,
-            Palette::Rustic       => pal::RUSTIC,
-            Palette::VelvetCherry => pal::VELVET_CHERRY,
-            Palette::Custom(pal)  => pal,
+impl Config {
+    /// Loads configuration data from a file.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the configuration could not be
+    /// loaded.
+    pub fn load(path: &Path) -> Result<Self, Error> {
+        match fs::read_to_string(path) {
+            // If the configuration file does not exist, return an empty string,
+            // resulting in all fields being populated with defaults.
+            Err(err) if err.kind() == NotFound => Ok(String::default()),
+            // For other errors, return them directly.
+            Err(err) => Err(err.into()),
+            // On success, return the body of the file can be parsed.
+            Ok(body) => Ok(body),
         }
+        .and_then(|body| {
+            // If a configuration file was read, parse it.
+            parse(&body)
+                // Parsing errors should be mapped into a separate variant.
+                .map_err(Into::into)
+        })
+    }
+
+    /// Combines two configuration instances.
+    ///
+    /// This is useful when some configurations may also be supplied on the
+    /// command-line. When merging, it is best practice to prioritize options
+    /// from the cli to those saved on-disk. To do so, prefer keeping data
+    /// fields from `self` when conflicting with `other`.
+    pub fn merge(&mut self, other: Self) {
+        self.hw.boot = self.hw.boot.take().or(other.hw.boot);
+        self.ui.pal = self.ui.pal.take().or(other.ui.pal);
+        self.ui.spd = self.ui.spd.take().or(other.ui.spd);
     }
 }
 
-/// Simulated clock frequency.
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, ValueEnum)]
-#[serde(rename_all = "kebab-case")]
-pub enum Speed {
-    /// Half speed mode.
-    ///
-    /// Convenience preset resulting in emulation at half speed.
-    Half,
-    /// Actual hardware speed.
-    ///
-    /// Mimics the actual hardware clock frequency. Equal to 4 MiHz (60 FPS).
-    #[default]
-    Actual,
-    /// Double speed mode.
-    ///
-    /// Convenience preset resulting in emulation at double speed.
-    Double,
-    /// Frame rate.
-    ///
-    /// Frequency that targets supplied frame rate (FPS).
-    #[clap(skip)]
-    #[serde(rename = "fps")]
-    Rate(u8),
-    /// Clock frequency.
-    ///
-    /// Precise frequency (Hz) to clock the emulator.
-    #[clap(skip)]
-    #[serde(rename = "hz")]
-    Freq(u32),
-    /// Maximum possible.
-    ///
-    /// Unconstrained, limited only by the host system's capabilities.
-    Max,
-}
-
-impl Speed {
-    /// Converts the `Speed` to it's corresponding frequency.
-    #[rustfmt::skip]
-    pub fn freq(self) -> Option<u32> {
-        match self {
-            Speed::Half       => Some(FREQUENCY / 2),
-            Speed::Actual     => Some(FREQUENCY),
-            Speed::Double     => Some(FREQUENCY * 2),
-            Speed::Rate(rate) => Some((FREQUENCY / 60).saturating_mul(rate.into())),
-            Speed::Freq(freq) => Some(freq),
-            Speed::Max        => None,
-        }
-    }
+/// An error caused by [loading][`Config::load`] configuration.
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("failed to read config")]
+    Read(#[from] io::Error),
+    #[error("failed to parse config")]
+    Parse(#[from] toml::de::Error),
 }
