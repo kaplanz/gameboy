@@ -33,7 +33,7 @@ pub struct Header {
     /// Equality with boot ROM's Nintendo logo.
     pub logo: bool,
     /// Title of this ROM.
-    pub title: String,
+    pub title: Option<String>,
     /// DMG model support.
     pub dmg: bool,
     /// CGB model support.
@@ -62,7 +62,7 @@ impl Header {
     pub(super) fn blank() -> Self {
         Self {
             logo: false,
-            title: "Unknown".to_string(),
+            title: None,
             dmg: false,
             cgb: false,
             sgb: false,
@@ -141,14 +141,7 @@ impl Header {
 impl Display for Header {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "┌──────────────────┐")?;
-        writeln!(
-            f,
-            "│ {:^16} │",
-            match self.title.replace('\0', " ").trim() {
-                "" => "Unknown",
-                title => title,
-            }
-        )?;
+        writeln!(f, "│ {:^16} │", self.title.as_deref().unwrap_or("Unknown"))?;
         writeln!(f, "├──────────────────┤")?;
         writeln!(
             f,
@@ -203,9 +196,14 @@ impl TryFrom<&[u8]> for Header {
         let logo = header[0x04..=0x33] == LOGO;
         // Parse title
         let tlen = if header[0x43] & 0x80 == 0 { 16 } else { 15 };
-        let title = std::str::from_utf8(&header[0x34..0x34 + tlen])
+        let title = match std::str::from_utf8(&header[0x34..0x34 + tlen])
             .map_err(Error::Title)?
-            .to_string();
+            .trim_matches('\0')
+        {
+            "" => None,
+            ok => Some(ok),
+        }
+        .map(ToString::to_string);
         // Parse CGB flag
         let dmg = (header[0x43] & 0xc0) != 0xc0;
         let cgb = match header[0x43] {
@@ -500,7 +498,7 @@ mod tests {
         // Manually hard-code header fields
         let truth = Header {
             logo: true,
-            title: String::from_utf8([0u8; 16].into()).unwrap(),
+            title: None,
             dmg: true,
             cgb: false,
             sgb: false,
