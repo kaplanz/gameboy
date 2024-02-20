@@ -1,19 +1,20 @@
 #![warn(clippy::pedantic)]
 
-use std::fs::{self, File};
-use std::io::{self, Read};
+use std::fs::File;
+use std::io::Read;
 use std::net::UdpSocket;
-use std::path::PathBuf;
+use std::ops::Not;
+use std::path::Path;
 use std::string::ToString;
 
+use anyhow::{ensure, Context, Result};
 use clap::Parser;
-use eyre::{ensure, Result, WrapErr};
 use gameboy::core::dmg::cart::Cartridge;
 use gameboy::core::dmg::{Boot, Dimensions, GameBoy, SCREEN};
 #[cfg(feature = "gbd")]
-use gameboy::gbd::{Debugger, Portal};
-use log::{info, trace, warn};
-use sysexits::ExitCode;
+use gameboy::gbd::Debugger;
+use gameboy::gbd::Portal;
+use log::{error, info, trace, warn};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
 
@@ -24,6 +25,7 @@ use crate::cli::Cli;
 use crate::dbg::doc::Doctor;
 #[cfg(feature = "gbd")]
 use crate::dbg::gbd::Readline;
+use crate::err::Exit;
 #[cfg(feature = "view")]
 use crate::gui::view::View;
 use crate::gui::{Gui, Window};
@@ -33,249 +35,273 @@ mod cfg;
 mod cli;
 #[cfg(feature = "debug")]
 mod dbg;
+mod def;
+mod dir;
+mod err;
 mod gui;
 
+/// Name of this crate.
+///
+/// This may be used for base subdirectories.
+pub const NAME: &str = "gameboy";
+
 /// Game Boy main clock frequency, set to 4,194,304 Hz.
-const FREQUENCY: u32 = 4_194_304;
+pub const FREQ: u32 = 4_194_304;
+
+/// Temporary substitute for `try` trait to perform `?` desugaring.
+macro_rules! check {
+    ($res:expr) => {{
+        let res = $res;
+        match res {
+            Ok(okay) => okay,
+            Err(err) => return err.into(),
+        }
+    }};
+}
 
 #[allow(clippy::too_many_lines)]
-fn main() -> Result<()> {
-    // Install panic and error report handlers
-    color_eyre::install()?;
+fn main() -> Exit {
     // Parse args
-    let args = Cli::parse();
-    // Parse conf
-    let conf: Config = {
-        // Read file
-        let path = &args.conf;
-        match fs::read_to_string(path) {
-            Ok(read) => Ok(read),
-            Err(err) => match err.kind() {
-                io::ErrorKind::NotFound => Ok(String::default()),
-                _ => Err(err).with_context(|| format!("could not read: `{}`", path.display())),
-            },
-        }
-        // Parse conf
-        .map(|read| match toml::from_str(&read) {
-            Ok(conf) => conf,
-            Err(err) => {
-                advise::error!("{err}");
-                ExitCode::Config.exit();
-            }
-        })
-    }
-    .context("unable to load config")?;
+    let mut args = Cli::parse();
+    // Load config
+    args.cfg.merge(check!(
+        Config::load(&args.conf).context("could not load configuration")
+    ));
     // Initialize logger
+    #[allow(unused_variables)]
+    let log = check!(
+        logger(args.log.as_deref().unwrap_or_default()).context("could not initialize logger")
+    );
+    // Log previous steps
+    trace!("{args:#?}");
+
+    // Prepare application
+    let app = {
+        // Load ROMs
+        let boot = check!(args
+            .cfg
+            .hw
+            .boot
+            .as_deref()
+            .map(boot)
+            .transpose()
+            .context("could not load boot ROM"));
+        let cart = check!(
+            cart(args.cart.rom.as_deref(), args.cart.check, args.cart.force)
+                .context("could not load cartridge")
+        );
+
+        // Exit early on `--exit`
+        if args.exit {
+            return Exit::Success;
+        }
+
+        // Initialize graphics
+        let title = cart.title().to_string();
+        let gui = check!(args
+            .headless
+            .not()
+            .then(|| -> Result<_> {
+                let Dimensions { width, height } = SCREEN;
+                Ok(Gui {
+                    main: Window::new(&title, width, height)?,
+                    #[cfg(feature = "view")]
+                    view: args
+                        .dbg
+                        .view
+                        .then(|| View::new().context("could not initialize debug view"))
+                        .transpose()?,
+                })
+            })
+            .transpose());
+
+        // Instantiate emulator
+        let mut emu = boot.map_or_else(GameBoy::new, GameBoy::with);
+        emu.load(cart); // load cartridge into emulator
+
+        // Open link cable
+        let link = check!(args
+            .link
+            .map(|cli::Link { host, peer }| -> Result<_> {
+                // Bind host to local address
+                let sock = UdpSocket::bind(host)
+                    .with_context(|| format!("failed to bind local socket: `{host}`"))?;
+                // Connect to peer address
+                sock.connect(peer)
+                    .with_context(|| format!("failed to connect to peer: `{peer}`"))?;
+                // Set socket options
+                sock.set_nonblocking(true)
+                    .context("failed to set non-blocking")?;
+                // Return completed link
+                Ok(sock)
+            })
+            .transpose()
+            .context("could not open link cable"));
+
+        // Open log file
+        #[cfg(feature = "doctor")]
+        let doc = check!(args
+            .dbg
+            .doc
+            .map(|path| -> Result<_> {
+                // Create logfile
+                let f = File::create(&path)
+                    .with_context(|| format!("failed to open: `{}`", path.display()))?;
+                // Construct a doctor instance
+                Ok(Doctor::new(f))
+            })
+            .transpose()
+            .context("could not open log file"));
+
+        // Prepare debugger
+        #[cfg(feature = "gbd")]
+        let gbd = check!(args
+            .dbg
+            .gbd
+            .then(|| -> Result<_> {
+                // Construct a new `Debugger`
+                let mut gbd = Debugger::new();
+                // Initialize prompt handle
+                gbd.prompt(Box::new(
+                    Readline::new().context("failed to initialize readline")?,
+                ));
+                // Initialize logger handle
+                gbd.logger(log);
+                // Return constructed debugger
+                Ok(gbd)
+            })
+            .transpose()
+            .context("could not prepare debugger"));
+
+        // Configure application options
+        let cfg = app::Options {
+            title,
+            pal: args.cfg.ui.pal.unwrap_or_default().into(),
+            spd: args.cfg.ui.spd.unwrap_or_default().freq(),
+        };
+        // Configure application debug
+        #[cfg(feature = "debug")]
+        let dbg = app::Debug {
+            #[cfg(feature = "doctor")]
+            doc,
+            #[cfg(feature = "gbd")]
+            gbd,
+        };
+        // Construct application devices
+        let dev = app::Devices { link };
+        // Construct application
+        App {
+            cfg,
+            #[cfg(feature = "debug")]
+            dbg,
+            dev,
+            emu,
+            gui,
+        }
+    };
+    // Run application
+    check!(app.run());
+
+    // Terminate normally
+    Exit::Success
+}
+
+fn logger(filter: &str) -> Result<Portal<String>> {
+    // Construct logger
     let log = tracing_subscriber::fmt()
         .with_env_filter({
-            let filter = args.log.as_deref().unwrap_or_default();
             EnvFilter::builder()
                 .with_default_directive(LevelFilter::WARN.into())
                 .parse(filter)
-                .with_context(|| format!("failed to parse: \"{filter}\""))?
+                .with_context(|| format!("failed to parse: {filter:?}"))?
         })
         .with_filter_reloading();
-    #[cfg(feature = "gbd")]
-    let handle = log.reload_handle();
+    // Extract handle
+    let handle = {
+        Portal {
+            get: {
+                let handle = log.reload_handle();
+                Box::new(move || handle.with_current(ToString::to_string).unwrap())
+            },
+            set: {
+                let handle = log.reload_handle();
+                Box::new(move |filter: String| handle.reload(filter).unwrap())
+            },
+        }
+    };
+    // Install logger
     log.init();
-    // Log previous steps
-    trace!("args: {args:#?}");
-    trace!("conf: {conf:#?}");
-
-    // Read the boot ROM
-    let boot = boot(args.hw.boot.or(conf.hw.boot))?;
-    // Read the cartridge
-    let cart = cart(args.cart.rom, args.cart.chk, args.cart.force)?;
-    let title = cart.title().to_string();
-
-    // Exit early on `--exit`
-    if args.exit {
-        return Ok(());
-    }
-
-    // Create emulator instance
-    let mut emu = if let Some(boot) = boot {
-        GameBoy::with(boot)
-    } else {
-        GameBoy::new()
-    };
-    // Load the cartridge into the emulator
-    emu.load(cart);
-
-    // Initialize UI
-    let gui = if args.gui.headless {
-        None
-    } else {
-        let Dimensions { width, height } = SCREEN;
-        Some(Gui {
-            main: Window::new(&title, width, height)?,
-            #[cfg(feature = "view")]
-            view: args
-                .dbg
-                .view
-                .then(|| View::new().context("failed to initialize debug view"))
-                .transpose()?,
-        })
-    };
-
-    // Open serial link socket
-    let link = args
-        .hw
-        .link
-        .map(|cli::Link { host, peer }| -> Result<_> {
-            // Bind host to local address
-            let sock = UdpSocket::bind(host)
-                .with_context(|| format!("failed to bind local socket: `{host}`"))?;
-            // Connect to peer address
-            sock.connect(peer)
-                .with_context(|| format!("failed to connect to peer: `{peer}`"))?;
-            // Set socket options
-            sock.set_nonblocking(true)
-                .context("failed to set non-blocking")?;
-            // Return completed link
-            Ok(sock)
-        })
-        .transpose()?;
-
-    #[cfg(feature = "doctor")]
-    // Open doctor logfile
-    let doc = args
-        .dbg
-        .doc
-        .map(|path| -> Result<_> {
-            // Create logfile
-            let f = File::create(&path)
-                .with_context(|| format!("failed to open doctor logfile: `{}`", path.display()))?;
-            // Construct a doctor instance
-            Ok(Doctor::new(f))
-        })
-        .transpose()?;
-
-    // Construct debugger
-    #[cfg(feature = "gbd")]
-    let gbd = args
-        .dbg
-        .gbd
-        .then(|| -> Result<_> {
-            // Construct a new `Debugger`
-            let mut gbd = Debugger::new();
-            // Initialize the prompt handle
-            gbd.prompt(Box::new(
-                Readline::new().context("failed to initialize readline")?,
-            ));
-            // Initialize the logger handle
-            gbd.logger({
-                Portal {
-                    get: {
-                        let handle = handle.clone();
-                        Box::new(move || handle.with_current(ToString::to_string).unwrap())
-                    },
-                    set: {
-                        let handle = handle.clone();
-                        Box::new(move |filter: String| handle.reload(filter).unwrap())
-                    },
-                }
-            });
-            // Return the constructed debugger
-            Ok(gbd)
-        })
-        .transpose()?;
-
-    // Construct app options
-    let cfg = app::Options {
-        pal: args.gui.pal.unwrap_or(conf.gui.pal).into(),
-        spd: args.gui.spd.unwrap_or(conf.gui.spd).freq(),
-    };
-    // Construct debug options
-    #[cfg(feature = "debug")]
-    let debug = app::Debug {
-        #[cfg(feature = "doctor")]
-        doc,
-        #[cfg(feature = "gbd")]
-        gbd,
-    };
-    // Construct peripherals
-    let dev = app::Devices { link };
-    // Construct application
-    let app = App {
-        title,
-        cfg,
-        #[cfg(feature = "debug")]
-        dbg: debug,
-        dev,
-        emu,
-        gui,
-    };
-
-    // Run the app
-    app.run()
+    // Return handle
+    Ok(handle)
 }
 
-fn boot(path: Option<PathBuf>) -> Result<Option<Boot>> {
-    // Prepare the boot ROM
-    let boot = path
-        .map(|boot| -> Result<_> {
-            // Open boot ROM file
-            let mut f = File::open(&boot)
-                .with_context(|| format!("failed to open boot ROM: `{}`", boot.display()))?;
-            // Read boot ROM into a buffer (must be exactly 256 bytes)
-            let mut buf = [0u8; 0x0100];
-            f.read_exact(&mut buf)
-                .with_context(|| format!("failed to read full boot ROM: `{}`", boot.display()))?;
-            info!(
-                "read {} bytes from boot ROM: `{}`",
-                buf.len(),
-                boot.display(),
-            );
-
-            Ok(buf)
-        })
-        .transpose()?;
-    // Initialize the boot rom
-    let boot = boot.as_ref().map(Boot::from);
+/// Read and load a boot ROM instance from a file.
+fn boot(path: &Path) -> Result<Boot> {
+    // Read ROM file
+    let boot = {
+        // Open ROM file
+        let mut file =
+            File::open(path).with_context(|| format!("failed to open: `{}`", path.display()))?;
+        // Read ROM into a buffer (must be exactly 256 bytes)
+        let mut buf = [0u8; 0x0100];
+        file.read_exact(&mut buf)
+            .with_context(|| format!("failed to read: `{}`", path.display()))?;
+        info!(
+            "read {} bytes from boot ROM: `{}`",
+            buf.len(),
+            path.display(),
+        );
+        // Return ROM contents
+        buf
+    };
+    // Initialize boot ROM
+    let boot = Boot::from(&boot);
 
     Ok(boot)
 }
 
-fn cart(path: Option<PathBuf>, chk: bool, force: bool) -> Result<Cartridge> {
+/// Read and load a cartridge instance from a file.
+fn cart(path: Option<&Path>, check: bool, force: bool) -> Result<Cartridge> {
     if let Some(path) = path {
+        // Read ROM file
         let rom = {
             // Open ROM file
-            let f = File::open(&path)
-                .with_context(|| format!("failed to open ROM: `{}`", path.display()))?;
+            let f = File::open(path)
+                .with_context(|| format!("failed to open: `{}`", path.display()))?;
             // Read ROM into a buffer
             let mut buf = Vec::new();
             let nbytes = f
                 // Game Paks manufactured by Nintendo have a maximum 8 MiB ROM
                 .take(0x0080_0000)
                 .read_to_end(&mut buf)
-                .with_context(|| format!("failed to read ROM: `{}`", path.display()))?;
+                .with_context(|| format!("failed to read: `{}`", path.display()))?;
             info!("read {nbytes} bytes from ROM: `{}`", path.display());
-
+            // Return ROM contents
             buf
         };
 
-        // Initialize the cartridge
+        // Initialize cartridge
         let cart = if force {
             // Force cartridge creation from ROM
-            Cartridge::unchecked(&rom)
-        } else if chk {
+            Cartridge::checked(&rom)
+                .inspect_err(|err| error!("{err:#}"))
+                .ok() // discard the error
+                .unwrap_or_else(|| Cartridge::unchecked(&rom))
+        } else if check {
             // Check ROM integrity and create a cartridge
-            let cart = Cartridge::checked(&rom)
-                .with_context(|| format!("failed ROM integrity check: `{}`", path.display()))?;
-            info!("passed ROM integrity check");
-
-            cart
+            Cartridge::checked(&rom)
+                .inspect(|_| info!("passed ROM integrity check"))
+                .with_context(|| format!("failed to load: `{}`", path.display()))?
         } else {
             // Attempt to create a cartridge
-            Cartridge::new(&rom)
-                .with_context(|| format!("failed to load cartridge: `{}`", path.display()))?
+            Cartridge::new(&rom).with_context(|| format!("failed to load: `{}`", path.display()))?
         };
         info!("loaded cartridge:\n{}", cart.header());
 
         Ok(cart)
     } else {
-        ensure!(force, "missing cartridge");
+        // Initialize blank cartridge
+        ensure!(force, "missing cartridge; did not specify `--force`");
         warn!("missing cartridge; defaulting to blank");
         Ok(Cartridge::blank())
     }

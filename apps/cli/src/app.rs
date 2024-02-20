@@ -4,8 +4,9 @@ use std::net::UdpSocket;
 use std::sync::Arc;
 #[cfg(feature = "gbd")]
 use std::time::Duration;
+use std::time::Instant;
 
-use eyre::Context;
+use anyhow::Context;
 #[cfg(any(feature = "doctor", feature = "view"))]
 use gameboy::core::dmg;
 use gameboy::core::dmg::{Button, GameBoy, Screen};
@@ -22,17 +23,15 @@ use remus::{Clock, Machine};
 #[cfg(feature = "doctor")]
 use crate::dbg::doc::Doctor;
 use crate::gui::Gui;
-use crate::FREQUENCY;
+use crate::FREQ;
 
 // Clock divider for more efficient synchronization.
 const DIVIDER: u32 = 0x100;
 
-/// App internals.
+/// Application.
 #[derive(Debug)]
 pub struct App {
-    /// Window title.
-    pub title: String,
-    /// Runtime options.
+    /// Application options.
     pub cfg: Options,
     /// Debug options.
     #[cfg(feature = "debug")]
@@ -45,16 +44,18 @@ pub struct App {
     pub gui: Option<Gui>,
 }
 
-/// Runtime options.
+/// Application options.
 #[derive(Debug)]
 pub struct Options {
-    /// Palette.
+    /// Cartridge title.
+    pub title: String,
+    /// Color palette.
     pub pal: Palette,
-    /// Frequency.
+    /// Clock frequency.
     pub spd: Option<u32>,
 }
 
-/// Debug options.
+/// Application debug.
 #[cfg(feature = "debug")]
 #[derive(Debug)]
 pub struct Debug {
@@ -66,7 +67,7 @@ pub struct Debug {
     pub gbd: Option<Debugger>,
 }
 
-/// Connected peripherals.
+/// Application devices.
 #[derive(Debug)]
 pub struct Devices {
     /// Link cable.
@@ -79,7 +80,6 @@ impl App {
     pub fn run(self) -> crate::Result<()> {
         #[allow(unused_mut, unused_variables)]
         let Self {
-            title,
             cfg,
             #[cfg(feature = "debug")]
             mut dbg,
@@ -92,7 +92,7 @@ impl App {
         let mut clk = cfg.spd.map(|freq| freq / DIVIDER).map(Clock::with_freq);
 
         // Initialize timer, counters
-        let mut now = std::time::Instant::now();
+        let mut now = Instant::now();
         let mut cycle = 0;
         let mut stamp = 0;
         let mut frame = 0;
@@ -142,19 +142,19 @@ impl App {
                 // Calculate stats
                 let iters = cycle - stamp; // iterations since last probe
                 let freq = f64::from(iters) / now.elapsed().as_secs_f64();
-                let speedup = freq / f64::from(FREQUENCY);
+                let speedup = freq / f64::from(FREQ);
                 let fps = 60. * speedup;
                 // Log stats
                 trace!(
-                    "frequency: {freq:>7.4} MHz, speedup: {speedup:>5.1}%, frame rate: {fps:>6.2} Hz",
+                    "frequency: {freq:>7.4} MHz, speedup: {speedup:>5.1}%, frame rate: {fps:>6.2} FPS",
                     freq = freq / 1e6, speedup = 100. * speedup,
                 );
                 // Display frequency in GUI
                 if let Some(gui) = gui.as_mut() {
-                    gui.main.set_title(&format!("{title} ({fps:.1} Hz)"));
+                    gui.main.set_title(&format!("{} ({fps:.1} FPS)", cfg.title));
                 }
                 // Reset timer, counters
-                now = std::time::Instant::now();
+                now = Instant::now();
                 stamp = cycle;
                 frame = 0;
             }
@@ -268,7 +268,7 @@ impl App {
             // Stream serial data
             if let Some(link) = dev.link.as_mut() {
                 // NOTE: Data is streamed at 1 Hz.
-                if cycle % FREQUENCY == 0 {
+                if cycle % FREQ == 0 {
                     // emu -> link
                     'tx: {
                         // Download from emulator
