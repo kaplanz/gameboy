@@ -120,6 +120,12 @@ impl Cartridge {
         &self.header
     }
 
+    /// Gets the cartridge's title.
+    #[must_use]
+    pub fn title(&self) -> &str {
+        self.header.title.as_deref().unwrap_or("Unknown")
+    }
+
     /// Gets a shared reference to the cartridge's ROM.
     #[must_use]
     pub fn rom(&self) -> Dynamic<u16, u8> {

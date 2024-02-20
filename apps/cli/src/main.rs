@@ -86,11 +86,7 @@ fn main() -> Result<()> {
     let boot = boot(args.hw.boot.or(conf.hw.boot))?;
     // Read the cartridge
     let cart = cart(args.cart.rom, args.cart.chk, args.cart.force)?;
-    let title = match cart.header().title.replace('\0', " ").trim() {
-        "" => "Untitled",
-        title => title,
-    } // extract title from cartridge
-    .to_string();
+    let title = cart.title().to_string();
 
     // Exit early on `--exit`
     if args.exit {
