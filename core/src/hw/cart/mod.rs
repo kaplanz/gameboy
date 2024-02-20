@@ -29,7 +29,7 @@ mod header;
 
 pub mod mbc;
 
-pub use self::header::{Error as HeaderError, Header};
+pub use self::header::{Error as HeaderError, Header, LOGO};
 
 /// Intermediate memory parts.
 struct Memory {
