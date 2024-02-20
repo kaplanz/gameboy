@@ -103,7 +103,7 @@ crates are used with the structure as follows:
 - [ ] Performance enhancements
   - [x] Real-time emulation
   - [ ] Benchmark tests
-- [ ] [Testing]
+- [ ] [Testing][docs.testing]
   - [ ] Blargg (17/45)
   - [ ] Mooneye (23/69)
 
@@ -188,12 +188,21 @@ project below.
 
 ## License
 
-This project is dual-licensed under both [MIT License][mit] and [Apache License
-2.0][apache2]. You have permission to use this code under the conditions of
-either license pursuant to the rights granted by the chosen license.
+This project is dual-licensed under both [MIT License][license.mit] and [Apache
+License 2.0][license.ap2]. You have permission to use this code under the
+conditions of either license pursuant to the rights granted by the chosen
+license.
+
+<!-- Reference-style badges -->
+[deps.badge]: https://deps.rs/repo/github/kaplanz/gameboy/status.svg
+[deps.hyper]: https://deps.rs/repo/github/kaplanz/gameboy
+
+<!-- Reference-style files -->
+[license.ap2]:  ./LICENSE-APACHE
+[license.mit]:  ./LICENSE-MIT
+[docs.testing]: ./docs/TESTING.md
 
 <!-- Reference-style links -->
-[apache2]:   ./LICENSE-APACHE
 [blargg]:    https://github.com/retrio/gb-test-roms
 [dmg-acid2]: https://github.com/mattcurrie/dmg-acid2
 [dmgcpu]:    https://github.com/emu-russia/dmgcpu
@@ -202,12 +211,6 @@ either license pursuant to the rights granted by the chosen license.
 [gbdev]:     https://gbdev.io
 [gbedg]:     https://hacktix.github.io/GBEDG/
 [gekkio]:    https://gekkio.fi
-[mit]:       ./LICENSE-MIT
 [mooneye]:   https://github.com/Gekkio/mooneye-test-suite
 [nitty]:     http://blog.kevtris.org/blogfiles/Nitty%20Gritty%20Gameboy%20VRAM%20Timing.txt
 [pandocs]:   https://gbdev.io/pandocs/
-[testing]:   ./docs/TESTING.md
-
-<!-- Reference-style badges -->
-[deps.badge]: https://deps.rs/repo/github/kaplanz/gameboy/status.svg
-[deps.hyper]: https://deps.rs/repo/github/kaplanz/gameboy
