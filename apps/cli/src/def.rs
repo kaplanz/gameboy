@@ -6,6 +6,37 @@ use serde::Deserialize;
 
 use crate::FREQ;
 
+/// Cartridge options.
+#[derive(Args, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Cartridge {
+    /// Cartridge ROM image file.
+    ///
+    /// A cartridge will be constructed from the data specified in the ROM. The
+    /// cartridge header specifies precisely what hardware will be instantiated.
+    #[clap(required_unless_present("force"))]
+    #[clap(value_hint = ValueHint::FilePath)]
+    #[clap(help_heading = None)]
+    #[serde(skip)]
+    pub rom: Option<PathBuf>,
+
+    /// Check cartridge integrity.
+    ///
+    /// Verifies that both the header and global checksums match the data within
+    /// the ROM.
+    #[clap(short, long)]
+    #[clap(conflicts_with("force"))]
+    pub check: bool,
+
+    /// Force cartridge construction.
+    ///
+    /// Causes the cartridge generation to always succeed, even if the ROM does
+    /// not contain valid data.
+    #[clap(short, long)]
+    #[serde(skip)]
+    pub force: bool,
+}
+
 /// Interface options.
 #[derive(Args, Debug, Default, Deserialize)]
 #[serde(default)]

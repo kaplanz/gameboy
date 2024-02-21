@@ -9,7 +9,7 @@ use serde::Deserialize;
 use thiserror::Error;
 use toml::from_str as parse;
 
-use crate::def::{Hardware, Interface};
+use crate::def::{Cartridge, Hardware, Interface};
 use crate::dir;
 
 /// Returns the path to the application's configuration file.
@@ -27,6 +27,12 @@ pub struct Config {
     #[clap(next_help_heading = None)]
     #[serde(rename = "hardware")]
     pub hw: Hardware,
+
+    /// Cartridge options.
+    #[clap(flatten)]
+    #[clap(next_help_heading = "Cartridge")]
+    #[serde(rename = "cartridge")]
+    pub sw: Cartridge,
 
     /// Interface options.
     #[clap(flatten)]
