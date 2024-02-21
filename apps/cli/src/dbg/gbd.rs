@@ -1,35 +1,112 @@
 use std::error::Error as StdError;
+use std::fs;
+use std::path::PathBuf;
 
+use anyhow::Context;
 use gameboy::gbd::prompt::{Error, Prompt};
-use rustyline::error::ReadlineError;
+use log::{debug, error, trace};
+use rustyline::error::ReadlineError::{Eof, Interrupted as Int};
 use rustyline::history::History;
 use rustyline::DefaultEditor as Editor;
 
-#[derive(Debug)]
-pub struct Readline(Editor);
+use crate::dir;
 
-impl Readline {
-    /// Constructs a new `Terminal`.
-    pub fn new() -> Result<Self, ReadlineError> {
-        Editor::new().map(Self)
+/// Returns the path to the application's history file.
+#[must_use]
+pub fn history() -> PathBuf {
+    dir::state().join("history.txt")
+}
+
+/// Interface over the user's console.
+#[derive(Debug)]
+pub struct Console {
+    edit: Editor,
+}
+
+impl Console {
+    /// Constructs a new `Console`.
+    pub fn new() -> anyhow::Result<Self> {
+        Self {
+            edit: Editor::new()?,
+        }
+        .init()
+    }
+
+    /// Initializes the console.
+    fn init(mut self) -> anyhow::Result<Self> {
+        // Create state directory
+        let state = dir::state();
+        if !state.exists() {
+            fs::create_dir_all(&state)
+                .inspect(|()| trace!("created state directory: `{}`", state.display()))
+                .with_context(|| format!("failed to create directory: `{}`", state.display()))?;
+        }
+        // Load previous history from file
+        self.load()?;
+        // Return initialized console
+        Ok(self)
+    }
+
+    /// Loads history from a file into the prompt.
+    fn load(&mut self) -> anyhow::Result<()> {
+        debug!("loading history: `{}`", history().display());
+        self.edit
+            .load_history(&history())
+            .inspect(|()| {
+                debug!(
+                    "loaded history: {} items",
+                    self.edit.history().iter().count()
+                );
+                trace!(
+                    "history: {:#?}",
+                    self.edit.history().iter().collect::<Vec<_>>()
+                );
+            })
+            .context("failed to load history")
+    }
+
+    /// Saves history from the prompt into a file.
+    fn save(&mut self) -> anyhow::Result<()> {
+        debug!("saving history: `{}`", history().display());
+        self.edit
+            .save_history(&history())
+            .inspect(|()| {
+                debug!(
+                    "saved history: {} items",
+                    self.edit.history().iter().count()
+                );
+                trace!(
+                    "history: {:#?}",
+                    self.edit.history().iter().collect::<Vec<_>>()
+                );
+            })
+            .context("failed to save history")
     }
 }
 
-impl Prompt for Readline {
+impl Drop for Console {
+    fn drop(&mut self) {
+        if let Err(err) = self.save() {
+            error!("{err:#}");
+        }
+    }
+}
+
+impl Prompt for Console {
     fn prompt(&mut self, msg: &str) -> Result<String, Error> {
         // Prompt the user for input
         let line = loop {
-            match self.0.readline(msg) {
+            match self.edit.readline(msg) {
                 Ok(line) => break line,
                 Err(err) => match err {
-                    ReadlineError::Interrupted => continue,
-                    ReadlineError::Eof => return Err(Error::Quit),
+                    Int => continue,
+                    Eof => return Err(Error::Quit),
                     _ => return Err(Error::Internal(Box::new(err))),
                 },
             }
         };
         // Add obtained input to history
-        self.0
+        self.edit
             .history_mut()
             .add(&line)
             .map_err(|err| Box::new(err) as Box<dyn StdError>)?;
