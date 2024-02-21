@@ -24,7 +24,7 @@ use crate::cli::Cli;
 #[cfg(feature = "doctor")]
 use crate::dbg::doc::Doctor;
 #[cfg(feature = "gbd")]
-use crate::dbg::gbd::Readline;
+use crate::dbg::gbd::Console;
 use crate::err::Exit;
 #[cfg(feature = "view")]
 use crate::gui::view::View;
@@ -164,9 +164,9 @@ fn main() -> Exit {
                 // Construct a new `Debugger`
                 let mut gbd = Debugger::new();
                 // Initialize prompt handle
-                gbd.prompt(Box::new(
-                    Readline::new().context("failed to initialize readline")?,
-                ));
+                gbd.prompt(Box::new({
+                    Console::new().context("failed to initialize readline")?
+                }));
                 // Initialize logger handle
                 gbd.logger(log);
                 // Return constructed debugger
