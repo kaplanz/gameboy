@@ -86,10 +86,12 @@ fn main() -> Exit {
             .map(boot)
             .transpose()
             .context("could not load boot ROM"));
-        let cart = check!(
-            cart(args.cart.rom.as_deref(), args.cart.check, args.cart.force)
-                .context("could not load cartridge")
-        );
+        let cart = check!(cart(
+            args.cfg.sw.rom.as_deref(),
+            args.cfg.sw.check,
+            args.cfg.sw.force
+        )
+        .context("could not load cartridge"));
 
         // Exit early on `--exit`
         if args.exit {

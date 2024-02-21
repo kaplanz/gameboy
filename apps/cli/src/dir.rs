@@ -14,4 +14,4 @@ macro_rules! path {
     };
 }
 
-path! { config state }
+path! { config }
