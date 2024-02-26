@@ -40,7 +40,7 @@ the singles directories.
 
 Ths compact format on screen is to avoid having the results scroll off
 the top, so the test can be started and allowed to run without having to
-constantly monitor the display. 
+constantly monitor the display.
 
 
 Failure information
@@ -100,10 +100,10 @@ a specific reason as listed in the source code by the corresponding
 set_code line. Examples:
 
 Tones         Binary  Decimal  Meaning
-- - - - - - - - - - - - - - - - - - - - 
+- - - - - - - - - - - - - - - - - - - -
 low             0       0      passed
 low high        01      1      failed
 low high low   010      2      error 2
 
--- 
+--
 Shay Green <gblargg@gmail.com>
