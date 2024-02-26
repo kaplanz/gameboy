@@ -9,7 +9,7 @@ The read and write tests list failing instructions as
 
 	[CB] opcode:tested-correct
 
-The read-modify-write test lists failing instructions as 
+The read-modify-write test lists failing instructions as
 
 	[CB] opcode:tested read/tested write-correct read/correct write
 
@@ -44,7 +44,7 @@ corresponding ROM in individual/.
 
 Ths compact format on screen is to avoid having the results scroll off
 the top, so the test can be started and allowed to run without having to
-constantly monitor the display. 
+constantly monitor the display.
 
 Currently there is no well-defined way for an emulator test rig to
 programatically find the result of the test; contact me if you're trying
@@ -118,5 +118,5 @@ Some macros are used to simplify common tasks:
 
 Routines and macros are documented where they are defined.
 
--- 
+--
 Shay Green <gblargg@gmail.com>
