@@ -15,7 +15,7 @@ result code (1 = first). Finally, it makes several beeps. If a test
 fails, it can be run on its own by finding the corresponding ROM/GBS in
 the singles directories.
 
-Ths compact format on screen is to avoid having the results scroll off
+This compact format on screen is to avoid having the results scroll off
 the top, so the test can be started and allowed to run without having to
 constantly monitor the display.
 

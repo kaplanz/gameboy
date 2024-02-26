@@ -42,12 +42,12 @@ tests passed, or prints the number of failed tests. Finally, it makes
 several beeps. If a test fails, it can be run on its own by finding the
 corresponding ROM in individual/.
 
-Ths compact format on screen is to avoid having the results scroll off
+This compact format on screen is to avoid having the results scroll off
 the top, so the test can be started and allowed to run without having to
 constantly monitor the display.
 
 Currently there is no well-defined way for an emulator test rig to
-programatically find the result of the test; contact me if you're trying
+programmatically find the result of the test; contact me if you're trying
 to do completely automated testing of your emulator. One simple approach
 is to take a screenshot after all tests have run, or even just a
 checksum of one, and compare this with a previous run.
