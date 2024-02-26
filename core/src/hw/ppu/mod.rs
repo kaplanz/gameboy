@@ -470,19 +470,17 @@ impl Debug {
         Self { tdat, map1, map2 }
     }
 
-    /// Fetches the appropriate tile address from an tile number
+    /// Calculates the tile index using the indexing mode.
     #[allow(clippy::identity_op)]
     fn tidx(tnum: u8, bgwin: bool) -> usize {
-        // Calculate tile index offset
-        let addr = if bgwin {
-            (0x1000i16 + (16 * tnum as i8 as i16)) as usize
+        if bgwin {
+            (0x100 + (tnum as i8 as i16)) as usize
         } else {
-            (0x0000u16 + (16 * tnum as u16)) as usize
-        };
-        addr / 16
+            (0x000 + (tnum as u16)) as usize
+        }
     }
 
-    /// Renders tile data as pixels
+    /// Renders tile data as pixels.
     fn render<const N: usize>(tdat: &[Tile], ppu: &Ppu, meta: Meta, width: usize) -> [Color; N] {
         tdat.chunks_exact(width) // tiles per row
             .flat_map(|row| {

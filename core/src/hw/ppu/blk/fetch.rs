@@ -91,32 +91,26 @@ impl Fetch {
 
         // Calculate the y-offset within the tile
         let yoff = match loc {
-            Background | Sprite => ly.wrapping_add(scy) % 8,
-            Window => ppu.winln % 8,
-        };
+            Background | Sprite => ly.wrapping_add(scy),
+            Window => ppu.winln,
+        } % 8;
 
         // Calculate the tile data address
-        match loc {
-            Background | Window => {
-                if Lcdc::BgWinData.get(lcdc) {
-                    let base = 0x0000;
-                    let tidx = tnum as u16;
-                    let offset = (16 * tidx) + (2 * yoff) as u16;
-                    base + offset
-                } else {
-                    let base = 0x1000;
-                    let tidx = tnum as i8 as i16;
-                    let offset = (16 * tidx) + (2 * yoff) as i16;
-                    (base + offset) as u16
-                }
+        let bgwin = Lcdc::BgWinData.get(lcdc);
+        let tidx = match (loc, bgwin) {
+            (Background | Window, false) => {
+                let base = 0x1000;
+                let tnum = tnum as i8 as i16;
+                (base + (tnum << 4)) as u16
             }
-            Sprite => {
+            (Background | Window, true) | (Sprite, _) => {
                 let base = 0x0000;
-                let tidx = tnum as u16;
-                let offset = (16 * tidx) + (2 * yoff) as u16;
-                base + offset
+                let tnum = tnum as u16;
+                base + (tnum << 4)
             }
-        }
+        };
+        let toff = (2 * yoff) as u16;
+        tidx | toff
     }
 }
 
