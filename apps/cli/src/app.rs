@@ -1,9 +1,7 @@
 use std::io::{self, Read, Write};
 use std::net::UdpSocket;
 #[cfg(feature = "gbd")]
-use std::sync::Arc;
-#[cfg(feature = "gbd")]
-use std::time::Duration;
+use std::sync::mpsc;
 use std::time::Instant;
 
 use anyhow::Context;
@@ -16,8 +14,6 @@ use gameboy::gbd::{self, Debugger};
 use gameboy::pal::Palette;
 use log::{debug, trace};
 use minifb::Key;
-#[cfg(feature = "gbd")]
-use parking_lot::Mutex;
 use remus::{Clock, Machine};
 
 #[cfg(feature = "doctor")]
@@ -97,37 +93,26 @@ impl App {
         let mut stamp = 0;
         let mut frame = 0;
 
+        // Install signal handlers
+        #[cfg(feature = "gbd")]
+        let rx = {
+            let (tx, rx) = mpsc::channel();
+            ctrlc::try_set_handler(move || tx.send(()).expect("failed to send signal"))
+                .context("failed to install SIGINT handler")?;
+            rx
+        };
+
         // Enable doctor
         #[cfg(feature = "doctor")]
         emu.doctor(dbg.doc.is_some());
 
         // Prepare debugger
         #[cfg(feature = "gbd")]
-        let mut gbd = dbg.gbd.map(Mutex::new).map(Arc::new);
-        #[cfg(feature = "gbd")]
-        if let Some(gbd) = gbd.as_ref().map(Arc::clone) {
-            {
-                // Unlock the debugger
-                let mut gbd = gbd.lock();
-                // Enable debugger
-                gbd.enable();
-                // Sync initial console state
-                gbd.sync(&emu);
-            }
-            // Install SIGINT handler
-            ctrlc::try_set_handler(move || {
-                // Attempt to acquire the debugger (with timeout)
-                if let Some(mut gbd) = gbd.try_lock_for(Duration::from_millis(10)) {
-                    // Pause the console and present the user with the debugger
-                    // prompt.
-                    gbd.enable();
-                } else {
-                    // If unable to pause (likely due to prompt already
-                    // present), exit the program.
-                    std::process::exit(0);
-                }
-            })
-            .context("failed to install SIGINT handler")?;
+        if let Some(gbd) = dbg.gbd.as_mut() {
+            // Enable debugger
+            gbd.enable();
+            // Sync initial console state
+            gbd.sync(&emu);
         }
 
         // Emulation loop
@@ -135,6 +120,16 @@ impl App {
             // Break when GUI is closed
             if let Some(false) = gui.as_ref().map(Gui::alive) {
                 break;
+            }
+
+            // Handle signals
+            #[cfg(feature = "gbd")]
+            if let Ok(()) = rx.try_recv() {
+                if let Some(gbd) = dbg.gbd.as_mut() {
+                    gbd.enable();
+                } else {
+                    break;
+                }
             }
 
             // Calculate wall-clock frequency
@@ -161,7 +156,7 @@ impl App {
 
             // Run debugger when enabled
             #[cfg(feature = "gbd")]
-            if let Some(mut gbd) = gbd.as_mut().map(|gbd| gbd.lock()) {
+            if let Some(gbd) = dbg.gbd.as_mut() {
                 // Sync with console
                 gbd.sync(&emu);
 
