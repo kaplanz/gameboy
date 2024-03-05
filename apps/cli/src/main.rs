@@ -248,11 +248,8 @@ fn boot(path: &Path) -> Result<Boot> {
         let mut buf = [0u8; 0x0100];
         file.read_exact(&mut buf)
             .with_context(|| format!("failed to read: `{}`", path.display()))?;
-        info!(
-            "read {} bytes from boot ROM: `{}`",
-            buf.len(),
-            path.display(),
-        );
+        let nbytes = buf.len();
+        info!("read {nbytes} bytes: `{}`", path.display());
         // Return ROM contents
         buf
     };
@@ -277,7 +274,7 @@ fn cart(path: Option<&Path>, check: bool, force: bool) -> Result<Cartridge> {
                 .take(0x0080_0000)
                 .read_to_end(&mut buf)
                 .with_context(|| format!("failed to read: `{}`", path.display()))?;
-            info!("read {nbytes} bytes from ROM: `{}`", path.display());
+            info!("read {nbytes} bytes: `{}`", path.display());
             // Return ROM contents
             buf
         };
