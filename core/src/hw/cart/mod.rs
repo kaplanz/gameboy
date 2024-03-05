@@ -13,7 +13,7 @@
 use std::cmp::Ordering;
 use std::iter;
 
-use log::{debug, info, trace, warn};
+use log::{info, trace, warn};
 use remus::bus::Mux;
 use remus::dev::{Device, Dynamic, Null};
 use remus::mem::{Ram, Rom};
@@ -21,7 +21,7 @@ use remus::{Block, Board};
 use thiserror::Error;
 
 use self::header::Kind;
-use self::mbc::{Mbc, Mbc1, Mbc5, NoMbc};
+use self::mbc::{Mbc, Mbc1, Mbc5, None};
 use crate::arch::Bus;
 use crate::dev::Unmapped;
 
@@ -31,7 +31,7 @@ pub mod mbc;
 
 pub use self::header::{Error as HeaderError, Header, LOGO};
 
-/// Intermediate memory parts.
+/// Memory slice.
 struct Memory {
     buf: Dynamic<u16, u8>,
     len: usize,
@@ -44,9 +44,9 @@ struct Memory {
 #[derive(Debug)]
 pub struct Cartridge {
     // Metadata
-    header: Header,
+    head: Header,
     // Memory
-    mbc: Box<dyn Mbc>,
+    body: Box<dyn Mbc>,
 }
 
 impl Cartridge {
@@ -57,13 +57,12 @@ impl Cartridge {
     /// Returns an error when the cartridge header cannot be parsed.
     pub fn new(rom: &[u8]) -> Result<Self, Error> {
         // Parse cartridge header
-        let header = Header::try_from(rom)?;
-        debug!("header:\n{header}");
+        let head = Header::try_from(rom)?;
 
         // Construct memory bank controller
-        let mbc = Self::mbc(&header, rom)?;
+        let body = Self::body(&head, rom)?;
 
-        Ok(Self { header, mbc })
+        Ok(Self { head, body })
     }
 
     /// Constructs a new `Cartridge` explicitly checking the entire header.
@@ -73,13 +72,12 @@ impl Cartridge {
     /// Returns an error when the cartridge header contained an error.
     pub fn checked(rom: &[u8]) -> Result<Self, Error> {
         // Check then parse cartridge header
-        let header = Header::check(rom).and_then(|()| Header::try_from(rom))?;
-        debug!("header:\n{header}");
+        let head = Header::check(rom).and_then(|()| Header::try_from(rom))?;
 
         // Construct memory bank controller
-        let mbc = Self::mbc(&header, rom)?;
+        let body = Self::body(&head, rom)?;
 
-        Ok(Self { header, mbc })
+        Ok(Self { head, body })
     }
 
     /// Constructs a new `Cartridge` without checking the header.
@@ -89,61 +87,57 @@ impl Cartridge {
     /// Panics if the memory bank controller could not be constructed.
     pub fn unchecked(rom: &[u8]) -> Self {
         // Parse cartridge header
-        let header = Header::try_from(rom).ok().unwrap_or_else(Header::blank);
-        debug!("header:\n{header}");
+        let head = Header::try_from(rom).ok().unwrap_or_else(Header::blank);
 
         // Construct memory bank controller
-        let mbc = Self::mbc(&header, rom).ok().unwrap();
+        let body = Self::body(&head, rom).ok().unwrap();
 
-        Self { header, mbc }
+        Self { head, body }
     }
 
     /// Constructs a blank `Cartridge`.
     #[must_use]
     pub fn blank() -> Self {
         // Construct a blank header
-        let header = Header::blank();
+        let head = Header::blank();
 
         // Use null devices for the ROM, RAM
         let rom = Null::<u8, 0x8000>::with(0xff).to_dynamic();
-        let eram = Null::<u8, 0>::new().to_dynamic();
+        let ram = Null::<u8, 0>::new().to_dynamic();
 
         // Construct a membory bank controller
-        let mbc = Box::new(NoMbc::with(rom, eram));
+        let body = Box::new(None::with(rom, ram));
 
-        Self { header, mbc }
+        Self { head, body }
     }
 
     /// Gets a reference to the cartridge's header.
     #[must_use]
     pub fn header(&self) -> &Header {
-        &self.header
+        &self.head
     }
 
     /// Gets the cartridge's title.
     #[must_use]
     pub fn title(&self) -> &str {
-        self.header.title.as_deref().unwrap_or("Unknown")
+        self.head.title.as_deref().unwrap_or("Unknown")
     }
 
     /// Gets a shared reference to the cartridge's ROM.
     #[must_use]
     pub fn rom(&self) -> Dynamic<u16, u8> {
-        self.mbc.rom()
+        self.body.rom()
     }
 
     /// Gets a shared reference to the cartridge's RAM.
     #[must_use]
     pub fn ram(&self) -> Dynamic<u16, u8> {
-        self.mbc.ram()
+        self.body.ram()
     }
 
     /// Constructs a memory bank controller from a parsed ROM and header.
     #[allow(clippy::too_many_lines)]
-    fn mbc(header: &Header, rom: &[u8]) -> Result<Box<dyn Mbc>, Error> {
-        // Extract dimensions from header
-        let &Header { romsz, ramsz, .. } = header;
-
+    fn body(head: &Header, rom: &[u8]) -> Result<Box<dyn Mbc>, Error> {
         // Construct null device (for reuse where needed)
         let null = Unmapped::<0x2000>::new().to_dynamic();
 
@@ -151,34 +145,34 @@ impl Cartridge {
         let rom = {
             // Calculate buffer stats
             let read = rom.len();
-            match read.cmp(&header.romsz) {
+            match read.cmp(&head.romsz) {
                 Ordering::Less => {
                     warn!(
-                        "initialized {init} bytes; remaining {diff} bytes uninitialized",
+                        "loaded {init} bytes; remaining {diff} bytes uninitialized",
                         init = read,
-                        diff = header.romsz - read
+                        diff = head.romsz - read
                     );
                 }
-                Ordering::Equal => info!("initialized {read} bytes"),
+                Ordering::Equal => info!("loaded {read} bytes"),
                 Ordering::Greater => {
                     warn!(
-                        "initialized {init} bytes; remaining {diff} bytes truncated",
-                        init = header.romsz,
-                        diff = read - header.romsz
+                        "loaded {init} bytes; remaining {diff} bytes truncated",
+                        init = head.romsz,
+                        diff = read - head.romsz
                     );
                 }
             }
             rom.iter()
                 .copied()
                 .chain(iter::repeat(0xffu8))
-                .take(romsz)
+                .take(head.romsz)
                 .collect::<Vec<_>>()
                 .into_boxed_slice()
         };
         trace!("ROM:\n{rom}", rom = phex::Printer::<u8>::new(0, &rom));
 
         // Construct ROM
-        let rom = match romsz {
+        let rom = match head.romsz {
             0x0000_8000 => Rom::<u8, 0x0000_8000>::from(
                 &*Box::<[_; 0x0000_8000]>::try_from(rom).map_err(Error::Mismatch)?,
             )
@@ -219,7 +213,7 @@ impl Cartridge {
         };
 
         // Construct RAM
-        let ram = match ramsz {
+        let ram = match head.ramsz {
             0x00000 => null.clone().to_dynamic(),
             0x02000 => Ram::<u8, 0x02000>::new().to_dynamic(),
             0x08000 => Ram::<u8, 0x08000>::new().to_dynamic(),
@@ -229,34 +223,34 @@ impl Cartridge {
         };
 
         // Construct a memory bank controller
-        let mbc: Box<dyn Mbc> = match &header.cart {
-            &Kind::Basic { ram: has_ram, .. } => {
+        let mbc: Box<dyn Mbc> = match &head.cart {
+            &Kind::None { ram: has_ram, .. } => {
                 let ram = [null, ram][has_ram as usize].clone();
-                Box::new(NoMbc::with(rom, ram))
+                Box::new(None::with(rom, ram))
             }
             &Kind::Mbc1 { ram: has_ram, .. } => {
                 let rom = Memory {
                     buf: rom,
-                    len: romsz,
+                    len: head.romsz,
                 };
                 let ram = Memory {
                     buf: [null, ram][has_ram as usize].clone(),
-                    len: ramsz.max(0x2000),
+                    len: head.ramsz.max(0x2000),
                 };
                 Box::new(Mbc1::with(rom, ram))
             }
             &Kind::Mbc5 { ram: has_ram, .. } => {
                 let rom = Memory {
                     buf: rom,
-                    len: romsz,
+                    len: head.romsz,
                 };
                 let ram = Memory {
                     buf: [null, ram][has_ram as usize].clone(),
-                    len: ramsz,
+                    len: head.ramsz,
                 };
                 Box::new(Mbc5::with(rom, ram))
             }
-            cart => return Err(Error::Unimplemented(cart.clone())),
+            kind => return Err(Error::Unimpl(kind.clone())),
         };
 
         Ok(mbc)
@@ -266,7 +260,7 @@ impl Cartridge {
 impl Block for Cartridge {
     fn reset(&mut self) {
         // Memory
-        self.mbc.reset();
+        self.body.reset();
     }
 }
 
@@ -304,5 +298,5 @@ pub enum Error {
     #[error("cartridge size mismatch")]
     Mismatch(Box<[u8]>),
     #[error("unimplemented cartridge kind: {0}")]
-    Unimplemented(Kind),
+    Unimpl(Kind),
 }

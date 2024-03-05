@@ -14,11 +14,11 @@ use super::Memory;
 
 mod mbc1;
 mod mbc5;
-mod nombc;
+mod none;
 
 pub use self::mbc1::Mbc1;
 pub use self::mbc5::Mbc5;
-pub use self::nombc::NoMbc;
+pub use self::none::None;
 
 /// Unified MBC interface.
 pub(super) trait Mbc: Block + Debug {

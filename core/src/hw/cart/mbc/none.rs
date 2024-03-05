@@ -6,14 +6,14 @@ use crate::dev::ReadOnly;
 
 /// Rom (+ RAM) only; no MBC.
 #[derive(Debug)]
-pub struct NoMbc {
+pub struct None {
     // Memory
     rom: Shared<ReadOnly<Dynamic<u16, u8>>>,
     ram: Dynamic<u16, u8>,
 }
 
-impl NoMbc {
-    /// Constructs a new `NoMbc` with the provided configuration.
+impl None {
+    /// Constructs a new `None` with the provided configuration.
     #[must_use]
     pub fn with(rom: Dynamic<u16, u8>, ram: Dynamic<u16, u8>) -> Self {
         Self {
@@ -23,7 +23,7 @@ impl NoMbc {
     }
 }
 
-impl Block for NoMbc {
+impl Block for None {
     fn reset(&mut self) {
         // Memory
         self.rom.reset();
@@ -31,7 +31,7 @@ impl Block for NoMbc {
     }
 }
 
-impl Mbc for NoMbc {
+impl Mbc for None {
     fn rom(&self) -> Dynamic<u16, u8> {
         self.rom.clone().to_dynamic()
     }
