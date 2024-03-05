@@ -147,10 +147,10 @@ fn main() -> Exit {
             .doc
             .map(|path| -> Result<_> {
                 // Create logfile
-                let f = File::create(&path)
+                let file = File::create(&path)
                     .with_context(|| format!("failed to open: `{}`", path.display()))?;
                 // Construct a doctor instance
-                Ok(Doctor::new(f))
+                Ok(Doctor::new(file))
             })
             .transpose()
             .context("could not open log file"));
@@ -268,11 +268,11 @@ fn cart(path: Option<&Path>, check: bool, force: bool) -> Result<Cartridge> {
         // Read ROM file
         let rom = {
             // Open ROM file
-            let f = File::open(path)
+            let file = File::open(path)
                 .with_context(|| format!("failed to open: `{}`", path.display()))?;
             // Read ROM into a buffer
             let mut buf = Vec::new();
-            let nbytes = f
+            let nbytes = file
                 // Game Paks manufactured by Nintendo have a maximum 8 MiB ROM
                 .take(0x0080_0000)
                 .read_to_end(&mut buf)
