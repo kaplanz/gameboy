@@ -30,7 +30,7 @@ A cycle accurate emulator of the original 1989 Nintendo Game Boy.
 This project aims to provide high-accuracy emulation of all major components in
 the SM83-based Nintendo Game Boy family of consoles. (Note that at this time,
 there are no plans to support the later Game Boy Advance, which has an entirely
-different architecture.) Each components is modular, enabling them to be easily
+different architecture.) Each component is modular, enabling them to be easily
 substituted for one another. In turn, this leads to emulator instances
 supporting multiple implementations of core components with different
 accuracy/performance margins.
