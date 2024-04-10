@@ -418,6 +418,7 @@ impl<T: Debug> Debug for Portal<T> {
 }
 
 /// A type specifying categories of [`Debugger`] errors.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum Error {
     /// Requested breakpoint could not be found.

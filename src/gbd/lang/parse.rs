@@ -79,6 +79,7 @@ impl Display for Rule {
 }
 
 /// A type specifying categories of [`Language`] errors.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("internal error: {0}")]
