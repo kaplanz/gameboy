@@ -45,12 +45,12 @@ chex = { version = "0.1.0", path = "crates/chex" }
 derange = { version = "0.1.0", path = "crates/derange", optional = true }
 displaydoc = { version = "0.2.4", optional = true }
 gameboy-core = { path = "core" }
-indexmap = { version = "2.2.3", optional = true }
-log = { version = "0.4.20", optional = true }
+indexmap = { version = "2.2.6", optional = true }
+log = { version = "0.4.21", optional = true }
 num = { version = "0.4.1", optional = true }
-pest = { version = "2.7.7", optional = true }
-pest_derive = { version = "2.7.7", optional = true }
+pest = { version = "2.7.9", optional = true }
+pest_derive = { version = "2.7.9", optional = true }
 phex = { version = "0.1.0", path = "crates/phex", optional = true }
 remus = { git = "https://github.com/kaplanz/remus.git" }
-serde = { version = "1.0.196", features = ["derive"] }
-thiserror = "1.0.57"
+serde = { version = "1.0.197", features = ["derive"] }
+thiserror = "1.0.58"

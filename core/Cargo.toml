@@ -11,7 +11,7 @@ license = { workspace = true }
 [dependencies]
 enuf = { version = "0.1.0", path = "../crates/enuf" }
 itertools = "0.12.1"
-log = "0.4.20"
+log = "0.4.21"
 phex = { version = "0.1.0", path = "../crates/phex" }
 remus = { git = "https://github.com/kaplanz/remus.git" }
-thiserror = "1.0.57"
+thiserror = "1.0.58"

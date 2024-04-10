@@ -10,5 +10,5 @@ license = { workspace = true }
 
 [dependencies]
 phf = { version = "0.11.2", features = ["macros"] }
-serde_with = "3.6.1"
-thiserror = "1.0.57"
+serde_with = "3.7.0"
+thiserror = "1.0.58"
