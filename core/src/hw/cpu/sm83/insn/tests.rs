@@ -5,7 +5,7 @@ use remus::mem::Ram;
 use remus::Shared;
 
 use super::*;
-use crate::arch::Bus;
+use crate::dev::Bus;
 
 fn setup() -> Cpu {
     let mem = Ram::<u8, 0x10000>::new().to_dynamic();

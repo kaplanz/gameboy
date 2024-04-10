@@ -1,10 +1,9 @@
 use std::path::PathBuf;
 
 use clap::{Args, ValueEnum, ValueHint};
+use rugby::core::dmg::FREQ;
 use rugby::pal;
 use serde::Deserialize;
-
-use crate::FREQ;
 
 /// Cartridge options.
 #[derive(Args, Debug, Default, Deserialize)]

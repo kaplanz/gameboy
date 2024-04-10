@@ -191,7 +191,7 @@ mod tests {
     }
 
     #[test]
-    fn edge_works() {
+    fn iter_edge_works() {
         // One item
         assert_eq!(Derange::<u8>::from(0..1).into_iter().count(), 1);
         assert_eq!(Derange::<u8>::from(255..).into_iter().count(), 1);

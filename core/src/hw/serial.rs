@@ -10,7 +10,8 @@ use remus::reg::Register;
 use remus::{Address, Block, Board, Cell, Location, Machine, Shared};
 
 use super::pic::{Interrupt, Pic};
-use crate::arch::Bus;
+use crate::api::serial::Serial as Api;
+use crate::dev::Bus;
 
 /// 8-bit serial control register set.
 ///
@@ -72,22 +73,6 @@ impl Serial {
         }
     }
 
-    /// Gets the external serial receiver handle.
-    #[must_use]
-    pub fn rx(&mut self) -> &mut impl BufRead {
-        // NOTE: We return `tx`, since the internal transmitter is the external
-        //       receiver.
-        &mut self.tx
-    }
-
-    /// Gets the external serial transmitter handle.
-    #[must_use]
-    pub fn tx(&mut self) -> &mut impl Write {
-        // NOTE: We return `rx`, since the internal receiver is the external
-        //       transmitter.
-        &mut self.rx
-    }
-
     /// Perform a tick of the external clock.
     #[allow(unused)]
     pub fn tick(&mut self) {
@@ -118,6 +103,22 @@ impl Serial {
         sb.store(data);
         // Return output
         tx
+    }
+}
+
+impl Api for Serial {
+    #[must_use]
+    fn rx(&mut self) -> &mut impl BufRead {
+        // NOTE: We return `tx`, since the internal transmitter is the external
+        //       receiver.
+        &mut self.tx
+    }
+
+    #[must_use]
+    fn tx(&mut self) -> &mut impl Write {
+        // NOTE: We return `rx`, since the internal receiver is the external
+        //       transmitter.
+        &mut self.rx
     }
 }
 

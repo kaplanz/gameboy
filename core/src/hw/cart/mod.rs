@@ -22,8 +22,8 @@ use thiserror::Error;
 
 use self::header::Kind;
 use self::mbc::{Mbc, Mbc1, Mbc5, None};
-use crate::arch::Bus;
-use crate::dev::Unmapped;
+use crate::api::cart::Cartridge as Api;
+use crate::dev::{Bus, Unmapped};
 
 mod header;
 
@@ -37,7 +37,7 @@ struct Memory {
     len: usize,
 }
 
-/// Cartridge model.
+/// Removable game cartridge.
 ///
 /// Parses a [`Header`] from the ROM, then initializes the memory bank
 /// controller ([`mbc`]).
@@ -256,6 +256,8 @@ impl Cartridge {
         Ok(mbc)
     }
 }
+
+impl Api for Cartridge {}
 
 impl Block for Cartridge {
     fn reset(&mut self) {

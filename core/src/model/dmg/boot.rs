@@ -6,8 +6,7 @@ use remus::bus::Mux;
 use remus::dev::Device;
 use remus::{mem, Address, Block, Board, Cell, Shared};
 
-use crate::arch::Bus;
-use crate::dev::ReadOnly;
+use crate::dev::{Bus, ReadOnly};
 
 /// Boot RAM model.
 pub type Boot = mem::Rom<u8, 0x100>;

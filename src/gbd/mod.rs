@@ -13,6 +13,7 @@ use self::lang::Program;
 use self::prompt::Prompt;
 use crate::core::dmg::cpu::{self, reg};
 use crate::core::dmg::{ppu, GameBoy};
+use crate::emu::proc::Support as _;
 
 mod exec;
 mod lang;
@@ -397,7 +398,7 @@ impl Display for Tick {
 #[derive(Debug, Default)]
 struct State {
     cpu: cpu::Stage,
-    dot: usize,
+    dot: u16,
     ppu: ppu::Mode,
 }
 

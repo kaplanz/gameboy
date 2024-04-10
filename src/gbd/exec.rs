@@ -7,7 +7,8 @@ use remus::{Block, Location as _};
 
 use super::lang::{Keyword, Location, Serial, Value};
 use super::{Debugger, Error, GameBoy, Result, Tick};
-use crate::core::dmg::cpu::Processor;
+use crate::emu::proc::{Processor, Support as _};
+use crate::emu::serial::Support as _;
 use crate::gbd::Breakpoint;
 
 pub fn r#break(gbd: &mut Debugger, addr: u16) -> Result<()> {

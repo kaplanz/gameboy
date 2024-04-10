@@ -6,8 +6,10 @@ use remus::mem::Ram;
 use remus::reg::Register;
 use remus::{Block, Board, Machine, Shared};
 
-use crate::arch::Bus;
+use crate::api::audio::Audio as Api;
+use crate::dev::Bus;
 
+/// Wave RAM model.
 pub type Wave = Ram<u8, 0x0010>;
 
 /// APU model.
@@ -36,6 +38,8 @@ impl Apu {
         self.wave.clone()
     }
 }
+
+impl Api for Apu {}
 
 impl Block for Apu {
     fn reset(&mut self) {

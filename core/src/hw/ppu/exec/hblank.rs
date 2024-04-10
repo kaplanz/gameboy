@@ -3,19 +3,23 @@ use std::fmt::Display;
 use remus::Cell;
 
 use super::draw::Draw;
-use super::{Interrupt, Mode, Ppu, SCREEN};
+use super::{Interrupt, Mode, Ppu, LCD};
 
+/// Horizontal blanking interval.
 #[derive(Clone, Debug, Default)]
 pub struct HBlank;
 
 impl HBlank {
-    /// Maximum dot within the scanline for which `HBlank` runs.
-    pub const DOTS: usize = 456;
+    /// Maximum number of dots per scanline.
+    pub const DOTS: u16 = 456;
 
     pub fn exec(self, ppu: &mut Ppu) -> Mode {
-        // HBlank lasts until the 456th dot
+        // Move to next dot
         ppu.dot += 1;
+
+        // Determine next mode
         if ppu.dot < Self::DOTS {
+            // Continue vblank
             Mode::HBlank(self)
         } else {
             // Increment scanline
@@ -24,8 +28,8 @@ impl HBlank {
             // Reset dot-clock
             ppu.dot = 0;
 
-            // Determine next mode
-            if (ly as usize) < SCREEN.height {
+            // Determine next scanline type
+            if u16::from(ly) < LCD.ht {
                 // Begin next scanline
                 Mode::Scan(self.into())
             } else {
@@ -33,7 +37,7 @@ impl HBlank {
                 ppu.winln = 0;
                 // Request an interrupt
                 ppu.pic.borrow_mut().req(Interrupt::VBlank);
-                // Enter VBlank
+                // Enter vblank
                 Mode::VBlank(self.into())
             }
         }

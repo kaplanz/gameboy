@@ -9,7 +9,7 @@
 //! use enuf::Enuf;
 //!
 //! // Define `Flags` enum
-//! #[derive(Copy, Clone)]
+//! #[derive(Clone, Copy)]
 //! enum Flag {
 //!     A = 0b001, // NOTE: Each of the fields should have descrimenant
 //!     B = 0b010, //       values that are mutually exclusive, to ensure

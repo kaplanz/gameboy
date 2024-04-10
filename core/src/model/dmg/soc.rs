@@ -7,8 +7,7 @@ use super::noc::NoC;
 use super::pic::Pic;
 use super::ppu::{Oam, Ppu, Vram};
 use super::{boot, Hram};
-use crate::arch::Bus;
-use crate::dev::Unmapped;
+use crate::dev::{Bus, Unmapped};
 use crate::hw::apu::Apu;
 use crate::hw::dma::Dma;
 

@@ -86,7 +86,7 @@ pub struct Link {
 /// Debugging options.
 #[derive(Args, Debug)]
 pub struct Debug {
-    #[cfg(feature = "doctor")]
+    #[cfg(feature = "doc")]
     /// Doctor logfile path.
     ///
     /// Enables logging at the provided path of the emulator's state after every
@@ -103,11 +103,11 @@ pub struct Debug {
     #[clap(short = 'i', long)]
     pub gbd: bool,
 
-    #[cfg(feature = "view")]
-    /// Open debug view windows.
+    #[cfg(feature = "win")]
+    /// Open debug windows.
     ///
-    /// Causes the emulator to open the debug views, providing graphical
+    /// Causes the emulator to open the debug windows, providing graphical
     /// rendering of video RAM contents.
     #[clap(long)]
-    pub view: bool,
+    pub win: bool,
 }

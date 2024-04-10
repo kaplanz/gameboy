@@ -7,7 +7,7 @@ use remus::reg::Register;
 use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
 
 use super::pic::{Interrupt, Pic};
-use crate::arch::Bus;
+use crate::dev::Bus;
 
 /// 8-bit timer control register set.
 ///

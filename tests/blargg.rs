@@ -3,6 +3,8 @@ use std::io::Read;
 use remus::Machine;
 use rugby::core::dmg::cart::Cartridge;
 use rugby::core::dmg::GameBoy;
+use rugby::emu::cart::Support as _;
+use rugby::emu::serial::Support as _;
 use thiserror::Error;
 
 type Result<T> = std::result::Result<T, Error>;

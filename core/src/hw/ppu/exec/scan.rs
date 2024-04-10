@@ -8,6 +8,7 @@ use super::sprite::Sprite;
 use super::vblank::VBlank;
 use super::{Lcdc, Mode, Ppu};
 
+/// Sprite scanning interval.
 #[derive(Clone, Debug, Default)]
 pub struct Scan {
     pub(super) idx: usize,
@@ -49,8 +50,10 @@ impl Scan {
         // <https://raw.githubusercontent.com/ISSOtm/pandocs/rendering-internals/src/Rendering_Internals.md>
         self.idx += 2;
 
-        // Scan lasts 80 dots, then progresses to Draw
+        // Move to next dot
         ppu.dot += 1;
+
+        // Determine next mode
         if ppu.dot < 80 {
             Mode::Scan(self)
         } else {

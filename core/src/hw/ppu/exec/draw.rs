@@ -5,8 +5,9 @@ use remus::Cell;
 use super::blk::Pipeline;
 use super::scan::Scan;
 use super::sprite::Sprite;
-use super::{Mode, Ppu, SCREEN};
+use super::{Mode, Ppu, LCD};
 
+/// Pixel drawing interval.
 #[derive(Clone, Debug, Default)]
 pub struct Draw {
     pub(crate) pipe: Pipeline,
@@ -24,34 +25,37 @@ impl Draw {
         // Execute the next fetch cycle
         self.pipe.fetch(ppu, &self.objs);
 
+        // Extract x-position
+        let mut xpos: u16 = self.pipe.xpos().into();
         // If we have a pixel to draw, draw it
-        let mut xpos = self.pipe.xpos() as usize;
         if let Some(pixel) = self.pipe.shift(ppu) {
-            // Calculate pixel index on screen
-            let ypos = ppu.file.ly.load() as usize;
-            let idx = (ypos * SCREEN.width) + xpos;
+            // Extract y-position
+            let ypos: u16 = ppu.file.ly.load().into();
 
+            // Calculate pixel index on screen
+            let idx = (ypos * LCD.wd) + xpos;
             // Determine this pixel's color (according to its palette)
             let color = ppu.color(&pixel);
+            // Write pixel into the framebuffer
+            ppu.buf[idx as usize] = color;
 
-            // Write the pixel into the framebuffer
-            ppu.lcd[idx] = color;
-
-            // Retrieve updated x-position
-            xpos = self.pipe.xpos() as usize;
+            // Update x-position
+            xpos = self.pipe.xpos().into();
         }
 
-        // Move to the next dot
+        // Move to next dot
         ppu.dot += 1;
 
-        // Either draw next pixel, or enter HBlank
-        if xpos < SCREEN.width {
+        // Determine next mode
+        if xpos < LCD.wd {
+            // Continue to next pixel
             Mode::Draw(self)
         } else {
             // Increment window internal line counter
-            if self.pipe.was_at_win() {
+            if self.pipe.within_win() {
                 ppu.winln += 1;
             }
+            // Enter hblank
             Mode::HBlank(self.into())
         }
     }

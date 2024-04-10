@@ -3,7 +3,7 @@ use remus::bus::Mux;
 use remus::dev::Device;
 use remus::Shared;
 
-use crate::arch::Bus;
+use crate::dev::Bus;
 
 /// Memory bus architecture.
 #[derive(Debug, Default)]

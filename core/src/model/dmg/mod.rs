@@ -1,4 +1,4 @@
-//! DMG-01: [Game Boy].
+//! DMG: [Game Boy].
 //!
 //! [Game Boy]: https://en.wikipedia.org/wiki/Game_Boy
 
@@ -10,19 +10,18 @@ use remus::dev::Device;
 use remus::mem::Ram;
 use remus::{Block, Board, Location, Machine, Shared};
 
+use self::apu::Apu;
 use self::cpu::Cpu;
 use self::dbg::Doctor;
+use self::joypad::Joypad;
 use self::noc::NoC;
-use self::ppu::Vram;
+use self::pic::Pic;
+use self::ppu::Ppu;
+use self::serial::Serial;
 use self::soc::SoC;
-use crate::dmg::cpu::Processor;
-use crate::emu::Emulator;
-use crate::hw::cart::Cartridge;
-use crate::hw::joypad::Joypad;
-use crate::hw::pic::Pic;
-use crate::hw::ppu::Ppu;
-use crate::hw::serial::Serial;
-use crate::hw::timer::Timer;
+use self::timer::Timer;
+use crate::api::proc::Processor;
+use crate::api::{self, Core};
 
 mod boot;
 mod noc;
@@ -30,25 +29,25 @@ mod soc;
 
 pub mod dbg;
 
+pub use self::apu::Wave;
 pub use self::boot::Boot;
-pub use crate::emu::Screen as Dimensions;
+pub use self::cart::Cartridge;
+pub use self::joypad::Button;
+pub use self::ppu::{Vram, LCD};
 pub use crate::hw::cpu::sm83 as cpu;
-pub use crate::hw::joypad::Button;
-pub use crate::hw::ppu::Screen;
-pub use crate::hw::{cart, pic, ppu, serial, timer};
+pub use crate::hw::{apu, cart, joypad, pic, ppu, serial, timer};
+
+/// DMG frequency.
+///
+/// Crystal oscillator frequency of 4,194,304 Hz.
+pub const FREQ: u32 = 4_194_304;
 
 /// Work RAM model.
 pub type Wram = Ram<u8, 0x2000>;
 /// High RAM model.
 pub type Hram = Ram<u8, 0x007f>;
 
-/// DMG-01 screen specification.
-pub const SCREEN: Dimensions = Dimensions {
-    width: 160,
-    height: 144,
-};
-
-/// DMG-01 Game Boy emulator.
+/// DMG emulator.
 #[derive(Debug)]
 pub struct GameBoy {
     // State
@@ -105,10 +104,10 @@ impl Default for GameBoy {
 impl GameBoy {
     /// Constructs a new `GameBoy`.
     ///
-    /// The returned instance will be fully set-up for emulation to begin
-    /// without further setup.
+    /// # Note
     ///
-    /// Note that [`Cartridge`]s must be manually loaded with [`Self::load`].
+    /// In order to emulate a [`Cartridge`], it must be separately loaded with
+    /// [`load`][`api::cart::Support::load`].
     #[must_use]
     pub fn new() -> Self {
         Self::default().setup().boot()
@@ -116,10 +115,10 @@ impl GameBoy {
 
     /// Constructs a new `GameBoy` using the provided boot ROM.
     ///
-    /// The returned instance will be fully set-up for emulation to begin
-    /// without further setup.
+    /// # Note
     ///
-    /// Note that [`Cartridge`]s must be manually loaded with [`Self::load`].
+    /// In order to emulate a [`Cartridge`], it must be separately loaded with
+    /// [`load`][`api::cart::Support::load`].
     #[must_use]
     pub fn with(boot: Boot) -> Self {
         // Construct a default instance
@@ -218,47 +217,21 @@ impl GameBoy {
         self
     }
 
-    /// Loads a game [`Cartridge`] into the `GameBoy`
-    ///
-    /// If a cartridge has already been loaded, it will be disconnected and
-    /// replaced.
-    pub fn load(&mut self, cart: Cartridge) {
-        // Disconnect cartridge from the bus
-        let ebus = &mut *self.noc.ext.borrow_mut();
-        if let Some(cart) = &self.cart {
-            cart.disconnect(ebus);
-        }
-        // Connect the supplied cartridge
-        cart.connect(ebus);
-        self.cart = Some(cart);
-    }
-
     /// Returns debug information about the model.
     #[must_use]
     pub fn debug(&mut self) -> dbg::Debug {
         dbg::Debug::new(self)
     }
 
-    /// (Re)sets introspection with [Gameboy Doctor][gbdoc].
+    /// Enables or disables CPU introspection logs for [Gameboy Doctor][gbdoc].
     ///
     /// # Note
     ///
-    /// Any uncollected logs will be lost.
+    /// Upon disable, any uncollected logs will be lost.
     ///
     /// [gbdoc]: https://robertheaton.com/gameboy-doctor
     pub fn doctor(&mut self, enable: bool) {
         self.doc = enable.then(Doctor::default);
-    }
-
-    /// Gets the `GameBoy`'s CPU.
-    #[must_use]
-    pub fn cpu(&self) -> &Cpu {
-        &self.soc.cpu
-    }
-
-    /// Mutably gets the `GameBoy`'s CPU.
-    pub fn cpu_mut(&mut self) -> &mut Cpu {
-        &mut self.soc.cpu
     }
 
     /// Gets the `GameBoy`'s programmable interrupt controller.
@@ -281,17 +254,6 @@ impl GameBoy {
     /// Mutably gets the `GameBoy`'s PPU.
     pub fn ppu_mut(&mut self) -> &mut Ppu {
         &mut self.soc.ppu
-    }
-
-    /// Gets the `GameBoy`'s serial.
-    #[must_use]
-    pub fn serial(&self) -> &Serial {
-        &self.serial
-    }
-
-    /// Mutably gets the `GameBoy`'s serial.
-    pub fn serial_mut(&mut self) -> &mut Serial {
-        &mut self.serial
     }
 
     /// Gets the `GameBoy`'s timer.
@@ -330,19 +292,99 @@ impl Block for GameBoy {
     }
 }
 
-impl Emulator for GameBoy {
-    type Input = Button;
+impl Core for GameBoy {}
 
-    type Screen = Screen;
+impl api::audio::Support for GameBoy {
+    type Audio = Apu;
 
-    fn send(&mut self, keys: &[Self::Input]) {
-        self.joypad.input(keys);
+    fn audio(&self) -> &Self::Audio {
+        &self.soc.apu
     }
 
-    fn redraw(&self, mut callback: impl FnMut(&Screen)) {
-        if self.soc.ppu.ready() {
-            callback(self.soc.ppu.screen());
+    fn audio_mut(&mut self) -> &mut Self::Audio {
+        &mut self.soc.apu
+    }
+}
+
+impl api::cart::Support for GameBoy {
+    /// Game ROM cartridge.
+    type Cartridge = Cartridge;
+
+    /// Loads a game [`Cartridge`] into the [`GameBoy`].
+    ///
+    /// If a cartridge has already been loaded, it will be disconnected and
+    /// replaced.
+    fn load(&mut self, cart: Self::Cartridge) {
+        // Disconnect previous cartridge
+        if let Some(cart) = self.eject() {
+            warn!("ejected previous cartridge: {}", cart.header());
+        };
+        // Insert supplied cartridge
+        let ebus = &mut *self.noc.ext.borrow_mut();
+        cart.connect(ebus);
+        self.cart = Some(cart);
+    }
+
+    fn cart(&mut self) -> Option<&Self::Cartridge> {
+        self.cart.as_ref()
+    }
+
+    fn eject(&mut self) -> Option<Self::Cartridge> {
+        // Disconnect from bus
+        let ebus = &mut *self.noc.ext.borrow_mut();
+        if let Some(cart) = &self.cart {
+            cart.disconnect(ebus);
         }
+        // Remove inserted cartridge
+        self.cart.take()
+    }
+}
+
+impl api::proc::Support for GameBoy {
+    type Processor = Cpu;
+
+    fn cpu(&self) -> &Self::Processor {
+        &self.soc.cpu
+    }
+
+    fn cpu_mut(&mut self) -> &mut Self::Processor {
+        &mut self.soc.cpu
+    }
+}
+
+impl api::joypad::Support for GameBoy {
+    type Joypad = Joypad;
+
+    fn joypad(&self) -> &Self::Joypad {
+        &self.joypad
+    }
+
+    fn joypad_mut(&mut self) -> &mut Self::Joypad {
+        &mut self.joypad
+    }
+}
+
+impl api::serial::Support for GameBoy {
+    type Serial = Serial;
+
+    fn serial(&self) -> &Self::Serial {
+        &self.serial
+    }
+
+    fn serial_mut(&mut self) -> &mut Self::Serial {
+        &mut self.serial
+    }
+}
+
+impl api::video::Support for GameBoy {
+    type Video = Ppu;
+
+    fn video(&self) -> &Self::Video {
+        &self.soc.ppu
+    }
+
+    fn video_mut(&mut self) -> &mut Self::Video {
+        &mut self.soc.ppu
     }
 }
 
@@ -403,6 +445,7 @@ impl Machine for GameBoy {
 mod tests {
     use remus::Address;
 
+    use self::api::cart::Support as _;
     use super::*;
 
     /// Sample boot ROM.

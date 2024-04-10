@@ -114,7 +114,7 @@ impl Fetch {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum Location {
     #[default]
     Background,

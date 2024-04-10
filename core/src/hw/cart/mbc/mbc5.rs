@@ -4,7 +4,7 @@ use remus::dev::{Device, Dynamic};
 use remus::{Address, Block, Shared};
 
 use super::{Mbc, Memory};
-use crate::arch::Bus;
+use crate::dev::Bus;
 
 type Bank = adapt::Bank<u16, u8>;
 

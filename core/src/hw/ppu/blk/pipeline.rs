@@ -57,7 +57,7 @@ impl Pipeline {
             self.ready = true;
         }
         // - The window border is encountered
-        let reached_window = !self.was_at_win() && self.is_at_win(ppu);
+        let reached_window = !self.within_win() && self.found_win(ppu);
         if reached_window {
             // Mark the location as in the window
             self.bgwin.loc = Location::Window;
@@ -108,8 +108,8 @@ impl Pipeline {
         }
     }
 
-    /// Checks if the current position is a window boundary.
-    fn is_at_win(&self, ppu: &Ppu) -> bool {
+    /// Checks if the position is at a window boundary.
+    fn found_win(&self, ppu: &Ppu) -> bool {
         // Extract scanline info
         let lcdc = ppu.file.lcdc.load();
         let ly = ppu.file.ly.load();
@@ -117,18 +117,18 @@ impl Pipeline {
         let wx = ppu.file.wx.load();
 
         // The window is reached if:
-        // - The window is enabled
+        // - window is enabled
         let enabled = Lcdc::WinEnable.get(lcdc);
-        // - The y-position is NOT above the window
+        // - y-position is NOT above window
         let above = ly < wy;
-        // - The x-position is NOT left of the window
+        // - x-position is NOT left of window
         let left = self.xpos + 7 < wx;
 
         enabled && !above && !left
     }
 
-    /// Checks if the window has already been reached this scanline.
-    pub fn was_at_win(&self) -> bool {
+    /// Checks if the position is within a window.
+    pub fn within_win(&self) -> bool {
         self.bgwin.loc == Location::Window
     }
 }

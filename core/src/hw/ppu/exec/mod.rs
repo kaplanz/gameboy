@@ -7,12 +7,12 @@ use self::draw::Draw;
 use self::hblank::HBlank;
 use self::scan::Scan;
 use self::vblank::VBlank;
-use super::{blk, sprite, Interrupt, Lcdc, Ppu, SCREEN};
+use super::{blk, sprite, Interrupt, Lcdc, Ppu, LCD};
 
-mod draw;
-mod hblank;
-mod scan;
-mod vblank;
+pub mod draw;
+pub mod hblank;
+pub mod scan;
+pub mod vblank;
 
 #[derive(Clone, Debug)]
 pub enum Mode {

@@ -1,16 +1,20 @@
 //! Joypad controller.
 
+use std::collections::HashSet;
+use std::ops::{BitOr, Not};
+
 use log::{debug, trace};
 use remus::bus::Mux;
 use remus::dev::Device;
-use remus::{reg, Address, Block, Board, Cell, Linked, Shared};
+use remus::{Address, Block, Board, Cell, Linked, Shared};
 
 use super::pic::{Interrupt, Pic};
-use crate::arch::Bus;
+use crate::api::joypad::{Event, Input, Joypad as Api, State};
+use crate::dev::Bus;
 
 /// Joypad buttons.
 #[rustfmt::skip]
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Button {
     A      = 0b0010_0001,
     B      = 0b0010_0010,
@@ -20,6 +24,32 @@ pub enum Button {
     Left   = 0b0001_0010,
     Up     = 0b0001_0100,
     Down   = 0b0001_1000,
+}
+
+impl Button {
+    /// Gets the button's underlying bitmask.
+    fn mask(self) -> u8 {
+        self as u8
+    }
+}
+
+impl Input for Button {}
+
+/// Joypad select.
+#[derive(Clone, Copy, Debug, Default)]
+pub enum Select {
+    #[default]
+    None = 0b0000_0000,
+    DPad = 0b0001_1111,
+    Keys = 0b0010_1111,
+    Both = 0b0011_1111,
+}
+
+impl Select {
+    /// Gets the selection's underlying bitmask.
+    fn mask(self) -> u8 {
+        self as u8
+    }
 }
 
 /// Joypad model.
@@ -38,6 +68,7 @@ pub struct Joypad {
 
 impl Joypad {
     /// Constructs a new `Joypad`.
+    #[must_use]
     pub fn new(pic: Shared<Pic>) -> Self {
         Self {
             // Control
@@ -52,34 +83,32 @@ impl Joypad {
     pub fn con(&self) -> Shared<Control> {
         self.con.clone()
     }
+}
 
-    /// Handle pressed button inputs.
-    pub fn input(&mut self, keys: &[Button]) {
-        // Retrieve controller state (inverted)
-        let prev = !self.con.load();
-        let is_empty = keys.is_empty();
+impl Api for Joypad {
+    type Button = Button;
 
-        // Calculate updated state
-        let next = keys
-            // Use `.iter().copied()` to allow use of `btns` later for logging.
-            .iter()
-            .copied()
-            // Filter buttons as requested in the controller register
-            .filter(|&btn| (prev & btn as u8) & 0x30 != 0)
-            // Fold matching pressed buttons' corresponding bits into a byte
-            .fold(prev & 0xf0, |acc, btn| acc | ((btn as u8) & 0x0f));
-
-        // Check if value has updated
-        if (prev & 0x0f) != (next & 0x0f) {
-            // Request an interrupt
-            self.pic.borrow_mut().req(Interrupt::Joypad);
-            debug!("input {next:#010b}: {keys:?}"); // log updates with `debug`
-        } else if !is_empty {
-            trace!("input {next:#010b}: {keys:?}"); // log others with `trace`
+    fn recv(&mut self, events: impl IntoIterator<Item = Event<Self::Button>>) {
+        // Borrow controller state
+        let keys = &mut self.con.borrow_mut().keys;
+        // Update pressed keys
+        let mut updated = false;
+        for Event { input: key, state } in events {
+            trace!("event: {key:?}, {state:?}");
+            // Update internal state
+            updated |= match state {
+                State::Dn => keys.insert(key),
+                State::Up => keys.remove(&key),
+            };
         }
-
-        // Update controller state (inverted)
-        self.con.borrow_mut().0.store(!next);
+        // Handle key updates
+        if updated {
+            debug!("updated keys: {keys:?}");
+            // Schedule an interrupt on changes
+            self.pic.borrow_mut().req(Interrupt::Joypad);
+        } else {
+            trace!("received no input events");
+        }
     }
 }
 
@@ -115,8 +144,11 @@ impl Linked<Pic> for Joypad {
 }
 
 /// Player input register.
-#[derive(Debug)]
-pub struct Control(reg::Register<u8>);
+#[derive(Debug, Default)]
+pub struct Control {
+    ctrl: Select,
+    keys: HashSet<Button>,
+}
 
 impl Address<u16, u8> for Control {
     fn read(&self, _: u16) -> u8 {
@@ -136,20 +168,36 @@ impl Block for Control {
 
 impl Cell<u8> for Control {
     fn load(&self) -> u8 {
-        self.0.load()
+        // Extract control mode, mask from control
+        let mode = 0x30 & self.ctrl.mask();
+        let mask = 0x0f & self.ctrl.mask();
+        // Determine byte-value from state
+        self.keys
+            .iter()
+            .copied()
+            // get bitmask for each key
+            .map(Button::mask)
+            // keep only selected keys
+            .filter(|key| key & mode != 0)
+            // mask key index bits
+            .map(|key| key & mask)
+            // apply selected mode
+            .fold(mode, BitOr::bitor)
+            // values are read inverted
+            .not()
     }
 
-    fn store(&mut self, mut value: u8) {
-        // NOTE: Only bits masked bits are writable
+    fn store(&mut self, value: u8) {
+        // NOTE: Only key select bits are writable
         const MASK: u8 = 0b0011_0000;
-        value = (value & MASK) | (self.load() & !MASK);
-        self.0.store(value);
-    }
-}
-
-impl Default for Control {
-    fn default() -> Self {
-        Self(reg::Register::from(0xff))
+        // Update selection control
+        self.ctrl = match !value & MASK {
+            0b0000_0000 => Select::None,
+            0b0001_0000 => Select::DPad,
+            0b0010_0000 => Select::Keys,
+            0b0011_0000 => Select::Both,
+            _ => unreachable!(),
+        };
     }
 }
 

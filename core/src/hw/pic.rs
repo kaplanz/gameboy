@@ -9,7 +9,7 @@ use remus::dev::Device;
 use remus::{reg, Address, Block, Board, Cell, Location, Shared};
 use thiserror::Error;
 
-use crate::arch::Bus;
+use crate::dev::Bus;
 
 #[allow(clippy::doc_markdown)]
 /// 8-bit serial control register set.
@@ -172,7 +172,7 @@ impl Device<u16, u8> for Register {}
 
 /// Interrupt type.
 #[rustfmt::skip]
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Interrupt {
     // ┌─────┬──────────┬─────────┐
     // │ Bit │  Source  │ Handler │

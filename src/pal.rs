@@ -1,4 +1,4 @@
-//! Color palettes.
+//! Color Palettes.
 
 use std::fmt::Debug;
 use std::ops::Index;

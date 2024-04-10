@@ -5,8 +5,7 @@ use remus::dev::Device;
 use remus::{reg, Address, Block, Board, Cell, Linked, Machine, Shared};
 
 use super::ppu::Oam;
-use crate::arch::Bus;
-use crate::dev::Unmapped;
+use crate::dev::{Bus, Unmapped};
 
 const OAM: u8 = 160;
 

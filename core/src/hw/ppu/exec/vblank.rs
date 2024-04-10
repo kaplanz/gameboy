@@ -3,35 +3,39 @@ use std::fmt::Display;
 use remus::Cell;
 
 use super::hblank::HBlank;
-use super::{Mode, Ppu, SCREEN};
+use super::{Mode, Ppu, LCD};
 
+/// Vertical blanking interval.
 #[derive(Clone, Debug, Default)]
 pub struct VBlank;
 
 impl VBlank {
-    /// Number of lines for which `VBlank` runs.
-    pub const LINES: usize = 10;
+    /// Number of scanlines of vblank.
+    pub const LAST: u16 = LCD.ht + 10;
 
     pub fn exec(self, ppu: &mut Ppu) -> Mode {
-        // VBlank lasts for 456 dots per scanline
+        // Move to next dot
         ppu.dot += 1;
+
+        // Determine next mode
         if ppu.dot < HBlank::DOTS {
+            // Continue vblank
             Mode::VBlank(self)
         } else {
-            // Increment scanline at the 456th dot
+            // Increment scanline
             let ly = ppu.file.ly.load() + 1;
             ppu.file.ly.store(ly);
             // Reset dot-clock
             ppu.dot = 0;
 
-            // VBlank lasts for scanlines 144..154
-            if (ly as usize) < SCREEN.height + Self::LINES {
-                // Resume VBlank
+            // Determine next mode
+            if u16::from(ly) < Self::LAST {
+                // Continue vblank
                 Mode::VBlank(self)
             } else {
                 // Reset scanline
                 ppu.file.ly.store(0);
-                // Restart PPU
+                // Enter scan (next frame)
                 Mode::Scan(self.into())
             }
         }

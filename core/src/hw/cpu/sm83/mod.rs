@@ -1,4 +1,4 @@
-//! SM83 CPU core.
+//! SM83 processor core.
 //!
 //! Model for the CPU core present on the Sharp LR35902.
 
@@ -10,13 +10,13 @@ use remus::reg::Register;
 use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
 use thiserror::Error;
 
-use crate::arch::Bus;
+use crate::api::proc::Processor;
+use crate::dev::Bus;
 use crate::hw::pic::Pic;
 
 mod insn;
 
 pub use self::insn::Instruction;
-pub use super::Processor;
 
 /// Register sets.
 pub mod reg {
@@ -469,7 +469,7 @@ impl Display for File {
 }
 
 /// 16-bit wide linked register.
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy)]
 struct Alias {
     load: fn(&File) -> u16,
     store: fn(&mut File, u16),
@@ -492,7 +492,7 @@ impl Debug for Alias {
 }
 
 /// CPU flags.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 enum Flag {
     Z = 0b1000_0000,
     N = 0b0100_0000,

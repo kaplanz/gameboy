@@ -7,23 +7,36 @@ use remus::mem::Ram;
 use remus::reg::Register;
 use remus::{Address, Block, Board, Cell, Linked, Location, Machine, Shared};
 
+use self::exec::hblank::HBlank;
+use self::exec::vblank::VBlank;
 use self::pixel::{Meta, Palette, Pixel};
 use self::tile::Tile;
 use super::dma::Control as Dma;
 use super::pic::{Interrupt, Pic};
-use crate::arch::Bus;
-use crate::dmg::SCREEN;
+use crate::api::video::{self, Aspect, Video as Api};
+use crate::dev::Bus;
 
 mod blk;
 mod exec;
 mod pixel;
-mod screen;
 mod sprite;
 mod tile;
 
 pub use self::exec::Mode;
 pub use self::pixel::Color;
-pub use self::screen::Screen;
+
+/// Frame rate.
+///
+/// Video frame refresh occurs every 70,224 clock cycles. When running at the
+/// full 4 MiHz, this equates to a frequency of ~59.7275 Hz.
+#[allow(clippy::doc_markdown)]
+pub const RATE: u32 = 70224;
+
+/// LCD resolution.
+pub const LCD: Aspect = Aspect { wd: 160, ht: 144 };
+
+/// LCD framebuffer.
+pub type Frame = video::Frame<Color, { LCD.depth() }>;
 
 /// Video RAM.
 ///
@@ -112,11 +125,11 @@ pub enum Control {
 #[derive(Debug)]
 pub struct Ppu {
     // State
-    dot: usize,
+    dot: u16,
     winln: u8,
     mode: Mode,
     // Output
-    lcd: Screen,
+    buf: Frame,
     // Control
     // ┌──────┬──────────┬─────┐
     // │ Size │   Name   │ Dev │
@@ -143,11 +156,11 @@ impl Ppu {
     pub fn new(vram: Shared<Vram>, oam: Shared<Oam>, dma: Shared<Dma>, pic: Shared<Pic>) -> Self {
         Self {
             // State
-            dot: usize::default(),
+            dot: u16::default(),
             winln: u8::default(),
             mode: Mode::default(),
             // Output
-            lcd: Screen::default(),
+            buf: [Color::default(); LCD.depth()],
             // Control
             file: File::new(dma),
             // Memory
@@ -164,23 +177,9 @@ impl Ppu {
         Debug::new(self)
     }
 
-    /// Check if the screen is ready to be redrawn.
-    #[must_use]
-    pub fn ready(&self) -> bool {
-        // Redraw the screen once per frame, when:
-        // 1. PPU is enabled
-        let enabled = self.enabled();
-        // 2. Scanline is top of screen
-        let topline = self.file.ly.load() == 0;
-        // 3. Dot is first of scanline
-        let firstdot = self.dot == 0;
-
-        enabled && topline && firstdot
-    }
-
     /// Gets the current exxecution cycle.
     #[must_use]
-    pub fn dot(&self) -> usize {
+    pub fn dot(&self) -> u16 {
         self.dot
     }
 
@@ -192,8 +191,8 @@ impl Ppu {
 
     /// Get a reference to the PPU's screen.
     #[must_use]
-    pub fn screen(&self) -> &Screen {
-        &self.lcd
+    pub fn screen(&self) -> &Frame {
+        &self.buf
     }
 
     /// Gets a shared reference to the PPU's video RAM.
@@ -216,6 +215,35 @@ impl Ppu {
             Palette::Obp1 => self.file.obp1.load(),
         };
         pixel.col.recolor(pal)
+    }
+}
+
+impl Api for Ppu {
+    const SIZE: Aspect = LCD;
+
+    type Pixel = Color;
+
+    fn ready(&self) -> bool {
+        // In order to consider the frame ready to be rendered, the following
+        // conditions must be met:
+        //
+        // 1. PPU is enabled
+        let isenable = self.enabled();
+        // 2. Mode is vertical blank
+        let blanking = matches!(self.mode, Mode::VBlank(_));
+        // 3. Scanline is last of virtual frame
+        let lastline = (VBlank::LAST - 1) == self.file.ly.load().into();
+        // 4. Dot is final of virtual frame
+        let finaldot = (HBlank::DOTS - 1) == self.dot;
+        //
+        // In brief, this will cause
+        //
+        // Return if all conditions are met
+        isenable && blanking && lastline && finaldot
+    }
+
+    fn frame(&self) -> &[Self::Pixel] {
+        &self.buf
     }
 }
 
@@ -396,7 +424,7 @@ impl Board<u16, u8> for File {
 }
 
 #[rustfmt::skip]
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 enum Lcdc {
     Enable      = 0b1000_0000,
     WinMap      = 0b0100_0000,
@@ -418,7 +446,7 @@ impl Lcdc {
 #[derive(Debug)]
 pub struct Debug {
     /// Tile data.
-    pub tdat: [Color; 0x06000],
+    pub tile: [Color; 0x06000],
     /// Tile map 1.
     pub map1: [Color; 0x10000],
     /// Tile map 2.
@@ -467,7 +495,11 @@ impl Debug {
         let map2 = Self::render(&map2, ppu, meta, 32); // 32x32 tiles
 
         // Return debug info
-        Self { tdat, map1, map2 }
+        Self {
+            tile: tdat,
+            map1,
+            map2,
+        }
     }
 
     /// Calculates the tile index using the indexing mode.

@@ -1,4 +1,6 @@
 use thiserror::Error;
+
+use crate::api::video;
 #[derive(Clone, Debug)]
 pub struct Pixel {
     /// Color value.
@@ -37,8 +39,8 @@ impl Pixel {
     }
 }
 
-/// Pixel color values.
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+/// Color values.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum Color {
     /// Lightest
     #[default]
@@ -57,6 +59,8 @@ impl Color {
     }
 }
 
+impl video::Pixel for Color {}
+
 impl TryFrom<u8> for Color {
     type Error = Error;
 
@@ -72,7 +76,7 @@ impl TryFrom<u8> for Color {
 }
 
 /// Pixel metadata.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Meta {
     /// Color palette.
     pub pal: Palette,
@@ -80,7 +84,7 @@ pub struct Meta {
     pub bgp: bool,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum Palette {
     BgWin,
     Obp0,

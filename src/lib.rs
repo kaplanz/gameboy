@@ -31,11 +31,12 @@
 
 #![warn(clippy::pedantic)]
 
-mod api;
-
+pub mod app;
 #[cfg(feature = "gbd")]
 pub mod gbd;
+pub mod pal;
 
-pub use api::*;
 #[doc(inline)]
 pub use rugby_core as core;
+
+pub use crate::core::api as emu;
