@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 
-use gameboy::core::dmg::cart::Cartridge;
-use gameboy::core::dmg::cpu::Cpu;
-use gameboy::core::dmg::GameBoy;
 use remus::{Location, Machine};
+use rugby::core::dmg::cart::Cartridge;
+use rugby::core::dmg::cpu::Cpu;
+use rugby::core::dmg::GameBoy;
 use thiserror::Error;
 
 type Result<T> = std::result::Result<T, Error>;

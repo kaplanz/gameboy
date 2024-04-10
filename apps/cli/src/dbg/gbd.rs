@@ -3,8 +3,8 @@ use std::fs;
 use std::path::PathBuf;
 
 use anyhow::Context;
-use gameboy::gbd::prompt::{Error, Prompt};
 use log::{debug, error, trace};
+use rugby::gbd::prompt::{Error, Prompt};
 use rustyline::error::ReadlineError::{Eof, Interrupted as Int};
 use rustyline::history::History;
 use rustyline::DefaultEditor as Editor;

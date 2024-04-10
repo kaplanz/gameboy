@@ -1,4 +1,4 @@
-# gameboy
+# rugby
 
 <p align="center">
   <img width="100" height="100" src="./docs/assets/img/gameboy.svg"/>
@@ -67,8 +67,8 @@ crates are used with the structure as follows:
 
 > [!TIP]
 >
-> For downstream library users, I recommend using the top-level `gameboy` crate
-> rather than directly using `gameboy-core`, as it better structured for end
+> For downstream library users, I recommend using the top-level `rugby` crate
+> rather than directly using `rugby-core`, as it better structured for end
 > users and includes useful supporting modules.
 
 ## Progress
@@ -194,8 +194,8 @@ conditions of either license pursuant to the rights granted by the chosen
 license.
 
 <!-- Reference-style badges -->
-[deps.badge]: https://deps.rs/repo/github/kaplanz/gameboy/status.svg
-[deps.hyper]: https://deps.rs/repo/github/kaplanz/gameboy
+[deps.badge]: https://deps.rs/repo/github/kaplanz/rugby/status.svg
+[deps.hyper]: https://deps.rs/repo/github/kaplanz/rugby
 
 <!-- Reference-style files -->
 [license.ap2]:  ./LICENSE-APACHE

@@ -9,12 +9,12 @@ use std::string::ToString;
 
 use anyhow::{ensure, Context, Result};
 use clap::Parser;
-use gameboy::core::dmg::cart::Cartridge;
-use gameboy::core::dmg::{Boot, Dimensions, GameBoy, SCREEN};
-#[cfg(feature = "gbd")]
-use gameboy::gbd::Debugger;
-use gameboy::gbd::Portal;
 use log::{error, info, trace, warn};
+use rugby::core::dmg::cart::Cartridge;
+use rugby::core::dmg::{Boot, Dimensions, GameBoy, SCREEN};
+#[cfg(feature = "gbd")]
+use rugby::gbd::Debugger;
+use rugby::gbd::Portal;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::EnvFilter;
 
@@ -43,7 +43,7 @@ mod gui;
 /// Name of this crate.
 ///
 /// This may be used for base subdirectories.
-pub const NAME: &str = "gameboy";
+pub const NAME: &str = "rugby";
 
 /// Game Boy main clock frequency, set to 4,194,304 Hz.
 pub const FREQ: u32 = 4_194_304;

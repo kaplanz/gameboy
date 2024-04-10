@@ -5,16 +5,16 @@ use std::sync::mpsc;
 use std::time::Instant;
 
 use anyhow::Context;
-#[cfg(any(feature = "doctor", feature = "view"))]
-use gameboy::core::dmg;
-use gameboy::core::dmg::{Button, GameBoy, Screen};
-use gameboy::core::Emulator;
-#[cfg(feature = "gbd")]
-use gameboy::gbd::{self, Debugger};
-use gameboy::pal::Palette;
 use log::{debug, trace};
 use minifb::Key;
 use remus::{Clock, Machine};
+#[cfg(any(feature = "doctor", feature = "view"))]
+use rugby::core::dmg;
+use rugby::core::dmg::{Button, GameBoy, Screen};
+use rugby::core::Emulator;
+#[cfg(feature = "gbd")]
+use rugby::gbd::{self, Debugger};
+use rugby::pal::Palette;
 
 #[cfg(feature = "doctor")]
 use crate::dbg::doc::Doctor;

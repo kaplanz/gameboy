@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::{Args, ValueEnum, ValueHint};
-use gameboy::pal;
+use rugby::pal;
 use serde::Deserialize;
 
 use crate::FREQ;

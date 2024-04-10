@@ -6,8 +6,8 @@
 //! # Examples
 //!
 //! ```
-//! use gameboy::core::dmg::cart::Cartridge;
-//! use gameboy::core::dmg::GameBoy;
+//! use rugby::core::dmg::cart::Cartridge;
+//! use rugby::core::dmg::GameBoy;
 //! use remus::Machine; // for `Machine::cycle`
 //!
 //! // Instantiate a cartridge from ROM bytes
@@ -38,4 +38,4 @@ pub mod gbd;
 
 pub use api::*;
 #[doc(inline)]
-pub use gameboy_core as core;
+pub use rugby_core as core;

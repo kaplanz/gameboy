@@ -1,5 +1,5 @@
 [package]
-name = "gameboy-core"
+name = "rugby-core"
 version = "0.1.0"
 authors = { workspace = true }
 edition = "2021"

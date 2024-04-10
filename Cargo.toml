@@ -1,5 +1,5 @@
 [package]
-name = "gameboy"
+name = "rugby"
 version = "0.1.0"
 authors = { workspace = true }
 edition = "2021"
@@ -20,7 +20,7 @@ members = [
 
 [workspace.package]
 authors = ["Zakhary Kaplan <me@zakhary.dev>"]
-repository = "https://github.com/kaplanz/gameboy"
+repository = "https://github.com/kaplanz/rugby"
 license = "MIT OR Apache-2.0"
 
 [features]
@@ -44,7 +44,6 @@ bytecount = { version = "0.6.7", optional = true }
 chex = { version = "0.1.0", path = "crates/chex" }
 derange = { version = "0.1.0", path = "crates/derange", optional = true }
 displaydoc = { version = "0.2.4", optional = true }
-gameboy-core = { path = "core" }
 indexmap = { version = "2.2.6", optional = true }
 log = { version = "0.4.21", optional = true }
 num = { version = "0.4.1", optional = true }
@@ -52,5 +51,6 @@ pest = { version = "2.7.9", optional = true }
 pest_derive = { version = "2.7.9", optional = true }
 phex = { version = "0.1.0", path = "crates/phex", optional = true }
 remus = { git = "https://github.com/kaplanz/remus.git" }
+rugby-core = { path = "core" }
 serde = { version = "1.0.197", features = ["derive"] }
 thiserror = "1.0.58"

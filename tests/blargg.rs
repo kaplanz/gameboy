@@ -1,8 +1,8 @@
 use std::io::Read;
 
-use gameboy::core::dmg::cart::Cartridge;
-use gameboy::core::dmg::GameBoy;
 use remus::Machine;
+use rugby::core::dmg::cart::Cartridge;
+use rugby::core::dmg::GameBoy;
 use thiserror::Error;
 
 type Result<T> = std::result::Result<T, Error>;
