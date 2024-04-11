@@ -15,7 +15,9 @@ use rugby::pal::Palette;
 
 mod win;
 
-pub use self::win::{dbg, Graphics};
+#[cfg(feature = "win")]
+pub use self::win::dbg;
+pub use self::win::Graphics;
 
 /// Frontend options.
 #[derive(Debug)]

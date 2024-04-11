@@ -1,9 +1,11 @@
+#[cfg(feature = "doc")]
 use std::io::Write;
 #[cfg(feature = "gbd")]
 use std::sync::mpsc;
 use std::time::Instant;
 
 use anyhow::Context as _;
+#[allow(unused)]
 use log::{debug, error, trace};
 use remus::{Clock, Machine};
 use rugby::app::joypad::Joypad;
@@ -22,6 +24,7 @@ use rugby::gbd;
 use rugby::gbd::Debugger;
 
 use self::ctx::Counter;
+#[cfg(feature = "win")]
 use self::gui::dbg::Region;
 #[cfg(feature = "doc")]
 use crate::dbg::doc::Doctor;

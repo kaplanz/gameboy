@@ -36,7 +36,7 @@ fn run() -> Result<()> {
     args.cfg
         .merge(Config::load(&args.conf).context("could not load configuration")?);
     // Initialize logger
-    #[allow(unused_variables)]
+    #[allow(unused)]
     let log = setup::log(args.log.as_deref().unwrap_or_default())
         .context("could not initialize logger")?;
     // Log previous steps
@@ -215,12 +215,18 @@ mod setup {
         Ok(cart)
     }
 
+    #[allow(unused)]
     pub fn app(args: &Cli, emu: GameBoy, log: Log) -> Result<App> {
         // Initialize graphics
         let gui = args
             .headless
             .not()
-            .then(|| gui(args.dbg.win))
+            .then(|| {
+                gui(
+                    #[cfg(feature = "win")]
+                    args.dbg.win,
+                )
+            })
             .transpose()
             .context("could not open graphics")?;
 
@@ -278,11 +284,12 @@ mod setup {
         Ok(app)
     }
 
-    fn gui(dbg: bool) -> Result<Graphics> {
+    fn gui(#[cfg(feature = "win")] dbg: bool) -> Result<Graphics> {
         // Calculate aspect
         let video::Aspect { wd, ht } = LCD;
         let size = (wd.into(), ht.into()).into();
         // Construct GUI
+        #[allow(unused)]
         let mut gui = Graphics::new(NAME, size).context("failed to open main window")?;
         // Open debug windows
         #[cfg(feature = "win")]

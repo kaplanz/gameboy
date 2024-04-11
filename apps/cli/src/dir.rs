@@ -5,6 +5,7 @@ use crate::NAME;
 macro_rules! path {
     ($($dir:tt)*) => {
         $(
+            #[allow(unused)]
             #[doc = concat!("Returns the path to the application's ", stringify!($dir), " directory.")]
             #[must_use]
             pub fn $dir() -> PathBuf {

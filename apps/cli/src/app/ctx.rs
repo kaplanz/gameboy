@@ -37,6 +37,7 @@ impl Counter {
     }
 
     /// Gets the relative cycle delta.
+    #[allow(unused)]
     pub fn delta(&self) -> u32 {
         self.delta
     }
