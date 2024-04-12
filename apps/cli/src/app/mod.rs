@@ -28,7 +28,7 @@ use self::ctx::Counter;
 use self::gui::dbg::Region;
 #[cfg(feature = "doc")]
 use crate::dbg::doc::Doctor;
-use crate::NAME;
+use crate::def::NAME;
 
 mod ctx;
 

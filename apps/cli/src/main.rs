@@ -17,11 +17,6 @@ mod def;
 mod dir;
 mod err;
 
-/// Name of this crate.
-///
-/// This may be used for base subdirectories.
-pub const NAME: &str = "rugby";
-
 fn main() -> Exit {
     match run() {
         Ok(()) => Exit::Success,
@@ -83,7 +78,7 @@ mod setup {
     use crate::dbg::doc::Doctor;
     #[cfg(feature = "gbd")]
     use crate::dbg::gbd::Console;
-    use crate::NAME;
+    use crate::def::NAME;
 
     type Log = Portal<String>;
 

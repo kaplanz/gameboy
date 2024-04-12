@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::NAME;
+use crate::def::NAME;
 
 macro_rules! path {
     ($($dir:tt)*) => {

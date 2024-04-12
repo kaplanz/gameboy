@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use clap::{Args, Parser, ValueHint};
 
 use crate::cfg::{self, Config};
+use crate::def::NAME;
 
 /// Nintendo Game Boy emulator.
 ///

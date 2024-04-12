@@ -5,6 +5,11 @@ use rugby::core::dmg::FREQ;
 use rugby::pal;
 use serde::Deserialize;
 
+/// Name of this crate.
+///
+/// This may be used for base subdirectories.
+pub const NAME: &str = "rugby";
+
 /// Cartridge options.
 #[derive(Args, Debug, Default, Deserialize)]
 #[serde(default)]
