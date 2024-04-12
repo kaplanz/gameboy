@@ -4,7 +4,8 @@ use std::env;
 use std::io::{self, Result};
 use std::path::PathBuf;
 
-use clap::CommandFactory;
+use clap::{CommandFactory, ValueEnum};
+use clap_complete::Shell;
 use clap_mangen::Man;
 
 use crate::def::NAME;
@@ -37,10 +38,17 @@ fn main() -> Result<()> {
         .map(PathBuf::from)
         .ok_or(io::ErrorKind::NotFound)?;
 
-    // Generate manual page
+    // Build clap command
     let cmd = cli::Cli::command();
+
+    // Generate completions
+    for shell in Shell::value_variants() {
+        clap_complete::generate_to(*shell, &mut cmd.clone(), NAME, &out)?;
+    }
+
+    // Generate manual page
     let man = Man::new(cmd).title(NAME).section(MANSECT);
-    man.generate_to(out)?;
+    man.generate_to(&out)?;
 
     Ok(())
 }
