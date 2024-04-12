@@ -7,7 +7,6 @@ use thiserror::Error;
 use crate::cfg;
 
 /// A convenient type alias for application errors.
-#[allow(unused)]
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// A top-level error caused within the application.

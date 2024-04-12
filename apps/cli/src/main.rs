@@ -1,12 +1,12 @@
 #![warn(clippy::pedantic)]
 
-use anyhow::{Context, Result};
+use anyhow::Context;
 use clap::Parser;
 use log::{trace, warn};
 
 use crate::cfg::Config;
 use crate::cli::Cli;
-use crate::err::Exit;
+use crate::err::{Exit, Result};
 
 mod app;
 mod cfg;
@@ -25,7 +25,7 @@ pub const NAME: &str = "rugby";
 fn main() -> Exit {
     match run() {
         Ok(()) => Exit::Success,
-        Err(e) => Exit::Failure(e.into()),
+        Err(e) => Exit::Failure(e),
     }
 }
 
