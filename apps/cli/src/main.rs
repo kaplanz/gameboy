@@ -127,16 +127,29 @@ mod setup {
             .transpose()
             .context("could not load boot ROM")?;
         // Load cartridge
-        let cart = cart(
-            args.cfg.sw.rom.as_deref(),
-            args.cfg.sw.check,
-            args.cfg.sw.force,
-        )
-        .context("could not load cartridge")?;
+        let load = |path| cart(path, args.cfg.sw.check, args.cfg.sw.force);
+        let cart = args
+            .cfg
+            .sw
+            .rom
+            .as_deref()
+            .map(load)
+            .transpose()
+            .context("could not load cartridge")?;
 
         // Instantiate emulator
         let mut emu = boot.map_or_else(GameBoy::new, GameBoy::with);
-        emu.load(cart); // insert cartridge
+        // Insert cartridge
+        if let Some(cart) = cart {
+            emu.load(cart);
+        } else {
+            // Handle missing cartridge
+            ensure!(
+                args.cfg.sw.force,
+                "missing cartridge; did not specify `--force`"
+            );
+            warn!("missing cartridge");
+        }
 
         // Return emulator
         Ok(emu)
@@ -168,14 +181,7 @@ mod setup {
     }
 
     /// Read and load a cartridge instance from a file.
-    fn cart(path: Option<&Path>, check: bool, force: bool) -> Result<Cartridge> {
-        // Handle missing cartridge
-        let Some(path) = path else {
-            ensure!(force, "missing cartridge; did not specify `--force`");
-            warn!("missing cartridge; defaulting to blank");
-            return Ok(Cartridge::blank());
-        };
-
+    fn cart(path: &Path, check: bool, force: bool) -> Result<Cartridge> {
         // Read ROM file
         let rom = {
             // Open ROM file
