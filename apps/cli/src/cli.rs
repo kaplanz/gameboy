@@ -8,13 +8,13 @@ use clap::{Args, Parser, ValueHint};
 use crate::cfg::{self, Config};
 use crate::def::NAME;
 
-/// Nintendo Game Boy emulator.
+/// Emulate the Nintendo Game Boy.
 ///
-/// Emulate the Nintendo Game Boy. Supports custom palettes, configurable
-/// speeds, interactive debugging, and more!
+/// Cycle-accurate emulation with support for custom palettes, configurable
+/// speed, interactive debugging, and more!
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Parser)]
-#[clap(author, version, about, long_about)]
+#[clap(name = NAME, author, version, about, long_about)]
 pub struct Cli {
     /// Configuration file.
     ///
