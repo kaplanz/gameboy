@@ -48,6 +48,7 @@ pub struct Interface {
     /// DMG color palette.
     ///
     /// Select from a list of preset 2-bit color palettes for the DMG model.
+    /// Custom values can be defined in the configuration file.
     #[clap(short, long = "palette", value_name = "COLOR")]
     #[clap(value_enum)]
     #[serde(rename = "palette")]
@@ -56,6 +57,7 @@ pub struct Interface {
     /// Simulated clock speed.
     ///
     /// Select from a list of possible speeds to simulate the emulator's clock.
+    /// Custom values can be defined in the configuration file.
     #[clap(short, long = "speed", value_name = "FREQ")]
     #[clap(value_enum)]
     #[serde(rename = "speed")]
