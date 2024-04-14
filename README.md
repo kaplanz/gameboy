@@ -17,6 +17,7 @@
 ---
 
 [![dependency status][deps.badge]][deps.hyper]
+[![cli frontend][cli.badge]][apps.cli]
 
 A cycle accurate emulator of the original 1989 Nintendo Game Boy.
 
@@ -135,7 +136,7 @@ crates are used with the structure as follows:
 
 ### Frontend
 
-- [x] Command-line (CLI)
+- [x] [Command-line (CLI)][apps.cli]
   - [x] Configuration file
     - [ ] Re-mappable joypad
   - [x] Debugging support
@@ -197,6 +198,7 @@ conditions of either license pursuant to the rights granted by the chosen
 license.
 
 <!-- Reference-style badges -->
+[cli.badge]:  https://img.shields.io/badge/frontend-cli-blue
 [deps.badge]: https://deps.rs/repo/github/kaplanz/rugby/status.svg
 [deps.hyper]: https://deps.rs/repo/github/kaplanz/rugby
 
@@ -204,6 +206,7 @@ license.
 [license.ap2]:  ./LICENSE-APACHE
 [license.mit]:  ./LICENSE-MIT
 [docs.testing]: ./docs/TESTING.md
+[apps.cli]:     ./apps/cli
 
 <!-- Reference-style links -->
 [blargg]:    https://github.com/retrio/gb-test-roms
