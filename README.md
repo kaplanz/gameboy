@@ -28,12 +28,15 @@ A cycle accurate emulator of the original 1989 Nintendo Game Boy.
 ## Goal
 
 This project aims to provide high-accuracy emulation of all major components in
-the SM83-based Nintendo Game Boy family of consoles. (Note that at this time,
-there are no plans to support the later Game Boy Advance, which has an entirely
-different architecture.) Each component is modular, enabling them to be easily
-substituted for one another. In turn, this leads to emulator instances
-supporting multiple implementations of core components with different
-accuracy/performance margins.
+the SM83-based Nintendo Game Boy family of consoles. Each component is modular,
+enabling them to be easily substituted for one another. In turn, this leads to
+emulator instances supporting multiple implementations of core components with
+different accuracy/performance margins.
+
+> [!NOTE]
+>
+> At this time, there are no plans to support the later Game Boy Advance, which
+> has an entirely different architecture.
 
 ## Organization
 
@@ -113,7 +116,7 @@ crates are used with the structure as follows:
 - [x] Debugger API
   - [x] Breakpoints
     - [x] Instruction address (PC)
-    - [ ] Instruction opocode
+    - [ ] Instruction opcode
     - [ ] I/O operation (read/write)
     - [ ] Softbreak (`ld b, b`)
     - [ ] Dynamic condition
@@ -132,7 +135,7 @@ crates are used with the structure as follows:
 
 ### Frontend
 
-- [x] Command-line
+- [x] Command-line (CLI)
   - [x] Configuration file
     - [ ] Re-mappable joypad
   - [x] Debugging support
