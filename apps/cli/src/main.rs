@@ -32,19 +32,19 @@ fn run() -> Result<()> {
         .merge(Config::load(&args.conf).context("could not load configuration")?);
     // Initialize logger
     #[allow(unused)]
-    let log = setup::log(args.log.as_deref().unwrap_or_default())
+    let log = build::log(args.log.as_deref().unwrap_or_default())
         .context("could not initialize logger")?;
     // Log previous steps
     trace!("{args:#?}");
 
     // Prepare emulator
-    let emu = setup::emu(&args)?;
+    let emu = build::emu(&args)?;
     // Perform early exit
     if args.exit {
         return Ok(());
     }
     // Prepare application
-    let app = setup::app(&args, emu, log)?;
+    let app = build::app(&args, emu, log)?;
     // Run application
     app.run()?;
 
@@ -52,7 +52,7 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-mod setup {
+mod build {
     use std::fs::File;
     use std::io::Read;
     use std::net::UdpSocket;
