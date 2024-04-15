@@ -225,7 +225,7 @@ impl App {
                 // Format, writing if non-empty
                 let note = format!("{info}");
                 if !note.is_empty() {
-                    writeln!(out.log, "{note}").context("failed to write doctor log")?;
+                    writeln!(out, "{note}").context("failed to write doctor log")?;
                 }
             }
 

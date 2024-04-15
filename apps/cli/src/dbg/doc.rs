@@ -1,15 +1,25 @@
 use std::fs::File;
-use std::io::BufWriter;
+use std::io::{BufWriter, Write};
 
 #[derive(Debug)]
 pub struct Doctor {
-    pub log: BufWriter<File>,
+    buf: BufWriter<File>,
 }
 
 impl Doctor {
     pub fn new(log: File) -> Self {
         Self {
-            log: BufWriter::new(log),
+            buf: BufWriter::new(log),
         }
+    }
+}
+
+impl Write for Doctor {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.buf.write(buf)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.buf.flush()
     }
 }
