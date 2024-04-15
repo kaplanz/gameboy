@@ -12,6 +12,9 @@ use toml::from_str as parse;
 use crate::def::{Cartridge, Hardware, Interface};
 use crate::dir;
 
+/// A convenient type alias for configuration errors.
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 /// Returns the path to the application's configuration file.
 #[must_use]
 pub fn path() -> PathBuf {
@@ -48,7 +51,7 @@ impl Config {
     ///
     /// This function will return an error if the configuration could not be
     /// loaded.
-    pub fn load(path: &Path) -> Result<Self, Error> {
+    pub fn load(path: &Path) -> Result<Self> {
         match fs::read_to_string(path) {
             // If the configuration file does not exist, return an empty string,
             // resulting in all fields being populated with defaults.
