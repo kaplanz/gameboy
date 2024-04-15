@@ -21,7 +21,7 @@ pub fn path() -> PathBuf {
     dir::config().join("config.toml")
 }
 
-/// Configuration data.
+/// Configuration options.
 #[derive(Args, Debug, Default, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -82,11 +82,13 @@ impl Config {
     }
 }
 
-/// An error caused by [loading][`Config::load`] configuration.
+/// An error caused by [loading][`Config::load`] the configuration.
 #[derive(Debug, Error)]
 pub enum Error {
+    /// Failed to read config.
     #[error("failed to read config")]
     Read(#[from] io::Error),
+    /// Failed to parse config.
     #[error("failed to parse config")]
     Parse(#[from] toml::de::Error),
 }

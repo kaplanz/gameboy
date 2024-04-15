@@ -1,7 +1,9 @@
+//! Window implementation.
+
 use std::collections::HashSet;
 
-pub use minifb::{Error, Key, Result};
-use minifb::{Scale, ScaleMode, WindowOptions};
+pub use minifb::{Error, Key};
+use minifb::{Result, Scale, ScaleMode, WindowOptions};
 use rugby::emu::joypad::{Event, State};
 
 /// Color value of an individual pixel.
@@ -22,6 +24,7 @@ impl From<(usize, usize)> for Aspect {
     }
 }
 
+/// Application window.
 #[derive(Debug)]
 pub struct Window {
     /// OS window handle.

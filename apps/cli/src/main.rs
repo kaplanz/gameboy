@@ -52,6 +52,7 @@ fn run() -> Result<()> {
     Ok(())
 }
 
+/// Build helpers.
 mod build {
     use std::fs::File;
     use std::io::Read;
@@ -72,6 +73,7 @@ mod build {
     use tracing_subscriber::filter::LevelFilter;
     use tracing_subscriber::EnvFilter;
 
+    use crate::app::gui::Cable;
     use crate::app::{self, App, Graphics};
     use crate::cli::{self, Cli};
     #[cfg(feature = "doc")]
@@ -82,6 +84,7 @@ mod build {
 
     type Log = Portal<String>;
 
+    /// Installs the global logger, returning an abstracted reload handle.
     pub fn log(filter: &str) -> Result<Log> {
         // Construct logger
         let log = tracing_subscriber::fmt()
@@ -111,6 +114,7 @@ mod build {
         Ok(handle)
     }
 
+    /// Builds an emulator instance.
     pub fn emu(args: &Cli) -> Result<GameBoy> {
         // Load boot ROM
         let boot = args
@@ -216,6 +220,7 @@ mod build {
         Ok(cart)
     }
 
+    /// Builds an application instance.
     #[allow(unused)]
     pub fn app(args: &Cli, emu: GameBoy, log: Log) -> Result<App> {
         // Initialize graphics
@@ -285,6 +290,7 @@ mod build {
         Ok(app)
     }
 
+    /// Builds a graphics instance.
     fn gui(#[cfg(feature = "win")] dbg: bool) -> Result<Graphics> {
         // Calculate aspect
         let video::Aspect { wd, ht } = LCD;
@@ -301,7 +307,8 @@ mod build {
         Ok(gui)
     }
 
-    fn link(cli::Link { host, peer }: &cli::Link) -> Result<UdpSocket> {
+    /// Builds a link cable instance.
+    fn link(cli::Link { host, peer }: &cli::Link) -> Result<Cable> {
         // Bind host to local address
         let sock = UdpSocket::bind(host)
             .with_context(|| format!("failed to bind local socket: `{host}`"))?;
@@ -315,6 +322,7 @@ mod build {
         Ok(sock)
     }
 
+    /// Builds a doctor logfile instance.
     #[cfg(feature = "doc")]
     fn doc(path: &Path) -> Result<Doctor> {
         // Create logfile
@@ -324,6 +332,7 @@ mod build {
         Ok(Doctor::new(file))
     }
 
+    /// Builds a debugger instance.
     #[cfg(feature = "gbd")]
     fn gbd(log: Log) -> Result<Debugger> {
         // Construct a new `Debugger`

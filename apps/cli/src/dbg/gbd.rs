@@ -1,3 +1,5 @@
+//! Game Boy Debugger (GBD).
+
 use std::error::Error as StdError;
 use std::fs;
 use std::path::PathBuf;

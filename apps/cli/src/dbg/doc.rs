@@ -1,6 +1,14 @@
+//! Gameboy Doctor.
+
 use std::fs::File;
 use std::io::{BufWriter, Write};
 
+/// Doctor logfile.
+///
+/// Logging output destination for CPU introspection formatted as specified for
+/// [Gameboy Doctor][gbdoc].
+///
+/// [gbdoc]: https://robertheaton.com/gameboy-doctor
 #[derive(Debug)]
 pub struct Doctor {
     buf: BufWriter<File>,

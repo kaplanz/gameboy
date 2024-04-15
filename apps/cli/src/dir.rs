@@ -1,7 +1,10 @@
+//! Standard directories.
+
 use std::path::PathBuf;
 
 use crate::def::NAME;
 
+/// Convenience macro for creating standard directory definition functions.
 macro_rules! path {
     ($($dir:tt)*) => {
         $(

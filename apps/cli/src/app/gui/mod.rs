@@ -1,7 +1,6 @@
 //! Application frontend.
 
 use std::io::{self, Read, Write};
-use std::net::UdpSocket as Link;
 
 use log::{debug, trace};
 use minifb::Key;
@@ -14,6 +13,8 @@ use rugby::emu::joypad::Event;
 use rugby::pal::Palette;
 
 mod win;
+
+pub use std::net::UdpSocket as Cable;
 
 #[cfg(feature = "win")]
 pub use self::win::dbg;
@@ -32,7 +33,7 @@ pub struct Frontend {
     /// Frontend options.
     pub cfg: Options,
     /// Link cable.
-    pub lnk: Option<Link>,
+    pub lnk: Option<Cable>,
     /// Window graphics.
     pub win: Option<Graphics>,
 }

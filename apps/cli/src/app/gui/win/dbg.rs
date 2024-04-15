@@ -1,3 +1,5 @@
+//! Debug windows.
+
 use super::{Aspect, Result, Window};
 
 /// Debug memory region.
@@ -36,6 +38,7 @@ impl Region {
     }
 }
 
+/// Debug windows.
 #[derive(Debug, Default)]
 pub struct Debug {
     /// Tile data.

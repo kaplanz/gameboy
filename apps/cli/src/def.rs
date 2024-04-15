@@ -1,3 +1,5 @@
+//! Partial configuration definitions.
+
 use std::path::PathBuf;
 
 use clap::{Args, ValueEnum, ValueHint};
@@ -5,7 +7,7 @@ use rugby::core::dmg::FREQ;
 use rugby::pal;
 use serde::Deserialize;
 
-/// Name of this crate.
+/// Name of this application.
 ///
 /// This may be used for base subdirectories.
 pub const NAME: &str = "rugby";

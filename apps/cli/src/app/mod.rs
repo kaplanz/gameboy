@@ -1,3 +1,5 @@
+//! Application structures.
+
 #[cfg(feature = "doc")]
 use std::io::Write;
 #[cfg(feature = "gbd")]
@@ -37,7 +39,10 @@ pub mod gui;
 pub use self::ctx::Context;
 pub use self::gui::{Frontend, Graphics};
 
-// Clock divider for more efficient synchronization.
+/// Clock divider.
+///
+/// As an optimization for more efficient synchronization, divide the target
+/// frequency by this number, but clock this number as many cycles each time.
 const DIVIDER: u32 = 0x100;
 
 /// Application.

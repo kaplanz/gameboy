@@ -1,3 +1,5 @@
+//! Window graphics.
+
 use thiserror::Error;
 
 #[cfg(feature = "win")]
@@ -10,8 +12,10 @@ pub mod dbg;
 
 pub use self::imp::{Aspect, Window};
 
+/// A convenient type alias for graphics errors.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// Graphics window groups.
 #[derive(Debug)]
 pub struct Graphics {
     /// Main window.
@@ -40,6 +44,7 @@ impl Graphics {
 /// A type specifying categories of [`Graphics`] errors.
 #[derive(Debug, Error)]
 pub enum Error {
+    /// Failed to render a window.
     #[error(transparent)]
     Window(#[from] imp::Error),
 }

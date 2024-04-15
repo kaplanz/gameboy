@@ -1,3 +1,5 @@
+//! Runtime context.
+
 use std::fmt::Display;
 use std::time::{Duration, Instant};
 
