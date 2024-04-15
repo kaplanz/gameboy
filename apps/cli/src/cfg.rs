@@ -73,9 +73,9 @@ impl Config {
     /// from the cli to those saved on-disk. To do so, prefer keeping data
     /// fields from `self` when conflicting with `other`.
     pub fn merge(&mut self, other: Self) {
-        self.hw.boot = self.hw.boot.take().or(other.hw.boot);
-        self.ui.pal = self.ui.pal.take().or(other.ui.pal);
-        self.ui.spd = self.ui.spd.take().or(other.ui.spd);
+        self.hw.merge(other.hw);
+        self.sw.merge(other.sw);
+        self.ui.merge(other.ui);
     }
 }
 

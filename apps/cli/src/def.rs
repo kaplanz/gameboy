@@ -41,6 +41,45 @@ pub struct Cartridge {
     pub force: bool,
 }
 
+impl Cartridge {
+    /// Combines two configuration instances.
+    ///
+    /// This is useful when some configurations may also be supplied on the
+    /// command-line. When merging, it is best practice to prioritize options
+    /// from the cli to those saved on-disk. To do so, prefer keeping data
+    /// fields from `self` when conflicting with `other`.
+    pub fn merge(&mut self, other: Self) {
+        self.rom = self.rom.take().or(other.rom);
+        self.check |= other.check;
+        self.force |= other.force;
+    }
+}
+
+/// Hardware options.
+#[derive(Args, Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct Hardware {
+    /// Boot ROM image file.
+    ///
+    /// Embedded firmware ROM executed upon booting.
+    #[clap(short, long, value_name = "PATH")]
+    #[clap(value_hint = ValueHint::FilePath)]
+    #[clap(help_heading = "Cartridge")]
+    pub boot: Option<PathBuf>,
+}
+
+impl Hardware {
+    /// Combines two configuration instances.
+    ///
+    /// This is useful when some configurations may also be supplied on the
+    /// command-line. When merging, it is best practice to prioritize options
+    /// from the cli to those saved on-disk. To do so, prefer keeping data
+    /// fields from `self` when conflicting with `other`.
+    pub fn merge(&mut self, other: Self) {
+        self.boot = self.boot.take().or(other.boot);
+    }
+}
+
 /// Interface options.
 #[derive(Args, Debug, Default, Deserialize)]
 #[serde(default)]
@@ -64,17 +103,17 @@ pub struct Interface {
     pub spd: Option<Speed>,
 }
 
-/// Hardware options.
-#[derive(Args, Debug, Default, Deserialize)]
-#[serde(default)]
-pub struct Hardware {
-    /// Boot ROM image file.
+impl Interface {
+    /// Combines two configuration instances.
     ///
-    /// Embedded firmware ROM executed upon booting.
-    #[clap(short, long, value_name = "PATH")]
-    #[clap(value_hint = ValueHint::FilePath)]
-    #[clap(help_heading = "Cartridge")]
-    pub boot: Option<PathBuf>,
+    /// This is useful when some configurations may also be supplied on the
+    /// command-line. When merging, it is best practice to prioritize options
+    /// from the cli to those saved on-disk. To do so, prefer keeping data
+    /// fields from `self` when conflicting with `other`.
+    pub fn merge(&mut self, other: Self) {
+        self.pal = self.pal.take().or(other.pal);
+        self.spd = self.spd.take().or(other.spd);
+    }
 }
 
 /// Emulator palette selection.
