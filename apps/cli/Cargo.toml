@@ -25,29 +25,29 @@ gbd = [
 win = ["debug"]
 
 [dependencies]
-clap = { version = "4.5.4", features = ["cargo", "derive", "env", "wrap_help"] }
-advise = { git = "https://github.com/kaplanz/advise", version = "0.1.0" }
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["cargo", "derive", "env", "wrap_help"] }
+advise = { workspace = true }
 ctrlc = { version = "3.4.4", optional = true }
 dirs = "5.0.1"
-log = "0.4.21"
+log = { workspace = true }
 minifb = "0.25.0"
-remus = { git = "https://github.com/kaplanz/remus.git" }
-rugby = { version = "0.1.0", path = "../.." }
+remus = { workspace = true }
+rugby = { workspace = true }
 rustyline = { version = "14.0.0", optional = true }
-serde = { version = "1.0.197", features = ["derive"] }
+serde = { workspace = true }
 sysexits = "0.7.12"
-thiserror = "1.0.58"
-toml = "0.8.12"
+thiserror = { workspace = true }
+toml = { workspace = true }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-xdir = { version = "0.1.0", git = "https://github.com/kaplanz/xdir" }
-anyhow = "1.0.82"
+xdir = { workspace = true }
 
 [build-dependencies]
-clap = { version = "4.5.4", features = ["derive"] }
+clap = { workspace = true }
 clap_complete = "4.5.2"
 clap_mangen = "0.2.20"
-rugby = { version = "0.1.0", path = "../.." }
-serde = { version = "1.0.197", features = ["derive"] }
-thiserror = "1.0.58"
-toml = "0.8.12"
-xdir = { git = "https://github.com/kaplanz/xdir", version = "0.1.0" }
+rugby = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+toml = { workspace = true }
+xdir = { workspace = true }

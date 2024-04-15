@@ -23,6 +23,24 @@ authors = ["Zakhary Kaplan <me@zakhary.dev>"]
 repository = "https://github.com/kaplanz/rugby"
 license = "MIT OR Apache-2.0"
 
+[workspace.dependencies]
+advise = { git = "https://github.com/kaplanz/advise", version = "0.1.0" }
+anyhow = "1.0.82"
+chex = { version = "0.1.0", path = "crates/chex" }
+clap = { version = "4.5.4", features = ["derive"] }
+derange = { version = "0.1.0", path = "crates/derange" }
+enuf = { version = "0.1.0", path = "crates/enuf" }
+log = "0.4.21"
+num = "0.4.1"
+phex = { version = "0.1.0", path = "crates/phex" }
+remus = { git = "https://github.com/kaplanz/remus" }
+rugby = { version = "0.1.0", path = "." }
+rugby-core = { version = "0.1.0", path = "core" }
+serde = { version = "1.0.197", features = ["derive"] }
+thiserror = "1.0.58"
+toml = "0.8.12"
+xdir = { git = "https://github.com/kaplanz/xdir", version = "0.1.0" }
+
 [features]
 default = ["gbd"]
 gbd = [
@@ -39,18 +57,18 @@ gbd = [
 ]
 
 [dependencies]
-advise = { git = "https://github.com/kaplanz/advise", version = "0.1.0", optional = true }
+advise = { workspace = true, optional = true }
 bytecount = { version = "0.6.7", optional = true }
-chex = { version = "0.1.0", path = "crates/chex" }
-derange = { version = "0.1.0", path = "crates/derange", optional = true }
+chex = { workspace = true }
+derange = { workspace = true, optional = true }
 displaydoc = { version = "0.2.4", optional = true }
 indexmap = { version = "2.2.6", optional = true }
-log = { version = "0.4.21", optional = true }
-num = { version = "0.4.1", optional = true }
+log = { workspace = true, optional = true }
+num = { workspace = true, optional = true }
 pest = { version = "2.7.9", optional = true }
 pest_derive = { version = "2.7.9", optional = true }
-phex = { version = "0.1.0", path = "crates/phex", optional = true }
-remus = { git = "https://github.com/kaplanz/remus.git" }
-rugby-core = { path = "core" }
-serde = { version = "1.0.197", features = ["derive"] }
-thiserror = "1.0.58"
+phex = { workspace = true, optional = true }
+remus = { workspace = true }
+rugby-core = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
