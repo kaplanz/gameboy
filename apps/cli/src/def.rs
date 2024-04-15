@@ -37,7 +37,6 @@ pub struct Cartridge {
     /// Causes the cartridge generation to always succeed, even if the ROM does
     /// not contain valid data.
     #[clap(short, long)]
-    #[serde(skip)]
     pub force: bool,
 }
 
