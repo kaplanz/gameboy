@@ -69,32 +69,44 @@ Debug:
 ### Configuration
 
 For persistent configuration, the program will read options from the file at
-`XDG_CONFIG_HOME/rugby/config.toml`. The default configuration is as follows:
+`$XDG_CONFIG_HOME/rugby/config.toml`.
+
+When options are specified in multiple locations, they will be applied with the
+following precedence: cli > env > file. This means these options may be
+overridden when running the program.
+
+Any relative paths specified in this file are resolved relative to this file's
+parent directory. Use `--conf` on the command-line to provide an alternate
+location for this file.
+
+The default configuration is as follows:
 
 ```toml
 [cartridge]
 # Check cartridge integrity
-check = false      # override: `-c/--check`
+check = false
 # Force cartridge construction
-force = false      # override: `-f/--force`
+force = false
 
 [interface]
 # DMG color palette
 #
 # Value must be a named preset or customized as follows:
 # palette = { custom = ["#222", "#666", "#aaa", "#ddd"] }
-palette = "mono"   # override: `-p/--palette`
+palette = "mono"
 # Simulated clock speed
 #
 # Value must be a named preset or customized as follows:
-# speed   = { fps =      90 } # runs at 1.50x
+# speed   = { fps = 90 }      # runs at 1.50x
 # speed   = { hz  = 3145728 } # runs at 0.75x
-speed   = "actual" # override: `-s/--speed`
+speed   = "actual"
 
 [hardware]
 # Boot ROM image file
-boot = "..."       # default: none, override: `-b/-boot`
+# boot = "path/to/dmg_boot.bin"
 ```
+
+A customized example could be found [here][config].
 
 ### Debugging
 
@@ -137,4 +149,5 @@ Use `help` for more information about how to use a command.
 For information regarding licensure, please see the project's [README][license].
 
 <!-- Reference-style files -->
+[config]:  ./docs/config.toml
 [license]: /README.md#license
