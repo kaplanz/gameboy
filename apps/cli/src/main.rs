@@ -1,5 +1,7 @@
 #![warn(clippy::pedantic)]
 
+use std::path::Path;
+
 use anyhow::Context;
 use clap::Parser;
 use log::{trace, warn};
@@ -28,8 +30,14 @@ fn run() -> Result<()> {
     // Parse args
     let mut args = Cli::parse();
     // Load config
-    args.cfg
-        .merge(Config::load(&args.conf).context("could not load configuration")?);
+    args.cfg.merge({
+        // Parse config from file
+        let mut cfg = Config::load(&args.conf).context("could not load configuration")?;
+        // Rebase paths to parent
+        cfg.rebase(args.conf.parent().unwrap_or(Path::new("")));
+        // Merge with args
+        cfg
+    });
     // Initialize logger
     #[allow(unused)]
     let log = build::log(args.log.as_deref().unwrap_or_default())

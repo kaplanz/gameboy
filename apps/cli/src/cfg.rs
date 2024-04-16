@@ -69,6 +69,16 @@ impl Config {
         })
     }
 
+    /// Rebase relative paths to the provided root.
+    ///
+    /// Any relative paths will have be rebased such that they are not relative
+    /// to the provided root.
+    pub fn rebase(&mut self, root: &Path) {
+        self.hw.rebase(root);
+        self.sw.rebase(root);
+        self.ui.rebase(root);
+    }
+
     /// Combines two configuration instances.
     ///
     /// This is useful when some configurations may also be supplied on the

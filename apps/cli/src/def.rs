@@ -1,6 +1,6 @@
 //! Partial configuration definitions.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use clap::{Args, ValueEnum, ValueHint};
 use rugby::core::dmg::FREQ;
@@ -43,6 +43,14 @@ pub struct Cartridge {
 }
 
 impl Cartridge {
+    /// Rebase relative paths to the provided root.
+    ///
+    /// Any relative paths will have be rebased such that they are not relative
+    /// to the provided root.
+    pub fn rebase(&mut self, root: &Path) {
+        self.rom = self.rom.take().map(|path| root.join(path));
+    }
+
     /// Combines two configuration instances.
     ///
     /// This is useful when some configurations may also be supplied on the
@@ -70,6 +78,14 @@ pub struct Hardware {
 }
 
 impl Hardware {
+    /// Rebase relative paths to the provided root.
+    ///
+    /// Any relative paths will have be rebased such that they are not relative
+    /// to the provided root.
+    pub fn rebase(&mut self, root: &Path) {
+        self.boot = self.boot.take().map(|path| root.join(path));
+    }
+
     /// Combines two configuration instances.
     ///
     /// This is useful when some configurations may also be supplied on the
@@ -105,6 +121,13 @@ pub struct Interface {
 }
 
 impl Interface {
+    /// Rebase relative paths to the provided root.
+    ///
+    /// Any relative paths will have be rebased such that they are not relative
+    /// to the provided root.
+    #[allow(unused, clippy::unused_self)]
+    pub fn rebase(&mut self, root: &Path) {}
+
     /// Combines two configuration instances.
     ///
     /// This is useful when some configurations may also be supplied on the
