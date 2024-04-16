@@ -12,18 +12,6 @@ license = { workspace = true }
 name = "rugby"
 path = "src/main.rs"
 
-[features]
-default = ["doc", "gbd", "win"]
-debug = []
-doc = ["debug"]
-gbd = [
-    "debug",
-    "dep:ctrlc",
-    "dep:rustyline",
-    "rugby/gbd",
-]
-win = ["debug"]
-
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["cargo", "derive", "env", "wrap_help"] }
@@ -51,3 +39,15 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 toml = { workspace = true }
 xdir = { workspace = true }
+
+[features]
+default = ["doc", "gbd", "win"]
+debug = []
+doc = ["debug"]
+gbd = [
+    "debug",
+    "dep:ctrlc",
+    "dep:rustyline",
+    "rugby/gbd",
+]
+win = ["debug"]
