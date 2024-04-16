@@ -14,7 +14,7 @@ pub const NAME: &str = "rugby";
 
 /// Cartridge options.
 #[derive(Args, Debug, Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct Cartridge {
     /// Cartridge ROM image file.
     ///
@@ -66,7 +66,7 @@ impl Cartridge {
 
 /// Hardware options.
 #[derive(Args, Debug, Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct Hardware {
     /// Boot ROM image file.
     ///
@@ -99,7 +99,7 @@ impl Hardware {
 
 /// Interface options.
 #[derive(Args, Debug, Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct Interface {
     /// DMG color palette.
     ///

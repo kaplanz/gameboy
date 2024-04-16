@@ -23,7 +23,7 @@ pub fn path() -> PathBuf {
 
 /// Configuration options.
 #[derive(Args, Debug, Default, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct Config {
     /// Hardware options.
     #[clap(flatten)]
