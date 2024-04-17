@@ -7,7 +7,7 @@ use rugby::emu::cart::Support as _;
 use rugby::emu::serial::Support as _;
 use thiserror::Error;
 
-type Result<T> = std::result::Result<T, Error>;
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 const TIMEOUT: usize = 250_000_000;
 

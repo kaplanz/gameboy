@@ -25,6 +25,9 @@ rugby-core = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 
+[dev-dependencies]
+png = "0.17.13"
+
 [features]
 default = ["gbd"]
 gbd = [

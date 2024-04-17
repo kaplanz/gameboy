@@ -245,8 +245,8 @@ chosen license.
 [blargg]:            https://github.com/retrio/gb-test-roms
 [blargg.test]:       ./roms/test/blargg
 [dmg-acid2]:         https://github.com/mattcurrie/dmg-acid2
-[dmg-acid2.test]:    ./roms/test/mattcurrie/dmg-acid2.gb
-[dmg-acid2.license]: ./roms/test/mattcurrie/LICENSE
+[dmg-acid2.test]:    ./roms/test/acid2/dmg-acid2.gb
+[dmg-acid2.license]: ./roms/test/acid2/LICENSE
 [mooneye]:           https://github.com/Gekkio/mooneye-test-suite
 [mooneye.test]:      ./roms/test/mooneye
 [mooneye.license]:   ./roms/test/mooneye/LICENSE
