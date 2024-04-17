@@ -215,6 +215,7 @@ impl Cartridge {
         // Construct RAM
         let ram = match head.ramsz {
             0x00000 => null.clone().to_dynamic(),
+            0x00800 => Ram::<u8, 0x00800>::new().to_dynamic(),
             0x02000 => Ram::<u8, 0x02000>::new().to_dynamic(),
             0x08000 => Ram::<u8, 0x08000>::new().to_dynamic(),
             0x20000 => Ram::<u8, 0x20000>::new().to_dynamic(),

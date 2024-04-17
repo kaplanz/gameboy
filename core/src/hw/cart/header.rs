@@ -226,6 +226,7 @@ impl TryFrom<&[u8]> for Header {
         // Parse RAM size
         let ramsz = match head[0x49] {
             0x00 => Ok(0),
+            0x01 => Ok(0x800),
             0x02 => Ok(0x2000),
             0x03 => Ok(0x8000),
             0x04 => Ok(0x20000),
