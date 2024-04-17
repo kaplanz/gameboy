@@ -20,7 +20,7 @@ pub struct Cli {
     ///
     /// When options are specified in multiple locations, they will be applied
     /// with the following precedence: cli > env > file.
-    #[clap(long)]
+    #[clap(long, env = "RUGBY_CONF")]
     #[clap(value_name = "PATH")]
     #[clap(default_value_os_t = cfg::path())]
     #[clap(value_hint = ValueHint::FilePath)]

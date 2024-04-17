@@ -38,7 +38,8 @@ Arguments:
   [ROM]  Cartridge ROM image file
 
 Options:
-      --conf <PATH>   Configuration file [default: ~/.config/rugby/config.toml]
+      --conf <PATH>   Configuration file [env: RUGBY_CONF=] [default:
+                      $XDG_CONFIG_HOME/rugby/config.toml]
   -l, --log <FILTER>  Logging level [env: RUGBY_LOG=]
   -h, --help          Print help (see more with '--help')
   -V, --version       Print version
@@ -68,8 +69,11 @@ Debug:
 
 ### Configuration
 
-For persistent configuration, the program will read options from the file at
-`$XDG_CONFIG_HOME/rugby/config.toml`.
+When run, the program will load persistent configuration options from the first
+file found according to following precedence rules:
+1. Command-line option `--conf=<PATH>`.
+1. Environment variable `RUGBY_CONF`.
+1. Default path `$XDG_CONFIG_HOME/rugby/config.toml`.
 
 When options are specified in multiple locations, they will be applied with the
 following precedence: cli > env > file. This means these options may be
