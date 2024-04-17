@@ -209,10 +209,13 @@ impl TryFrom<&[u8]> for Header {
         }?;
         // Parse SGB flag
         let sgb = match head[0x46] {
-            0x00 => Ok(false),
-            0x03 => Ok(true),
-            byte => Err(Error::Super(byte)),
-        }?;
+            0x00 => false,
+            0x03 => true,
+            byte => {
+                warn!("non-standard SGB flag: {byte:#04x}");
+                false
+            }
+        };
         // Parse cartridge kind
         let cart = head[0x47].try_into()?;
         // Parse ROM size
@@ -437,8 +440,6 @@ pub enum Error {
     Title(#[from] Utf8Error),
     #[error("invalid CGB flag: {0:#04x}")]
     Color(u8),
-    #[error("invalid SGB flag: {0:#04x}")]
-    Super(u8),
     #[error("unknown hardware: {0:#04x}")]
     Kind(u8),
     #[error("invalid ROM size: {0:#04x}")]
