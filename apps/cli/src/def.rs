@@ -71,7 +71,8 @@ pub struct Hardware {
     /// Boot ROM image file.
     ///
     /// Embedded firmware ROM executed upon booting.
-    #[clap(short, long, value_name = "PATH")]
+    #[clap(short, long)]
+    #[clap(value_name = "PATH")]
     #[clap(value_hint = ValueHint::FilePath)]
     #[clap(help_heading = "Cartridge")]
     pub boot: Option<PathBuf>,
@@ -105,7 +106,8 @@ pub struct Interface {
     ///
     /// Select from a list of preset 2-bit color palettes for the DMG model.
     /// Custom values can be defined in the configuration file.
-    #[clap(short, long = "palette", value_name = "COLOR")]
+    #[clap(short, long = "palette")]
+    #[clap(value_name = "COLOR")]
     #[clap(value_enum)]
     #[serde(rename = "palette")]
     pub pal: Option<Palette>,
@@ -114,7 +116,8 @@ pub struct Interface {
     ///
     /// Select from a list of possible speeds to simulate the emulator's clock.
     /// Custom values can be defined in the configuration file.
-    #[clap(short, long = "speed", value_name = "FREQ")]
+    #[clap(short, long = "speed")]
+    #[clap(value_name = "FREQ")]
     #[clap(value_enum)]
     #[serde(rename = "speed")]
     pub spd: Option<Speed>,

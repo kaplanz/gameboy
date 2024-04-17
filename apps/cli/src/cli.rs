@@ -20,7 +20,8 @@ pub struct Cli {
     ///
     /// When options are specified in multiple locations, they will be applied
     /// with the following precedence: cli > env > file.
-    #[clap(long, value_name = "PATH")]
+    #[clap(long)]
+    #[clap(value_name = "PATH")]
     #[clap(default_value_os_t = cfg::path())]
     #[clap(value_hint = ValueHint::FilePath)]
     pub conf: PathBuf,
@@ -34,6 +35,7 @@ pub struct Cli {
     ///
     /// A comma-separated list of logging directives.
     #[clap(short, long, env = "RUST_LOG")]
+    #[clap(value_name = "FILTER")]
     #[clap(help_heading = None)]
     pub log: Option<String>,
 
@@ -72,14 +74,16 @@ pub struct Link {
     ///
     /// Binds a local UDP socket to the specified address for serial
     /// communications.
-    #[clap(long, value_name = "ADDR")]
+    #[clap(long)]
+    #[clap(value_name = "ADDR")]
     #[clap(required = false, requires = "peer")]
     pub host: SocketAddr,
 
     /// Link cable peer address.
     ///
     /// Opens a UDP socket for serial communications at the specified address.
-    #[clap(long, value_name = "ADDR")]
+    #[clap(long)]
+    #[clap(value_name = "ADDR")]
     #[clap(required = false, requires = "host")]
     pub peer: SocketAddr,
 }
@@ -92,7 +96,8 @@ pub struct Debug {
     ///
     /// Enables logging at the provided path of the emulator's state after every
     /// instruction in the format used by Gameboy Doctor.
-    #[clap(long, value_name = "PATH")]
+    #[clap(long)]
+    #[clap(value_name = "PATH")]
     #[clap(value_hint = ValueHint::FilePath)]
     pub doc: Option<PathBuf>,
 

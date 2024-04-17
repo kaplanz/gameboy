@@ -38,10 +38,10 @@ Arguments:
   [ROM]  Cartridge ROM image file
 
 Options:
-      --conf <PATH>  Configuration file [default: ~/.config/rugby/config.toml]
-  -l, --log <LOG>    Logging level [env: RUST_LOG=]
-  -h, --help         Print help (see more with '--help')
-  -V, --version      Print version
+      --conf <PATH>   Configuration file [default: ~/.config/rugby/config.toml]
+  -l, --log <FILTER>  Logging level [env: RUST_LOG=]
+  -h, --help          Print help (see more with '--help')
+  -V, --version       Print version
 
 Cartridge:
   -b, --boot <PATH>  Boot ROM image file
