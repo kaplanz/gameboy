@@ -1,7 +1,11 @@
 //! Error types.
 
+use std::error::Error as StdError;
+use std::fmt::Display;
 use std::process::{ExitCode, Termination};
 
+use advise::Render;
+use clap::builder::styling::{AnsiColor, Style};
 use thiserror::Error;
 
 use crate::cfg;
@@ -55,10 +59,29 @@ impl Termination for Exit {
     fn report(self) -> ExitCode {
         match self {
             Exit::Success => ExitCode::SUCCESS,
-            Exit::Failure(err) => {
-                advise::error!("{err:#}");
-                err.into()
+            Exit::Failure(fail) => {
+                advise::error!("{fail}");
+                let mut err: &dyn StdError = &fail;
+                while let Some(src) = err.source() {
+                    advise::advise!(Cause, "{src}");
+                    err = src;
+                }
+                fail.into()
             }
         }
+    }
+}
+
+/// A cause for an error.
+#[derive(Debug)]
+struct Cause;
+
+impl Render for Cause {
+    fn style(&self) -> Style {
+        AnsiColor::Red.on_default()
+    }
+
+    fn label(&self) -> impl Display {
+        format!("{self:?}").to_lowercase()
     }
 }
