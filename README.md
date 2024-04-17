@@ -18,7 +18,7 @@
 
 [![dependency status][deps.badge]][deps.hyper]
 [![lines of code][loc.badge]](/)
-[![cli frontend][cli.badge]][apps.cli]
+[![cli frontend][cli.badge]](./apps/cli)
 
 A cycle accurate emulator of the original 1989 Nintendo Game Boy.
 
@@ -108,7 +108,7 @@ crates are used with the structure as follows:
 - [ ] Performance enhancements
   - [x] Real-time emulation
   - [ ] Benchmark tests
-- [ ] [Testing][docs.testing]
+- [ ] [Testing](./docs/TESTING.md)
   - [ ] Blargg (17/45)
   - [ ] Mooneye (23/69)
 
@@ -137,7 +137,7 @@ crates are used with the structure as follows:
 
 ### Frontend
 
-- [x] [Command-line (CLI)][apps.cli]
+- [x] [Command-line (CLI)](./apps/cli)
   - [x] Configuration file
     - [ ] Re-mappable joypad
   - [x] Debugging support
@@ -193,24 +193,22 @@ project below.
 
 ## License
 
-This project is dual-licensed under both [MIT License][license.mit] and [Apache
-License 2.0][license.ap2]. You have permission to use this code under the
-conditions of either license pursuant to the rights granted by the chosen
-license.
+This project is dual-licensed under both [MIT License](./LICENSE-MIT) and
+[Apache License 2.0](./LICENSE-APACHE). You have permission to use this code
+under the conditions of either license pursuant to the rights granted by the
+chosen license.
 
-<!-- Reference-style badges -->
+<!--
+  Reference-style links
+-->
+
+<!-- Badges -->
 [cli.badge]:  https://img.shields.io/badge/frontend-cli-blue
 [deps.badge]: https://deps.rs/repo/github/kaplanz/rugby/status.svg
 [deps.hyper]: https://deps.rs/repo/github/kaplanz/rugby
 [loc.badge]:  https://tokei.rs/b1/github/kaplanz/rugby?style=flat
 
-<!-- Reference-style files -->
-[license.ap2]:  ./LICENSE-APACHE
-[license.mit]:  ./LICENSE-MIT
-[docs.testing]: ./docs/TESTING.md
-[apps.cli]:     ./apps/cli
-
-<!-- Reference-style links -->
+<!-- References -->
 [blargg]:    https://github.com/retrio/gb-test-roms
 [dmg-acid2]: https://github.com/mattcurrie/dmg-acid2
 [dmgcpu]:    https://github.com/emu-russia/dmgcpu
