@@ -54,8 +54,8 @@ impl Joypad for Frontend {
             .flatten()
             // Perform key mapping
             .filter_map(|Event { input: key, state }| match key {
-                Key::Z     => Some(Event { input: Button::A,      state }),
-                Key::X     => Some(Event { input: Button::B,      state }),
+                Key::X     => Some(Event { input: Button::A,      state }),
+                Key::Z     => Some(Event { input: Button::B,      state }),
                 Key::Space => Some(Event { input: Button::Select, state }),
                 Key::Enter => Some(Event { input: Button::Start,  state }),
                 Key::Right => Some(Event { input: Button::Right,  state }),
