@@ -182,14 +182,34 @@ project below.
 - [Emu-Russia's DMG-01 SM83 Core Research][dmgcpu]: Verilog model with
   invaluable accompanying diagrams of the SM83 core.
 
-### Software
+## Attribution
 
-- [Test ROMs by Shay Green (a.k.a. Blargg)][blargg]: Classic introductory
-  collection of test ROMs.
-- [Mooneye Test Suite][mooneye]: Comprehensive test suite for individual niche
-  behaviours.
-- [dmg-acid2 by Matt Curie][dmg-acid2]: Clever re-imagining of the Web Standards
-  Project's Acid2 rendering test for the Game Boy's PPU.
+This project uses and distributes the following open-source software under the
+conditions of their respective licenses:
+
+### Firmware
+
+- [SameBoy's Boot ROM][sameboy.boot] is included under the conditions of the
+  [MIT License][sameboy.license] (dated 29 Aug 2023). See the project
+  [here][sameboy].
+
+### Games
+
+- A [2048][2048.game] Game Boy port is included under the conditions of the
+  [zlib License][2048.license] (dated 29 Aug 2023). See the project
+  [here][2048].
+
+### Testing
+
+- [Blargg's Test Suite][blargg.test] is included under presumptive permissive
+  licensing, though no explicit license could be found. See the project
+  [here][blargg].
+- [dmg-acid2 Test ROM][dmg-acid2.test] is included under the conditions of the
+  [MIT License][dmg-acid2.license] (dated 08 Jan 2024). See the project
+  [here][dmg-acid2].
+- [Mooneye Test Suite][mooneye.test] is included under the conditions of the
+  [MIT License][mooneye.license] (dated 06 Sep 2023). See the project
+  [here][mooneye].
 
 ## License
 
@@ -209,14 +229,27 @@ chosen license.
 [loc.badge]:  https://tokei.rs/b1/github/kaplanz/rugby?style=flat
 
 <!-- References -->
-[blargg]:    https://github.com/retrio/gb-test-roms
-[dmg-acid2]: https://github.com/mattcurrie/dmg-acid2
 [dmgcpu]:    https://github.com/emu-russia/dmgcpu
 [gbarch]:    https://www.copetti.org/writings/consoles/game-boy
 [gbctr]:     https://gekkio.fi/files/gb-docs/gbctr.pdf
 [gbdev]:     https://gbdev.io
 [gbedg]:     https://hacktix.github.io/GBEDG/
 [gekkio]:    https://gekkio.fi
-[mooneye]:   https://github.com/Gekkio/mooneye-test-suite
 [nitty]:     http://blog.kevtris.org/blogfiles/Nitty%20Gritty%20Gameboy%20VRAM%20Timing.txt
 [pandocs]:   https://gbdev.io/pandocs/
+
+<!-- Attribution -->
+[2048]:              https://github.com/Sanqui/2048-gb
+[2048.game]:         ./roms/games/2048/2048.gb
+[2048.license]:      ./roms/games/2048/LICENSE
+[blargg]:            https://github.com/retrio/gb-test-roms
+[blargg.test]:       ./roms/test/blargg
+[dmg-acid2]:         https://github.com/mattcurrie/dmg-acid2
+[dmg-acid2.test]:    ./roms/test/mattcurrie/dmg-acid2.gb
+[dmg-acid2.license]: ./roms/test/mattcurrie/LICENSE
+[mooneye]:           https://github.com/Gekkio/mooneye-test-suite
+[mooneye.test]:      ./roms/test/mooneye
+[mooneye.license]:   ./roms/test/mooneye/LICENSE
+[sameboy]:           https://sameboy.github.io
+[sameboy.boot]:      ./roms/boot/sameboy/dmg_boot.bin
+[sameboy.license]:   ./roms/boot/sameboy/LICENSE
