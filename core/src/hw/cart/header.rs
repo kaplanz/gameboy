@@ -244,7 +244,7 @@ impl TryFrom<&[u8]> for Header {
         // Parse header checksum
         let hchk = head[0x4d];
         // Parse global checksum
-        let gchk = u16::from_be_bytes(head[0x4e..=0x4f].try_into().unwrap());
+        let gchk = u16::from_be_bytes([head[0x4e], head[0x4f]]);
 
         // Verify header checksum
         let chk = Self::hchk(rom);
