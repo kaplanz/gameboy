@@ -202,9 +202,9 @@ impl TryFrom<&[u8]> for Header {
         .map(ToString::to_string);
         // Parse CGB flag
         let dmg = (head[0x43] & 0xc0) != 0xc0;
-        let cgb = match head[0x43] {
-            0x00 | 0x40 => Ok(false),
-            0x80 | 0xc0 => Ok(true),
+        let cgb = match head[0x43] & 0xbf {
+            0x00 => Ok(false),
+            0x80 => Ok(true),
             byte => Err(Error::Color(byte)),
         }?;
         // Parse SGB flag
