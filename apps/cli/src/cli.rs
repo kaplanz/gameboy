@@ -34,7 +34,7 @@ pub struct Cli {
     /// Logging level.
     ///
     /// A comma-separated list of logging directives.
-    #[clap(short, long, env = "RUST_LOG")]
+    #[clap(short, long, env = "RUGBY_LOG")]
     #[clap(value_name = "FILTER")]
     #[clap(help_heading = None)]
     pub log: Option<String>,

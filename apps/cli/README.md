@@ -39,7 +39,7 @@ Arguments:
 
 Options:
       --conf <PATH>   Configuration file [default: ~/.config/rugby/config.toml]
-  -l, --log <FILTER>  Logging level [env: RUST_LOG=]
+  -l, --log <FILTER>  Logging level [env: RUGBY_LOG=]
   -h, --help          Print help (see more with '--help')
   -V, --version       Print version
 
