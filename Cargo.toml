@@ -59,7 +59,7 @@ repository = "https://github.com/kaplanz/rugby"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
-advise = { git = "https://github.com/kaplanz/advise", version = "0.1.0" }
+advise = "0.1.0"
 anyhow = "1.0.82"
 chex = { version = "0.1.0", path = "crates/chex" }
 clap = { version = "4.5.4", features = ["derive"] }
@@ -74,4 +74,4 @@ rugby-core = { version = "0.1.0", path = "core" }
 serde = { version = "1.0.197", features = ["derive"] }
 thiserror = "1.0.58"
 toml = "0.8.12"
-xdir = { git = "https://github.com/kaplanz/xdir", version = "0.1.0" }
+xdir = "0.1.0"
