@@ -109,6 +109,7 @@ crates are used with the structure as follows:
   - [x] Real-time emulation
   - [ ] Benchmark tests
 - [ ] [Testing](./docs/TESTING.md)
+  - [ ] Acid2 (0/17)
   - [ ] Blargg (17/45)
   - [ ] Mealybug (0/24)
   - [ ] Mooneye (23/69)

@@ -4,6 +4,32 @@ Outlined below is current testing results for various integration test suites.
 
 ## Integration
 
+### [Acid2](/tests/acid2.rs)
+
+```
+0 passed; 17 failed;
+```
+
+| Pass | Test                                                |
+|:----:| --------------------------------------------------- |
+|  ❌  | `failure_10_obj_limit`                              |
+|  ❌  | `failure_8x16_obj_tile_index_bit_0`                 |
+|  ❌  | `failure_bg_enable`                                 |
+|  ❌  | `failure_bg_map`                                    |
+|  ❌  | `failure_obj_enable`                                |
+|  ❌  | `failure_obj_horizontal_flip`                       |
+|  ❌  | `failure_obj_palette`                               |
+|  ❌  | `failure_obj_priority_lower_x`                      |
+|  ❌  | `failure_obj_priority_same_x`                       |
+|  ❌  | `failure_obj_size`                                  |
+|  ❌  | `failure_obj_to_bg_priority`                        |
+|  ❌  | `failure_obj_vertical_flip`                         |
+|  ❌  | `failure_tile_sel`                                  |
+|  ❌  | `failure_win_enable`                                |
+|  ❌  | `failure_win_line_counter`                          |
+|  ❌  | `failure_win_map`                                   |
+|  ❌  | `success`                                           |
+
 ### [Blargg](/tests/blargg.rs)
 
 ```
