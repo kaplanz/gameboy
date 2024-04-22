@@ -58,6 +58,39 @@ Outlined below is current testing results for various integration test suites.
 |  ❌  | `oam_bug/rom_singles/7-timing_effect.gb`            |
 |  ❌  | `oam_bug/rom_singles/8-instr_effect.gb`             |
 
+### [Mealybug](/tests/mealybug.rs)
+
+```
+0 passed; 24 failed;
+```
+
+| Pass | Test                                                |
+|:----:| --------------------------------------------------- |
+|  ❌  | `m2_win_en_toggle`                                  |
+|  ❌  | `m3_bgp_change`                                     |
+|  ❌  | `m3_bgp_change_sprites`                             |
+|  ❌  | `m3_lcdc_bg_en_change`                              |
+|  ❌  | `m3_lcdc_bg_map_change`                             |
+|  ❌  | `m3_lcdc_obj_en_change`                             |
+|  ❌  | `m3_lcdc_obj_en_change_variant`                     |
+|  ❌  | `m3_lcdc_obj_size_change`                           |
+|  ❌  | `m3_lcdc_obj_size_change_scx`                       |
+|  ❌  | `m3_lcdc_tile_sel_change`                           |
+|  ❌  | `m3_lcdc_tile_sel_win_change`                       |
+|  ❌  | `m3_lcdc_win_en_change_multiple`                    |
+|  ❌  | `m3_lcdc_win_en_change_multiple_wx`                 |
+|  ❌  | `m3_lcdc_win_map_change`                            |
+|  ❌  | `m3_obp0_change`                                    |
+|  ❌  | `m3_scx_high_5_bits`                                |
+|  ❌  | `m3_scx_low_3_bits`                                 |
+|  ❌  | `m3_scy_change`                                     |
+|  ❌  | `m3_window_timing`                                  |
+|  ❌  | `m3_window_timing_wx_0`                             |
+|  ❌  | `m3_wx_4_change`                                    |
+|  ❌  | `m3_wx_4_change_sprites`                            |
+|  ❌  | `m3_wx_5_change`                                    |
+|  ❌  | `m3_wx_6_change`                                    |
+
 ### [Mooneye](/tests/mooneye.rs)
 
 ```

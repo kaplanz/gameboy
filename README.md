@@ -110,6 +110,7 @@ crates are used with the structure as follows:
   - [ ] Benchmark tests
 - [ ] [Testing](./docs/TESTING.md)
   - [ ] Blargg (17/45)
+  - [ ] Mealybug (0/24)
   - [ ] Mooneye (23/69)
 
 ### Library
@@ -207,6 +208,9 @@ conditions of their respective licenses:
 - [dmg-acid2 Test ROM][dmg-acid2.test] is included under the conditions of the
   [MIT License][dmg-acid2.license] (dated 08 Jan 2024). See the project
   [here][dmg-acid2].
+- [Mealybug Tearoom Tests][mealybug.test] is included under the conditions of
+  the [MIT License][mealybug.license] (dated 21 Apr 2024). See the project
+  [here][mealybug].
 - [Mooneye Test Suite][mooneye.test] is included under the conditions of the
   [MIT License][mooneye.license] (dated 06 Sep 2023). See the project
   [here][mooneye].
@@ -247,6 +251,9 @@ chosen license.
 [dmg-acid2]:         https://github.com/mattcurrie/dmg-acid2
 [dmg-acid2.test]:    ./roms/test/acid2/dmg-acid2.gb
 [dmg-acid2.license]: ./roms/test/acid2/LICENSE
+[mealybug]:           https://github.com/mattcurrie/mealybug-tearoom-tests
+[mealybug.test]:      ./roms/test/mealybug
+[mealybug.license]:   ./roms/test/mealybug/LICENSE
 [mooneye]:           https://github.com/Gekkio/mooneye-test-suite
 [mooneye.test]:      ./roms/test/mooneye
 [mooneye.license]:   ./roms/test/mooneye/LICENSE
