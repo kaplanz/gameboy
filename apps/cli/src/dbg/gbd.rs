@@ -43,6 +43,8 @@ impl Console {
                 .inspect(|()| trace!("created state directory: `{}`", state.display()))
                 .with_context(|| format!("failed to create directory: `{}`", state.display()))?;
         }
+        // Set maximum history entries
+        self.edit.history_mut().set_max_len(10_000)?;
         // Load previous history from file
         self.load()?;
         // Return initialized console
