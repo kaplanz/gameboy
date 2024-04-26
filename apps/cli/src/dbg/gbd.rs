@@ -55,6 +55,11 @@ impl Console {
     fn load(&mut self) -> anyhow::Result<()> {
         // Get histfile path
         let path = self::history();
+        if !path.exists() {
+            // Don't read any history if the file does not (yet) exist. Instead,
+            // return without doing anything.
+            return Ok(());
+        }
         // Read history from file
         debug!("loading history: `{}`", path.display());
         self.edit
