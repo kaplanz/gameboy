@@ -203,12 +203,13 @@ impl App {
                     // Gather debug info
                     let info = dmg::dbg::ppu(&mut self.emu);
                     // Extract PPU state
-                    let tile = info.tile.map(|col| self.gui.cfg.pal[col as usize].into());
-                    let map1 = info.map1.map(|col| self.gui.cfg.pal[col as usize].into());
-                    let map2 = info.map2.map(|col| self.gui.cfg.pal[col as usize].into());
+                    let recolor = |col: dmg::ppu::Color| self.gui.cfg.pal[col as usize].into();
+                    let tdat = info.tdat.into_iter().map(recolor).collect::<Box<_>>();
+                    let map1 = info.map1.into_iter().map(recolor).collect::<Box<_>>();
+                    let map2 = info.map2.into_iter().map(recolor).collect::<Box<_>>();
                     // Display PPU state
                     dbg.get_mut(Region::Tile)
-                        .map(|win| win.redraw(&tile))
+                        .map(|win| win.redraw(&tdat))
                         .transpose()
                         .context("failed to redraw tile data")?;
                     dbg.get_mut(Region::Map1)

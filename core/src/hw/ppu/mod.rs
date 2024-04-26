@@ -446,11 +446,11 @@ impl Lcdc {
 #[derive(Debug)]
 pub struct Debug {
     /// Tile data.
-    pub tile: [Color; 0x06000],
+    pub tdat: Box<[Color; 0x06000]>,
     /// Tile map 1.
-    pub map1: [Color; 0x10000],
+    pub map1: Box<[Color; 0x10000]>,
     /// Tile map 2.
-    pub map2: [Color; 0x10000],
+    pub map2: Box<[Color; 0x10000]>,
 }
 
 impl Debug {
@@ -495,11 +495,7 @@ impl Debug {
         let map2 = Self::render(&map2, ppu, meta, 32); // 32x32 tiles
 
         // Return debug info
-        Self {
-            tile: tdat,
-            map1,
-            map2,
-        }
+        Self { tdat, map1, map2 }
     }
 
     /// Calculates the tile index using the indexing mode.
@@ -513,7 +509,13 @@ impl Debug {
     }
 
     /// Renders tile data as pixels.
-    fn render<const N: usize>(tdat: &[Tile], ppu: &Ppu, meta: Meta, width: usize) -> [Color; N] {
+    #[allow(clippy::unnecessary_box_returns)]
+    fn render<const N: usize>(
+        tdat: &[Tile],
+        ppu: &Ppu,
+        meta: Meta,
+        width: usize,
+    ) -> Box<[Color; N]> {
         tdat.chunks_exact(width) // tiles per row
             .flat_map(|row| {
                 row.iter()
