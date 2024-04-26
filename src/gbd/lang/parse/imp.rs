@@ -1,6 +1,7 @@
 use std::num::ParseIntError;
 use std::ops::RangeInclusive;
 use std::panic;
+use std::path::PathBuf;
 
 use derange::Derange;
 use log::trace;
@@ -91,6 +92,15 @@ pub fn command(input: Pair<Rule>) -> Result<Command> {
         Rule::Log => {
             let filter = args.next().map(|pair| pair.as_span().as_str().to_string());
             Command::Log(filter)
+        }
+        Rule::Print => {
+            let path = args
+                .next()
+                .map(|pair| {
+                    PathBuf::from(pair.as_span().as_str().to_string()).with_extension("png")
+                })
+                .exception()?;
+            Command::Print(path)
         }
         Rule::Quit => Command::Quit,
         Rule::Read => {
@@ -309,6 +319,7 @@ pub fn keyword(pair: Pair<Rule>) -> Result<Keyword> {
         Rule::KList     => Keyword::List,
         Rule::KLoad     => Keyword::Load,
         Rule::KLog      => Keyword::Log,
+        Rule::KPrint    => Keyword::Print,
         Rule::KQuit     => Keyword::Quit,
         Rule::KRead     => Keyword::Read,
         Rule::KReset    => Keyword::Reset,

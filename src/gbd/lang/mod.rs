@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut};
+use std::path::PathBuf;
 
 use derange::Derange;
 use displaydoc::Display;
@@ -77,6 +78,8 @@ pub enum Command {
     Load(Vec<Location>),
     /// Change the [log][`Keyword::Log`] level.
     Log(Option<String>),
+    /// [Print][`Keyword::Print`] a screenshot.
+    Print(PathBuf),
     /// [Quit][`Keyword::Load`] the emulator.
     Quit,
     /// [Read][`Keyword::Read`] a memory address.
@@ -117,6 +120,7 @@ pub enum Keyword {
      * * `list`,      `ls`,   `l`: List instruction.
      * * `load`,      `ld`,      : Load register.
      * * `log`,       `lo`,      : Change logging level.
+     * * `print`,     `ps`,      : Print a screenshot.
      * * `quit`,              `q`: Quit emulator.
      * * `read`,      `rd`,   `r`: Read address.
      * * `reset`,     `res`,     : Reset emulator.
@@ -304,6 +308,14 @@ pub enum Keyword {
      * Aliases: `lo`
      */
     Log,
+    /**
+     * `print <PATH>`
+     *
+     * Save a screenshot to a file as a PNG.
+     *
+     * Aliases: `ps`
+     */
+    Print,
     /**
      * `quit`
      *

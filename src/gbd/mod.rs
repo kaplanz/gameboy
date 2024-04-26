@@ -245,6 +245,7 @@ impl Debugger {
             List                    => exec::list(self, emu),
             Load(loc)               => exec::loads(emu, loc),
             Log(filter)             => exec::log(self, filter),
+            Print(path)             => exec::print(emu, &path),
             Quit                    => exec::quit(),
             Read(addr)              => exec::read(emu, addr),
             ReadRange(range)        => exec::read_range(emu, range),
@@ -431,6 +432,9 @@ pub enum Error {
     /// Logger has not been configured.
     #[error("logger not configured")]
     ConfigureLogger,
+    /// Image encoding error.
+    #[error(transparent)]
+    Image(#[from] png::EncodingError),
     /// Command parsing error.
     #[error(transparent)]
     Language(#[from] lang::Error),

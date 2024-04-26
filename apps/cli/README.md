@@ -138,6 +138,7 @@ COMMANDS:
 * `list`,      `ls`,   `l`: List instruction.
 * `load`,      `ld`,      : Load register.
 * `log`,       `lo`,      : Change logging level.
+* `print`,     `ps`,      : Print a screenshot.
 * `quit`,              `q`: Quit emulator.
 * `read`,      `rd`,   `r`: Read address.
 * `reset`,     `res`,     : Reset emulator.

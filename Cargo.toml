@@ -20,13 +20,14 @@ num = { workspace = true, optional = true }
 pest = { version = "2.7.9", optional = true }
 pest_derive = { version = "2.7.9", optional = true }
 phex = { workspace = true, optional = true }
+png = { workspace = true, optional = true }
 remus = { workspace = true }
 rugby-core = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-png = "0.17.13"
+png = { workspace = true }
 
 [features]
 default = ["gbd"]
@@ -41,6 +42,7 @@ gbd = [
     "dep:pest",
     "dep:pest_derive",
     "dep:phex",
+    "dep:png",
 ]
 
 [profile.dev]
@@ -68,6 +70,7 @@ enuf = { version = "0.1.0", path = "crates/enuf" }
 log = "0.4.21"
 num = "0.4.1"
 phex = { version = "0.1.0", path = "crates/phex" }
+png = "0.17.13"
 remus = { git = "https://github.com/kaplanz/remus" }
 rugby = { version = "0.1.0", path = "." }
 rugby-core = { version = "0.1.0", path = "core" }

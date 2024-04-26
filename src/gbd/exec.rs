@@ -1,12 +1,16 @@
 #![allow(clippy::unnecessary_wraps)]
 
+use std::fs::File;
 use std::io::{BufRead, Read, Write};
+use std::ops::Not;
+use std::path::Path;
 
 use derange::Derange;
 use remus::{Block, Location as _};
 
 use super::lang::{Keyword, Location, Serial, Value};
 use super::{Debugger, Error, GameBoy, Result, Tick};
+use crate::core::dmg::LCD;
 use crate::emu::proc::{Processor, Support as _};
 use crate::emu::serial::Support as _;
 use crate::gbd::Breakpoint;
@@ -216,6 +220,35 @@ pub fn load(emu: &GameBoy, loc: Location) -> Result<()> {
             advise::info!("{reg:?}: {byte:#04x}");
         }
     };
+
+    Ok(())
+}
+
+pub fn print(emu: &mut GameBoy, path: &Path) -> Result<()> {
+    // Process screen data
+    let lcd = emu
+        // extract frame buffer
+        .ppu()
+        .screen()
+        // convert pixels to 2-bit value
+        .map(|pix| pix as u8)
+        // combine every 4 pixels (2bpp) into a byte
+        .chunks_exact(4)
+        .map(|cols| cols.iter().fold(0, |acc, &pix| (acc << 2) | pix))
+        // invert data (`Color::C0` is usually lightest)
+        .map(Not::not)
+        // collect as a fixed-size array
+        .collect::<Box<_>>();
+    // Create image file
+    let mut file = File::create_new(path)?;
+    // Declare image properties
+    let mut encoder = png::Encoder::new(&mut file, LCD.wd.into(), LCD.ht.into());
+    encoder.set_color(png::ColorType::Grayscale);
+    encoder.set_depth(png::BitDepth::Two);
+    // Write image to file
+    let mut writer = encoder.write_header()?;
+    writer.write_image_data(&lcd)?;
+    advise::info!("wrote to file: `{}`", path.display());
 
     Ok(())
 }

@@ -64,6 +64,7 @@ impl Display for Rule {
             KList     => write!(f, "{List}"),
             KLoad     => write!(f, "{Load}"),
             KLog      => write!(f, "{Log}"),
+            KPrint    => write!(f, "{Print}"),
             KQuit     => write!(f, "{Quit}"),
             KRead     => write!(f, "{Read}"),
             KReset    => write!(f, "{Reset}"),
