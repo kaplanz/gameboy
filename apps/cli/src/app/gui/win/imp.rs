@@ -28,7 +28,7 @@ impl From<(usize, usize)> for Aspect {
 #[derive(Debug)]
 pub struct Window {
     /// OS window handle.
-    win: minifb::Window,
+    win: Box<minifb::Window>,
     /// Logical aspect ratio.
     asp: Aspect,
 }
@@ -49,7 +49,7 @@ impl Window {
     /// Constructs a new `Window`.
     pub fn new(title: &str, asp: Aspect) -> Result<Self> {
         Ok(Self {
-            win: minifb::Window::new(title, asp.wd, asp.ht, Self::OPTIONS)?,
+            win: Box::new(minifb::Window::new(title, asp.wd, asp.ht, Self::OPTIONS)?),
             asp,
         })
     }
