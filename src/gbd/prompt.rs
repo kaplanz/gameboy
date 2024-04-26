@@ -1,5 +1,6 @@
 //! Generalized debugger prompt.
 
+use std::error::Error as StdError;
 use std::fmt::Debug;
 
 use thiserror::Error;
@@ -21,7 +22,7 @@ pub trait Prompt: Debug + Send {
 pub enum Error {
     /// Generic internal error.
     #[error(transparent)]
-    Internal(#[from] Box<dyn std::error::Error>),
+    Internal(#[from] Box<dyn StdError>),
     /// Quit request.
     ///
     /// Special error used to signal to the debugger that the uesr has requested
