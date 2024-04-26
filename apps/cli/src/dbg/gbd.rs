@@ -53,9 +53,12 @@ impl Console {
 
     /// Loads history from a file into the prompt.
     fn load(&mut self) -> anyhow::Result<()> {
-        debug!("loading history: `{}`", history().display());
+        // Get histfile path
+        let path = self::history();
+        // Read history from file
+        debug!("loading history: `{}`", path.display());
         self.edit
-            .load_history(&history())
+            .load_history(&path)
             .inspect(|()| {
                 debug!(
                     "loaded history: {} items",
@@ -71,9 +74,12 @@ impl Console {
 
     /// Saves history from the prompt into a file.
     fn save(&mut self) -> anyhow::Result<()> {
-        debug!("saving history: `{}`", history().display());
+        // Get histfile path
+        let path = self::history();
+        // Write history to file
+        debug!("saving history: `{}`", path.display());
         self.edit
-            .save_history(&history())
+            .save_history(&path)
             .inspect(|()| {
                 debug!(
                     "saved history: {} items",
