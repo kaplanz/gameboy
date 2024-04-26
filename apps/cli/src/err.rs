@@ -25,6 +25,21 @@ pub enum Error {
     Other(#[from] anyhow::Error),
 }
 
+impl Error {
+    /// Advises the user about an error.
+    fn advise(&self) {
+        advise::error!("{self}");
+        let Some(mut err) = self.source() else {
+            return;
+        };
+        while let Some(src) = err.source() {
+            advise::advise!(Cause::Stem, "{err}");
+            err = src;
+        }
+        advise::advise!(Cause::Root, "{err}");
+    }
+}
+
 impl From<Error> for ExitCode {
     fn from(err: Error) -> Self {
         match err {
@@ -58,23 +73,28 @@ impl<E: Into<Error>> From<E> for Exit {
 impl Termination for Exit {
     fn report(self) -> ExitCode {
         match self {
-            Exit::Success => ExitCode::SUCCESS,
-            Exit::Failure(fail) => {
-                advise::error!("{fail}");
-                let mut err: &dyn StdError = &fail;
-                while let Some(src) = err.source() {
-                    advise::advise!(Cause, "{src}");
-                    err = src;
-                }
-                fail.into()
+            Exit::Success => {
+                // Return a success exit code
+                ExitCode::SUCCESS
+            }
+            Exit::Failure(err) => {
+                // Advise the user about the error
+                err.advise();
+                // Return a failure exit code
+                err.into()
             }
         }
     }
 }
 
-/// A cause for an error.
+/// Rendering for error reporting.
 #[derive(Debug)]
-struct Cause;
+enum Cause {
+    /// Intermediate error source.
+    Stem,
+    /// Underlying error cause.
+    Root,
+}
 
 impl Render for Cause {
     fn style(&self) -> Style {
@@ -82,6 +102,9 @@ impl Render for Cause {
     }
 
     fn label(&self) -> impl Display {
-        format!("{self:?}").to_lowercase()
+        match self {
+            Cause::Stem => "   ├─",
+            Cause::Root => "   ╰─",
+        }
     }
 }
