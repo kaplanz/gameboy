@@ -229,7 +229,7 @@ mod build {
     }
 
     /// Builds an application instance.
-    #[allow(unused)]
+    #[allow(unused, clippy::needless_pass_by_value)]
     pub fn app(args: &Cli, emu: GameBoy, log: Log) -> Result<App> {
         // Initialize graphics
         let gui = args
