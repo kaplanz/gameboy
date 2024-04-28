@@ -12,9 +12,6 @@ pub mod dbg;
 
 pub use self::imp::{Aspect, Window};
 
-/// A convenient type alias for graphics errors.
-pub type Result<T, E = Error> = std::result::Result<T, E>;
-
 /// Graphics window groups.
 #[derive(Debug)]
 pub struct Graphics {
@@ -40,6 +37,9 @@ impl Graphics {
         self.lcd.is_open()
     }
 }
+
+/// A convenient type alias for [`Result`](std::result::Result).
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// A type specifying categories of [`Graphics`] errors.
 #[derive(Debug, Error)]

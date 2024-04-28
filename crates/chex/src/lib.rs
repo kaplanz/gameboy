@@ -111,19 +111,22 @@ impl FromStr for Color {
     }
 }
 
+/// A convenient type alias for [`Result`](std::result::Result).
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 /// A type specifying categories of [`Color`] error.
 #[derive(Clone, Debug, Error)]
 pub enum Error {
     /// Parse string was empty.
     #[error("empty string")]
     Empty,
-    /// Error parsing hexadecimal from input.
-    #[error("could not parse hex")]
+    /// Error parsing value from input.
+    #[error("failed to parse integer")]
     ParseInt(#[from] ParseIntError),
-    /// Use of an unknown format.
+    /// Unknown color name.
     #[error("unknown color name: {0}")]
     Unknown(String),
-    /// Use of an unsupported hex format.
+    /// Unsupported hex format.
     #[error("unsupported hex format")]
     Unsupported,
 }

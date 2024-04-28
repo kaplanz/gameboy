@@ -91,6 +91,9 @@ pub enum Palette {
     Obp1,
 }
 
+/// A convenient type alias for [`Result`](std::result::Result).
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 /// A type specifying categories of [`Pixel`] error.
 #[derive(Debug, Error)]
 pub enum Error {

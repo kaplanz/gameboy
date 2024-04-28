@@ -640,6 +640,9 @@ impl Ime {
     }
 }
 
+/// A convenient type alias for [`Result`](std::result::Result).
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 /// A type specifying general categories of [`Instruction`] error.
 #[derive(Debug, Error)]
 pub enum Error {

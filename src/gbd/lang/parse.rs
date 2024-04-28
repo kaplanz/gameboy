@@ -11,8 +11,6 @@ use super::{Command, Keyword, Location, Program, Serial, Tick, Value};
 
 mod imp;
 
-type Result<T, E = Error> = std::result::Result<T, E>;
-
 #[derive(Debug, Parser)]
 #[grammar = "gbd/lang/parse.pest"]
 struct Language;
@@ -79,14 +77,24 @@ impl Display for Rule {
     }
 }
 
+/// A convenient type alias for [`Result`](std::result::Result).
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 /// A type specifying categories of [`Language`] errors.
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("internal error: {0}")]
+    /// Internal parsing error.
+    ///
+    /// # Note
+    ///
+    /// An internal error is considered a bug.
+    #[error("an internal error occurred")]
     Internal(#[from] imp::Error),
+    /// Integer parsing error.
     #[error(transparent)]
     ParseInt(#[from] ParseIntError),
+    /// External parsing error.
     #[error(transparent)]
     Pest(#[from] pest::error::Error<Rule>),
 }

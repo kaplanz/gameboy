@@ -22,8 +22,6 @@ pub mod prompt;
 
 pub use self::lang::{Command, Keyword};
 
-type Result<T, E = Error> = std::result::Result<T, E>;
-
 /// Interactive debugger object.
 #[derive(Debug, Default)]
 pub struct Debugger {
@@ -418,6 +416,9 @@ impl<T: Debug> Debug for Portal<T> {
             .finish()
     }
 }
+
+/// A convenient type alias for [`Result`](std::result::Result).
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// A type specifying categories of [`Debugger`] errors.
 #[allow(clippy::large_enum_variant)]

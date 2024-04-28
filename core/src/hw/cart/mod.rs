@@ -293,10 +293,13 @@ impl Board<u16, u8> for Cartridge {
     }
 }
 
+/// A convenient type alias for [`Result`](std::result::Result).
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 /// A type specifying categories of [`Cartridge`] error.
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("could not parse header")]
+    #[error("failed to parse header")]
     Header(#[from] header::Error),
     #[error("cartridge size mismatch")]
     Mismatch(Box<[u8]>),

@@ -7,9 +7,6 @@ use std::str::Utf8Error;
 use log::warn;
 use thiserror::Error;
 
-/// A convenient type alias for header errors.
-pub type Result<T, E = Error> = std::result::Result<T, E>;
-
 /// Nintendo logo.
 ///
 /// ```text
@@ -449,14 +446,17 @@ impl TryFrom<u8> for Kind {
     }
 }
 
+/// A convenient type alias for [`Result`](std::result::Result).
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
 /// A type specifying categories of [`Header`] error.
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("missing header")]
+    #[error("missing header bytes")]
     Missing,
     #[error(transparent)]
     Slice(#[from] TryFromSliceError),
-    #[error("could not parse title")]
+    #[error("invalid bytes in title")]
     Title(#[from] Utf8Error),
     #[error("invalid CGB flag: {0:#04x}")]
     Color(u8),

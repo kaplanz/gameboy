@@ -10,10 +10,10 @@ use thiserror::Error;
 
 use crate::cfg;
 
-/// A convenient type alias for application errors.
+/// A convenient type alias for [`Result`](std::result::Result).
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// A top-level error caused within the application.
+/// A top-level error from within the application.
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum Error {

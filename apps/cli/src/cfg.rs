@@ -12,9 +12,6 @@ use toml::from_str as parse;
 use crate::def::{Cartridge, Hardware, Interface};
 use crate::dir;
 
-/// A convenient type alias for configuration errors.
-pub type Result<T, E = Error> = std::result::Result<T, E>;
-
 /// Returns the path to the application's configuration file.
 #[must_use]
 pub fn path() -> PathBuf {
@@ -91,6 +88,9 @@ impl Config {
         self.ui.merge(other.ui);
     }
 }
+
+/// A convenient type alias for [`Result`](std::result::Result).
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// An error caused by [loading][`Config::load`] the configuration.
 #[derive(Debug, Error)]

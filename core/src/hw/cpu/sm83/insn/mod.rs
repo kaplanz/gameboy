@@ -12,8 +12,6 @@ use crate::hw::pic::Interrupt;
 mod exec;
 mod table;
 
-type Result<T> = std::result::Result<T, Error>;
-
 /// Instruction operation execution interface.
 trait Execute {
     fn exec(self, opcode: u8, cpu: &mut Cpu) -> Result<Option<Operation>>;
@@ -119,6 +117,9 @@ mod help {
         };
     }
 }
+
+/// A convenient type alias for [`Result`](std::result::Result).
+pub type Result<T> = std::result::Result<T, Error>;
 
 /// A type specifying general categories of [`Instruction`] error.
 #[derive(Debug, Error)]

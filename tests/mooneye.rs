@@ -8,8 +8,6 @@ use rugby::emu::cart::Support as _;
 use rugby::emu::proc::Support as _;
 use thiserror::Error;
 
-type Result<T, E = Error> = std::result::Result<T, E>;
-
 const TIMEOUT: usize = 10_000_000;
 
 fn emulate(rom: &[u8]) -> Result<()> {
@@ -51,6 +49,9 @@ fn passed(emu: &GameBoy) -> Result<bool> {
     // Return success
     Ok(pass)
 }
+
+/// A convenient type alias for [`Result`](std::result::Result).
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug, Error)]
 enum Error {

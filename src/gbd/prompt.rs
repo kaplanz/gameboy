@@ -17,7 +17,10 @@ pub trait Prompt: Debug + Send {
     fn prompt(&mut self, msg: &str) -> Result<String, Error>;
 }
 
-/// A type specifying categories of [`Prompt`] errors.
+/// A convenient type alias for [`Result`](std::result::Result).
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+/// An error caused by a debugger [prompt][Prompt] frontend.
 #[derive(Debug, Error)]
 pub enum Error {
     /// Generic internal error.
