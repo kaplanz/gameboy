@@ -25,11 +25,11 @@ use self::mbc::{Mbc, Mbc1, Mbc5, None};
 use crate::api::cart::Cartridge as Api;
 use crate::dev::{Bus, Unmapped};
 
-mod header;
+pub mod header;
 
 pub mod mbc;
 
-pub use self::header::{Error as HeaderError, Header, LOGO};
+pub use self::header::Header;
 
 /// Memory slice.
 struct Memory {

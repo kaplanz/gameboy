@@ -1,3 +1,5 @@
+//! Game ROM cartridge header.
+
 use std::array::TryFromSliceError;
 use std::fmt::Display;
 use std::str::Utf8Error;
