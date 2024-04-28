@@ -126,7 +126,7 @@ Game Boy Debugger.
 
 COMMANDS:
 * `break`,     `br`,   `b`: Set breakpoint.
-* `capture`,   `ps`,      : Capture a screenshot.
+* `capture`,   `ps`       : Capture a screenshot.
 * `continue`,  `cont`, `c`: Resume execution.
 * `delete`,    `del`      : Delete breakpoint.
 * `disable`,   `dis`,  `d`: Disable breakpoint.
@@ -134,16 +134,16 @@ COMMANDS:
 * `frequency`, `freq`, `d`: Change step frequency.
 * `goto`,      `go`,   `g`: Goto address.
 * `help`,              `h`: Print help.
-* `ignore`,    `ig`,      : Ignore breakpoint.
+* `ignore`,    `ig`       : Ignore breakpoint.
 * `jump`,      `jp`,   `j`: Jump and execute.
 * `list`,      `ls`,   `l`: List instruction.
-* `load`,      `ld`,      : Load register.
-* `log`,       `lo`,      : Change logging level.
+* `load`,      `ld`       : Load register.
+* `log`,       `lo`       : Change logging level.
 * `quit`,              `q`: Quit emulator.
 * `read`,      `rd`,   `r`: Read address.
-* `reset`,     `res`,     : Reset emulator.
+* `reset`,     `res`      : Reset emulator.
 * `step`,              `s`: Perform debugger step.
-* `store`,     `sr`,      : Store register.
+* `store`,     `sr`       : Store register.
 * `write`,     `wr`,   `w`: Write address.
 
 Use `help` for more information about how to use a command.
