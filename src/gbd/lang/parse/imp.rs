@@ -94,13 +94,20 @@ pub fn command(input: Pair<Rule>) -> Result<Command> {
             Command::Log(filter)
         }
         Rule::Print => {
+            let force = args
+                .peek()
+                .filter(|pair| pair.as_rule() == Rule::Force)
+                .inspect(|_| {
+                    args.next(); // consume only if found
+                })
+                .is_some();
             let path = args
                 .next()
                 .map(|pair| {
                     PathBuf::from(pair.as_span().as_str().to_string()).with_extension("png")
                 })
                 .exception()?;
-            Command::Print(path)
+            Command::Print(path, force)
         }
         Rule::Quit => Command::Quit,
         Rule::Read => {

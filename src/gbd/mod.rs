@@ -245,7 +245,7 @@ impl Debugger {
             List                    => exec::list(self, emu),
             Load(loc)               => exec::loads(emu, loc),
             Log(filter)             => exec::log(self, filter),
-            Print(path)             => exec::print(emu, &path),
+            Print(path, force)      => exec::print(emu, &path, force),
             Quit                    => exec::quit(),
             Read(addr)              => exec::read(emu, addr),
             ReadRange(range)        => exec::read_range(emu, range),

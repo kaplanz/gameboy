@@ -224,7 +224,7 @@ pub fn load(emu: &GameBoy, loc: Location) -> Result<()> {
     Ok(())
 }
 
-pub fn print(emu: &mut GameBoy, path: &Path) -> Result<()> {
+pub fn print(emu: &mut GameBoy, path: &Path, force: bool) -> Result<()> {
     // Process screen data
     let lcd = emu
         // extract frame buffer
@@ -240,7 +240,13 @@ pub fn print(emu: &mut GameBoy, path: &Path) -> Result<()> {
         // collect as a fixed-size array
         .collect::<Box<_>>();
     // Create image file
-    let mut file = File::create_new(path)?;
+    let mut file = if force {
+        // Forcefully overwrite existing files
+        File::create
+    } else {
+        // Error if the file exists
+        File::create_new
+    }(path)?;
     // Declare image properties
     let mut encoder = png::Encoder::new(&mut file, LCD.wd.into(), LCD.ht.into());
     encoder.set_color(png::ColorType::Grayscale);

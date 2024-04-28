@@ -79,7 +79,7 @@ pub enum Command {
     /// Change the [log][`Keyword::Log`] level.
     Log(Option<String>),
     /// [Print][`Keyword::Print`] a screenshot.
-    Print(PathBuf),
+    Print(PathBuf, bool),
     /// [Quit][`Keyword::Load`] the emulator.
     Quit,
     /// [Read][`Keyword::Read`] a memory address.
@@ -309,9 +309,12 @@ pub enum Keyword {
      */
     Log,
     /**
-     * `print <PATH>`
+     * `print[!] <PATH>`
      *
      * Save a screenshot to a file as a PNG.
+     *
+     * To forcefully overwrite the file at the selected path, pass the `!`
+     * argument.
      *
      * Aliases: `ps`
      */
