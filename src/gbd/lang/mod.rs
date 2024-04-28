@@ -51,6 +51,8 @@ impl IntoIterator for Program {
 pub enum Command {
     /// Set a [breakpoint][`Keyword::Break`].
     Break(u16),
+    /// [Capture][`Keyword::Capture`] a screenshot.
+    Capture(PathBuf, bool),
     /// [Continue][`Keyword::Continue`] execution.
     Continue,
     /// [Delete][`Keyword::Delete`] a breakpoint.
@@ -78,8 +80,6 @@ pub enum Command {
     Load(Vec<Location>),
     /// Change the [log][`Keyword::Log`] level.
     Log(Option<String>),
-    /// [Print][`Keyword::Print`] a screenshot.
-    Print(PathBuf, bool),
     /// [Quit][`Keyword::Load`] the emulator.
     Quit,
     /// [Read][`Keyword::Read`] a memory address.
@@ -108,6 +108,7 @@ pub enum Keyword {
      *
      * COMMANDS:
      * * `break`,     `br`,   `b`: Set breakpoint.
+     * * `capture`,   `ps`,      : Capture a screenshot.
      * * `continue`,  `cont`, `c`: Resume execution.
      * * `delete`,    `del`      : Delete breakpoint.
      * * `disable`,   `dis`,  `d`: Disable breakpoint.
@@ -120,7 +121,6 @@ pub enum Keyword {
      * * `list`,      `ls`,   `l`: List instruction.
      * * `load`,      `ld`,      : Load register.
      * * `log`,       `lo`,      : Change logging level.
-     * * `print`,     `ps`,      : Print a screenshot.
      * * `quit`,              `q`: Quit emulator.
      * * `read`,      `rd`,   `r`: Read address.
      * * `reset`,     `res`,     : Reset emulator.
@@ -143,6 +143,20 @@ pub enum Keyword {
      * Aliases: `br`, `b`
      */
     Break,
+    /**
+     * `capture[!] <PATH>`
+     *
+     * Capture and save a screenshot to the provided path.
+     *
+     * Screenshots are saved as a PNG formatted image. The filename may be
+     * modified to include the "png" extension as needed.
+     *
+     * To forcefully overwrite the file at the selected path, pass the `!`
+     * argument.
+     *
+     * Aliases: `ps`
+     */
+    Capture,
     /**
      * `continue`
      *
@@ -308,17 +322,6 @@ pub enum Keyword {
      * Aliases: `lo`
      */
     Log,
-    /**
-     * `print[!] <PATH>`
-     *
-     * Save a screenshot to a file as a PNG.
-     *
-     * To forcefully overwrite the file at the selected path, pass the `!`
-     * argument.
-     *
-     * Aliases: `ps`
-     */
-    Print,
     /**
      * `quit`
      *

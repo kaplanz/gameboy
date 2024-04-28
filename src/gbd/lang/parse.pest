@@ -38,11 +38,12 @@ Filter          = @{ Directive ~ ("," ~ Filter)? }
       LOff      = _{ ^"off" }
 
 Program         = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOI }
-  Keyword       = _{ KBreak | KContinue | KDelete | KDisable | KEnable | KFreq |
-                     KGoto | KHelp | KIgnore | KInfo | KJump | KLoad | KLog |
-                     KList | KPrint | KQuit | KReset | KRead | KSerial |
+  Keyword       = _{ KBreak | KCapture | KContinue | KDelete | KDisable |
+                     KEnable | KFreq | KGoto | KHelp | KIgnore | KInfo | KJump |
+                     KLoad | KLog | KList | KQuit | KReset | KRead | KSerial |
                      KStore | KStep | KWrite }
     KBreak      =  { ^"break"     | ^"br"   | ^"b" }
+    KCapture    =  { ^"capture"   | ^"ps"          }
     KContinue   =  { ^"continue"  | ^"cont" | ^"c" }
     KDelete     =  { ^"delete"    | ^"del"         }
     KDisable    =  { ^"disable"   | ^"dis"  | ^"d" }
@@ -58,7 +59,6 @@ Program         = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOI }
       KLoadB    =  { ^"lb" }
       KLoadW    =  { ^"lw" }
     KLog        =  { ^"log"       | ^"lo"          }
-    KPrint      =  { ^"print"     | ^"ps"          }
     KQuit       =  { ^"quit"                | ^"q" }
     KRead       =  { ^"read"      | ^"rd"   | ^"r" }
     KReset      =  { ^"reset"     | ^"res"         }
@@ -112,11 +112,13 @@ Program         = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOI }
         HL      =  { ^"hl" }
         SP      =  { ^"sp" }
         PC      =  { ^"pc" }
-  Command       = _{ Break | Continue | Delete | Disable | Enable | Freq |
-                     Goto | Help | Ignore | Info | Jump | Load | Log | List |
-                     Print | Quit | Reset | Read | Serial | Store | Step |
+  Command       = _{ Break | Capture | Continue | Delete | Disable | Enable |
+                     Freq | Goto | Help | Ignore | Info | Jump | Load | Log |
+                     List | Quit | Reset | Read | Serial | Store | Step |
                      Write }
     Break       =  { KBreak ~ UInt }
+    Capture     =  { KCapture ~ Force? ~ Path }
+      Force     =  { "!" }
     Continue    =  { KContinue }
     Delete      =  { KDelete ~ UInt }
     Disable     =  { KDisable ~ UInt }
@@ -139,8 +141,6 @@ Program         = _{ SOI ~ Command? ~ (EOL ~ Command?)* ~ EOI }
       LoadB     = _{ KLoadB ~ BLocation+ }
       LoadW     = _{ KLoadW ~ WLocation+ }
     Log         =  { KLog ~ Filter? }
-    Print       =  { KPrint ~ Force? ~ Path }
-      Force     =  { "!" }
     Quit        =  { KQuit }
     Read        =  { KRead ~ (RangeBounds | UInt) }
     Reset       =  { KReset }

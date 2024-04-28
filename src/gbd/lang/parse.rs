@@ -51,6 +51,7 @@ impl Display for Rule {
         match self {
             // Keywords
             KBreak    => write!(f, "{Break}"),
+            KCapture  => write!(f, "{Capture}"),
             KContinue => write!(f, "{Continue}"),
             KDelete   => write!(f, "{Delete}"),
             KDisable  => write!(f, "{Disable}"),
@@ -64,7 +65,6 @@ impl Display for Rule {
             KList     => write!(f, "{List}"),
             KLoad     => write!(f, "{Load}"),
             KLog      => write!(f, "{Log}"),
-            KPrint    => write!(f, "{Print}"),
             KQuit     => write!(f, "{Quit}"),
             KRead     => write!(f, "{Read}"),
             KReset    => write!(f, "{Reset}"),

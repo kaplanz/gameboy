@@ -126,6 +126,7 @@ Game Boy Debugger.
 
 COMMANDS:
 * `break`,     `br`,   `b`: Set breakpoint.
+* `capture`,   `ps`,      : Capture a screenshot.
 * `continue`,  `cont`, `c`: Resume execution.
 * `delete`,    `del`      : Delete breakpoint.
 * `disable`,   `dis`,  `d`: Disable breakpoint.
@@ -138,7 +139,6 @@ COMMANDS:
 * `list`,      `ls`,   `l`: List instruction.
 * `load`,      `ld`,      : Load register.
 * `log`,       `lo`,      : Change logging level.
-* `print`,     `ps`,      : Print a screenshot.
 * `quit`,              `q`: Quit emulator.
 * `read`,      `rd`,   `r`: Read address.
 * `reset`,     `res`,     : Reset emulator.

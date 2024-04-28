@@ -33,6 +33,22 @@ pub fn command(input: Pair<Rule>) -> Result<Command> {
             let addr = args.next().exception().and_then(self::integer)?;
             Command::Break(addr)
         }
+        Rule::Capture => {
+            let force = args
+                .peek()
+                .filter(|pair| pair.as_rule() == Rule::Force)
+                .inspect(|_| {
+                    args.next(); // consume only if found
+                })
+                .is_some();
+            let path = args
+                .next()
+                .map(|pair| {
+                    PathBuf::from(pair.as_span().as_str().to_string()).with_extension("png")
+                })
+                .exception()?;
+            Command::Capture(path, force)
+        }
         Rule::Continue => Command::Continue,
         Rule::Delete => {
             let index = args.next().exception().and_then(self::integer)?;
@@ -92,22 +108,6 @@ pub fn command(input: Pair<Rule>) -> Result<Command> {
         Rule::Log => {
             let filter = args.next().map(|pair| pair.as_span().as_str().to_string());
             Command::Log(filter)
-        }
-        Rule::Print => {
-            let force = args
-                .peek()
-                .filter(|pair| pair.as_rule() == Rule::Force)
-                .inspect(|_| {
-                    args.next(); // consume only if found
-                })
-                .is_some();
-            let path = args
-                .next()
-                .map(|pair| {
-                    PathBuf::from(pair.as_span().as_str().to_string()).with_extension("png")
-                })
-                .exception()?;
-            Command::Print(path, force)
         }
         Rule::Quit => Command::Quit,
         Rule::Read => {
@@ -313,6 +313,7 @@ pub fn keyword(pair: Pair<Rule>) -> Result<Keyword> {
     // Extract the keyword rule
     Ok(match pair.as_rule() {
         Rule::KBreak    => Keyword::Break,
+        Rule::KCapture  => Keyword::Capture,
         Rule::KContinue => Keyword::Continue,
         Rule::KDelete   => Keyword::Delete,
         Rule::KDisable  => Keyword::Disable,
@@ -326,7 +327,6 @@ pub fn keyword(pair: Pair<Rule>) -> Result<Keyword> {
         Rule::KList     => Keyword::List,
         Rule::KLoad     => Keyword::Load,
         Rule::KLog      => Keyword::Log,
-        Rule::KPrint    => Keyword::Print,
         Rule::KQuit     => Keyword::Quit,
         Rule::KRead     => Keyword::Read,
         Rule::KReset    => Keyword::Reset,

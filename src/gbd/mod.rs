@@ -232,6 +232,7 @@ impl Debugger {
         // Perform the command
         match cmd {
             Break(addr)             => exec::r#break(self, addr),
+            Capture(path, force)    => exec::capture(emu, &path, force),
             Continue                => exec::r#continue(self, ),
             Delete(point)           => exec::delete(self, point),
             Disable(point)          => exec::disable(self, point),
@@ -245,7 +246,6 @@ impl Debugger {
             List                    => exec::list(self, emu),
             Load(loc)               => exec::loads(emu, loc),
             Log(filter)             => exec::log(self, filter),
-            Print(path, force)      => exec::print(emu, &path, force),
             Quit                    => exec::quit(),
             Read(addr)              => exec::read(emu, addr),
             ReadRange(range)        => exec::read_range(emu, range),

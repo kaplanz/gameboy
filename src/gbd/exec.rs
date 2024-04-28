@@ -29,6 +29,41 @@ pub fn r#break(gbd: &mut Debugger, addr: u16) -> Result<()> {
     Ok(())
 }
 
+pub fn capture(emu: &mut GameBoy, path: &Path, force: bool) -> Result<()> {
+    // Process screen data
+    let lcd = emu
+        // extract frame buffer
+        .ppu()
+        .screen()
+        // convert pixels to 2-bit value
+        .map(|pix| pix as u8)
+        // combine every 4 pixels (2bpp) into a byte
+        .chunks_exact(4)
+        .map(|cols| cols.iter().fold(0, |acc, &pix| (acc << 2) | pix))
+        // invert data (`Color::C0` is usually lightest)
+        .map(Not::not)
+        // collect as a fixed-size array
+        .collect::<Box<_>>();
+    // Create image file
+    let mut file = if force {
+        // Forcefully overwrite existing files
+        File::create
+    } else {
+        // Error if the file exists
+        File::create_new
+    }(path)?;
+    // Declare image properties
+    let mut encoder = png::Encoder::new(&mut file, LCD.wd.into(), LCD.ht.into());
+    encoder.set_color(png::ColorType::Grayscale);
+    encoder.set_depth(png::BitDepth::Two);
+    // Write image to file
+    let mut writer = encoder.write_header()?;
+    writer.write_image_data(&lcd)?;
+    advise::info!("wrote to file: `{}`", path.display());
+
+    Ok(())
+}
+
 pub fn r#continue(gbd: &mut Debugger) -> Result<()> {
     gbd.step = None; // reset step count
     gbd.resume(); // resume console
@@ -220,41 +255,6 @@ pub fn load(emu: &GameBoy, loc: Location) -> Result<()> {
             advise::info!("{reg:?}: {byte:#04x}");
         }
     };
-
-    Ok(())
-}
-
-pub fn print(emu: &mut GameBoy, path: &Path, force: bool) -> Result<()> {
-    // Process screen data
-    let lcd = emu
-        // extract frame buffer
-        .ppu()
-        .screen()
-        // convert pixels to 2-bit value
-        .map(|pix| pix as u8)
-        // combine every 4 pixels (2bpp) into a byte
-        .chunks_exact(4)
-        .map(|cols| cols.iter().fold(0, |acc, &pix| (acc << 2) | pix))
-        // invert data (`Color::C0` is usually lightest)
-        .map(Not::not)
-        // collect as a fixed-size array
-        .collect::<Box<_>>();
-    // Create image file
-    let mut file = if force {
-        // Forcefully overwrite existing files
-        File::create
-    } else {
-        // Error if the file exists
-        File::create_new
-    }(path)?;
-    // Declare image properties
-    let mut encoder = png::Encoder::new(&mut file, LCD.wd.into(), LCD.ht.into());
-    encoder.set_color(png::ColorType::Grayscale);
-    encoder.set_depth(png::BitDepth::Two);
-    // Write image to file
-    let mut writer = encoder.write_header()?;
-    writer.write_image_data(&lcd)?;
-    advise::info!("wrote to file: `{}`", path.display());
 
     Ok(())
 }
