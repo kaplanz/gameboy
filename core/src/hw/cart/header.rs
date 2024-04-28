@@ -1,4 +1,9 @@
 //! Game ROM cartridge header.
+//!
+//! Encoded in the ROM at the address range `0x0100..0x0150` is the header,
+//! which encodes both physical attributes describing the hardware of the
+//! cartridge, flags describing console support, and characteristics of the
+//! software.
 
 use std::array::TryFromSliceError;
 use std::fmt::Display;

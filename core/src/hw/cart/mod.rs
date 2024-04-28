@@ -1,14 +1,14 @@
 //! Game ROM cartridge.
 //!
-//! Encoded within the ROM is a [hardware specification][cartridge header] of
-//! the physical cartridge on which the ROM is connected to the console.
+//! Encoded within the ROM is a [hardware specification][header] of the physical
+//! cartridge on which the ROM is connected to the console.
 //!
-//! Additionally, one of several [memory bank controllers][mbcs] may be used to
-//! expand the ROM and external RAM beyond the respective 32 KiB and 8 KiB
-//! addressable bytes.
+//! Additionally, one of several supported [memory bank controllers][mbcs] may
+//! be used to expand the ROM and external RAM beyond the respective 32 KiB and
+//! 8 KiB addressable bytes.
 //!
-//! [cartridge header]: https://gbdev.io/pandocs/The_Cartridge_Header.html
-//! [mbcs]:             https://gbdev.io/pandocs/MBCs.html
+//! [header]: https://gbdev.io/pandocs/The_Cartridge_Header.html
+//! [mbcs]:   https://gbdev.io/pandocs/MBCs.html
 
 use std::cmp::Ordering;
 use std::iter;
