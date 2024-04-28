@@ -173,7 +173,7 @@ pub fn list(gbd: &Debugger, emu: &GameBoy) -> Result<()> {
 #[allow(clippy::needless_pass_by_value)]
 pub fn log(gbd: &mut Debugger, filter: Option<String>) -> Result<()> {
     // Extract the logger handle
-    let log = gbd.log.as_mut().ok_or(Error::ConfigureLogger)?;
+    let log = gbd.log.as_mut().ok_or(Error::CfgLogger)?;
 
     // Change the tracing filter
     if let Some(filter) = filter {

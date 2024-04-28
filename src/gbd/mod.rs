@@ -134,7 +134,7 @@ impl Debugger {
                             // Program input; fetch next iteration
                             Ok(()) => continue 'gbd,
                             // No input; repeat previous program
-                            Err(Error::NoInput) => {
+                            Err(Error::Empty) => {
                                 // Re-use previous program
                                 self.prog = self.prev.clone();
                                 debug!("repeat program: `{:?}`", self.prog);
@@ -182,7 +182,7 @@ impl Debugger {
     /// Errors if the prompt failed.
     pub fn readline(&mut self) -> Result<()> {
         // Extract the prompt handle
-        let line = self.line.as_mut().ok_or(Error::ConfigurePrompt)?;
+        let line = self.line.as_mut().ok_or(Error::CfgPrompt)?;
 
         // Present the prompt; get input
         let fmt = format!("(#{} @ {:#06x})> ", self.cycle, self.pc);
@@ -200,7 +200,7 @@ impl Debugger {
             // Remove stored program
             self.prog = None;
             // Report no input
-            Err(Error::NoInput)
+            Err(Error::Empty)
         } else {
             // Store program; update previous
             self.prog = Some(prog);
@@ -428,28 +428,28 @@ pub enum Error {
     Breakpoint,
     /// Prompt has not been configured.
     #[error("prompt not configured")]
-    ConfigurePrompt,
+    CfgPrompt,
     /// Logger has not been configured.
     #[error("logger not configured")]
-    ConfigureLogger,
+    CfgLogger,
+    /// Prompt returned empty string.
+    #[error("no input provided")]
+    Empty,
     /// Image encoding error.
     #[error(transparent)]
     Image(#[from] png::EncodingError),
-    /// Command parsing error.
+    /// I/O operation error.
+    #[error(transparent)]
+    Ioput(#[from] std::io::Error),
+    /// Parsing returned an error.
     #[error(transparent)]
     Language(#[from] lang::Error),
-    /// Prompt returned empty string.
-    #[error("no input provided")]
-    NoInput,
     /// Prompt returned an error.
     #[error(transparent)]
     Prompt(#[from] prompt::Error),
     /// Quit requested by user.
     #[error("quit requested by user")]
     Quit,
-    /// I/O operation failed.
-    #[error("serial I/O failed")]
-    Serial(#[from] std::io::Error),
     /// Attempted an unsupported operation.
     #[error("operation not supported")]
     Unsupported,
