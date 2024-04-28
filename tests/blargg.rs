@@ -53,7 +53,7 @@ fn passed(emu: &mut GameBoy, buf: &mut Vec<u8>) -> Result<bool> {
 #[derive(Debug, Error)]
 enum Error {
     #[error(transparent)]
-    Io(#[from] std::io::Error),
+    Ioput(#[from] std::io::Error),
     #[error("failed test")]
     Failed,
     #[error("timeout reached")]
