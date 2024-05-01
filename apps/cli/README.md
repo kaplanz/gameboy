@@ -119,40 +119,19 @@ Game Boy Debugger (GBD) prompt after initialization. In this mode, commands can
 be run to control and monitor execution of the console. While running with GBD
 enabled, CTRL-C could be used to interrupt emulation and present the prompt.
 
-To list and get help with GBD, use the `help` command at the prompt:
-
-```
-Game Boy Debugger.
-
-COMMANDS:
-* `break`,     `br`,   `b`: Set breakpoint.
-* `capture`,   `ps`       : Capture a screenshot.
-* `continue`,  `cont`, `c`: Resume execution.
-* `delete`,    `del`      : Delete breakpoint.
-* `disable`,   `dis`,  `d`: Disable breakpoint.
-* `enable`,    `en`,   `e`: Enable breakpoint.
-* `frequency`, `freq`, `d`: Change step frequency.
-* `goto`,      `go`,   `g`: Goto address.
-* `help`,              `h`: Print help.
-* `ignore`,    `ig`       : Ignore breakpoint.
-* `jump`,      `jp`,   `j`: Jump and execute.
-* `list`,      `ls`,   `l`: List instruction.
-* `load`,      `ld`       : Load register.
-* `log`,       `lo`       : Change logging level.
-* `quit`,              `q`: Quit emulator.
-* `read`,      `rd`,   `r`: Read address.
-* `reset`,     `res`      : Reset emulator.
-* `step`,              `s`: Perform debugger step.
-* `store`,     `sr`       : Store register.
-* `write`,     `wr`,   `w`: Write address.
-
-Use `help` for more information about how to use a command.
-```
+To list and get help with GBD, use the `help` command at the prompt or see its
+[documentation](/gbd/README.md).
 
 ## License
 
 For information regarding licensure, please see the project's [README][license].
 
-<!-- Reference-style files -->
+<!--
+  Reference-style links
+-->
+
+<!-- Usage -->
 [config]:  ./docs/config.toml
+
+<!-- License -->
 [license]: /README.md#license

@@ -79,7 +79,7 @@ crates are used with the structure as follows:
 
 ## Progress
 
-### Core
+### [Core](./core)
 
 - [ ] Implementation
   - [ ] Audio (APU)
@@ -115,7 +115,7 @@ crates are used with the structure as follows:
   - [ ] Mealybug (0/24)
   - [ ] Mooneye (23/69)
 
-### Debugger
+### [Debugger](./gbd)
 
 - [x] Breakpoints
   - [x] Instruction address (PC)
@@ -134,7 +134,7 @@ crates are used with the structure as follows:
 - [x] Peripheral control
   - [x] Serial interface
 
-### Library
+### [Library](./)
 
 - [x] Color palette API
 - [x] Exposed core API
