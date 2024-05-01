@@ -48,7 +48,7 @@ At a high level, the motherboard contains the following ASICs:
 [^gram]
 
 > [!NOTE]
-> See the [memory architecture][docs.mem] for a more precise diagram.
+> See the [memory architecture](./ARCH.md) for a more precise diagram.
 
 > [!NOTE]
 > More research is needed to determine exactly how components are laid out
@@ -162,12 +162,16 @@ is complete.
          addresses are decoded. See [above](#echo-ram) for more details.
 [^dma]:  See the discussion at Gekkio/mooneye-gb#39.
 
-<!-- Reference-style files -->
-[docs.mem]:  ./docs/MEMORY.md
+<!--
+  Reference-style links
+-->
 
-<!-- Reference-style links -->
-[conflict]: https://en.wikipedia.org/wiki/Bus_contention
 [dmg.pcb]:  https://github.com/Gekkio/gb-schematics/blob/main/DMG-CPU-06/DMG-CPU-06.jpg
+
+<!-- Schematic -->
+[conflict]: https://en.wikipedia.org/wiki/Bus_contention
+
+<!-- Footnotes -->
 [dmg.sch]:  https://github.com/Gekkio/gb-schematics/blob/main/DMG-CPU-06/schematic/DMG-CPU-06.pdf
 [gekkio]:   https://github.com/Gekkio/gb-schematics
 [lic.cc4]:  http://creativecommons.org/licenses/by/4.0/
