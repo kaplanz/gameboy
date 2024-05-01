@@ -1,0 +1,25 @@
+[package]
+name = "gbd"
+version = "0.1.0"
+authors.workspace = true
+edition = "2021"
+repository.workspace = true
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+advise = { workspace = true }
+bytecount = { version = "0.6.7" }
+derange = { workspace = true }
+displaydoc = { version = "0.2.4" }
+indexmap = { version = "2.2.6" }
+log = { workspace = true }
+num = { workspace = true }
+pest = { version = "2.7.9" }
+pest_derive = { version = "2.7.9" }
+phex = { workspace = true }
+png = { workspace = true }
+remus = { workspace = true }
+rugby = { workspace = true }
+thiserror = { workspace = true }

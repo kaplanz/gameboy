@@ -9,18 +9,7 @@ license = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-advise = { workspace = true, optional = true }
-bytecount = { version = "0.6.7", optional = true }
 chex = { workspace = true }
-derange = { workspace = true, optional = true }
-displaydoc = { version = "0.2.4", optional = true }
-indexmap = { version = "2.2.6", optional = true }
-log = { workspace = true, optional = true }
-num = { workspace = true, optional = true }
-pest = { version = "2.7.9", optional = true }
-pest_derive = { version = "2.7.9", optional = true }
-phex = { workspace = true, optional = true }
-png = { workspace = true, optional = true }
 remus = { workspace = true }
 rugby-core = { workspace = true }
 serde = { workspace = true }
@@ -28,22 +17,6 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 png = { workspace = true }
-
-[features]
-default = ["gbd"]
-gbd = [
-    "dep:advise",
-    "dep:bytecount",
-    "dep:derange",
-    "dep:displaydoc",
-    "dep:indexmap",
-    "dep:log",
-    "dep:num",
-    "dep:pest",
-    "dep:pest_derive",
-    "dep:phex",
-    "dep:png",
-]
 
 [profile.dev]
 opt-level = 3
@@ -53,6 +26,7 @@ members = [
     "apps/*",
     "core",
     "crates/*",
+    "gbd",
 ]
 
 [workspace.package]
@@ -67,6 +41,7 @@ chex = { version = "0.1.0", path = "crates/chex" }
 clap = { version = "4.5.4", features = ["derive"] }
 derange = { version = "0.1.0", path = "crates/derange" }
 enuf = { version = "0.1.0", path = "crates/enuf" }
+gbd = { version = "0.1.0", path = "gbd" }
 log = "0.4.21"
 num = "0.4.1"
 phex = { version = "0.1.0", path = "crates/phex" }

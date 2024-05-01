@@ -42,10 +42,11 @@ different accuracy/performance margins.
 ## Organization
 
 In accordance with the preference for modularity outlined above, the project is
-partitioned into the [core](./core), and various emulator [frontends](./apps).
-Useful supporting [crates](./crates) are independently available as well. Also
-packaged in this repository are several open-source [ROMs](./roms). These are
-used internally for testing and to demo project functionality.
+partitioned into the [core](./core), the [debugger](./gbd), and various emulator
+[frontends](./apps). Useful supporting [crates](./crates) are independently
+available as well. Also packaged in this repository are several open-source
+[ROMs](./roms). These are used internally for testing and to demo project
+functionality.
 
 ### Workspace
 
@@ -64,6 +65,7 @@ crates are used with the structure as follows:
 ├── core/            # emulation core
 ├── crates/          # support crates
 ├── docs/            # documentation
+├── gbd/             # game boy debugger
 ├── roms/            # open-source ROMs
 ├── src/             # emulation library
 └── tests/           # integration tests
@@ -113,26 +115,28 @@ crates are used with the structure as follows:
   - [ ] Mealybug (0/24)
   - [ ] Mooneye (23/69)
 
+### Debugger
+
+- [x] Breakpoints
+  - [x] Instruction address (PC)
+  - [ ] Instruction opcode
+  - [ ] I/O operation (read/write)
+  - [ ] Softbreak (`ld b, b`)
+  - [ ] Dynamic condition
+- [x] Memory peek/poke
+- [x] Register manipulation
+  - [ ] APU
+  - [x] CPU
+  - [x] Interrupts
+  - [x] PPU
+  - [x] Serial
+  - [x] Timer
+- [x] Peripheral control
+  - [x] Serial interface
+
 ### Library
 
 - [x] Color palette API
-- [x] Debugger API
-  - [x] Breakpoints
-    - [x] Instruction address (PC)
-    - [ ] Instruction opcode
-    - [ ] I/O operation (read/write)
-    - [ ] Softbreak (`ld b, b`)
-    - [ ] Dynamic condition
-  - [x] Memory peek/poke
-  - [x] Register manipulation
-    - [ ] APU
-    - [x] CPU
-    - [x] Interrupts
-    - [x] PPU
-    - [x] Serial
-    - [x] Timer
-  - [x] Peripheral control
-    - [x] Serial interface
 - [x] Exposed core API
 - [x] Frontend API
 

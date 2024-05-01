@@ -4,9 +4,9 @@ use std::path::PathBuf;
 
 use derange::Derange;
 use displaydoc::Display;
+use rugby::core::dmg::{cpu, pic, ppu, serial, timer};
 
 use super::Tick;
-use crate::core::dmg::{cpu, pic, ppu, serial, timer};
 
 mod parse;
 

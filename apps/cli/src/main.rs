@@ -70,14 +70,14 @@ mod build {
     use std::string::ToString;
 
     use anyhow::{ensure, Context, Result};
+    #[cfg(feature = "gbd")]
+    use gbd::Debugger;
+    use gbd::Portal;
     use log::{debug, error, info, warn};
     use rugby::core::dmg::cart::Cartridge;
     use rugby::core::dmg::{Boot, GameBoy, LCD};
     use rugby::emu::cart::Support as _;
     use rugby::emu::video;
-    #[cfg(feature = "gbd")]
-    use rugby::gbd::Debugger;
-    use rugby::gbd::Portal;
     use tracing_subscriber::filter::LevelFilter;
     use tracing_subscriber::EnvFilter;
 

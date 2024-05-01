@@ -8,10 +8,10 @@ use log::trace;
 use num::traits::WrappingSub;
 use num::{Bounded, Integer};
 use pest::iterators::Pair;
+use rugby::core::dmg::{cpu, pic, ppu, serial, timer};
 use thiserror::Error;
 
 use super::{Command, Keyword, Location, Result, Rule, Serial, Tick, Value};
-use crate::core::dmg::{cpu, pic, ppu, serial, timer};
 
 #[allow(clippy::cast_sign_loss)]
 #[allow(clippy::similar_names)]

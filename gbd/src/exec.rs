@@ -7,13 +7,13 @@ use std::path::Path;
 
 use derange::Derange;
 use remus::{Block, Location as _};
+use rugby::core::dmg::LCD;
+use rugby::emu::proc::{Processor, Support as _};
+use rugby::emu::serial::Support as _;
 
 use super::lang::{Keyword, Location, Serial, Value};
 use super::{Debugger, Error, GameBoy, Result, Tick};
-use crate::core::dmg::LCD;
-use crate::emu::proc::{Processor, Support as _};
-use crate::emu::serial::Support as _;
-use crate::gbd::Breakpoint;
+use crate::Breakpoint;
 
 pub fn r#break(gbd: &mut Debugger, addr: u16) -> Result<()> {
     // Check if the breakpoint already exists

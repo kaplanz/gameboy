@@ -7,13 +7,13 @@ use std::fmt::{Debug, Display, Write};
 use indexmap::IndexMap;
 use log::debug;
 use remus::{Block, Clock, Location, Machine};
+use rugby::core::dmg::cpu::{self, reg};
+use rugby::core::dmg::{ppu, GameBoy};
+use rugby::emu::proc::Support as _;
 use thiserror::Error;
 
 use self::lang::Program;
 use self::prompt::Prompt;
-use crate::core::dmg::cpu::{self, reg};
-use crate::core::dmg::{ppu, GameBoy};
-use crate::emu::proc::Support as _;
 
 mod exec;
 mod lang;

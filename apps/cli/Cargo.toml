@@ -13,10 +13,11 @@ name = "rugby"
 path = "src/main.rs"
 
 [dependencies]
+advise = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true, features = ["cargo", "derive", "env", "wrap_help"] }
-advise = { workspace = true }
 ctrlc = { version = "3.4.4", optional = true }
+gbd = { workspace = true, optional = true }
 log = { workspace = true }
 minifb = "0.25.0"
 remus = { workspace = true }
@@ -46,7 +47,7 @@ doc = ["debug"]
 gbd = [
     "debug",
     "dep:ctrlc",
+    "dep:gbd",
     "dep:rustyline",
-    "rugby/gbd",
 ]
 win = ["debug"]

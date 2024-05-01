@@ -32,8 +32,6 @@
 #![warn(clippy::pedantic)]
 
 pub mod app;
-#[cfg(feature = "gbd")]
-pub mod gbd;
 pub mod pal;
 
 #[doc(inline)]

@@ -12,7 +12,7 @@ use super::{Command, Keyword, Location, Program, Serial, Tick, Value};
 mod imp;
 
 #[derive(Debug, Parser)]
-#[grammar = "gbd/lang/parse.pest"]
+#[grammar = "lang/parse.pest"]
 struct Language;
 
 impl FromStr for Program {

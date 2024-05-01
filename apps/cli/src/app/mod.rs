@@ -7,6 +7,8 @@ use std::sync::mpsc;
 use std::time::Instant;
 
 use anyhow::Context as _;
+#[cfg(feature = "gbd")]
+use gbd::Debugger;
 #[allow(unused)]
 use log::{debug, error, trace};
 use remus::{Clock, Machine};
@@ -20,10 +22,6 @@ use rugby::emu::cart::Support as _;
 use rugby::emu::joypad::{Joypad as _, Support as _};
 use rugby::emu::serial::{Serial as _, Support as _};
 use rugby::emu::video::{Support as _, Video as _};
-#[cfg(feature = "gbd")]
-use rugby::gbd;
-#[cfg(feature = "gbd")]
-use rugby::gbd::Debugger;
 
 use self::ctx::Counter;
 #[cfg(feature = "win")]
