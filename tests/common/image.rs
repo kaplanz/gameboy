@@ -44,39 +44,26 @@ pub fn check(delta: usize, total: usize) -> Result<()> {
     if delta == 0 {
         Ok(())
     } else {
-        Err(Failure(Match { delta, total }))
+        Err(Error { delta, total })
     }
 }
 
 /// A convenient type alias for [`Result`](std::result::Result).
-pub type Result<T, E = Failure> = std::result::Result<T, E>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// Failure for an image-based test.
+/// Error for an image-based test.
 #[derive(Error)]
-#[error("failed test: {0}")]
-pub struct Failure(Match);
-
-impl Debug for Failure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(self, f)
-    }
-}
-
-/// Image comparison matching results.
-#[derive(Debug)]
-struct Match {
+#[error(
+    "test failed with deltas: {:.2}% ({delta}/{total})",
+    100. * (*.delta as f64) / (*.total as f64)
+)]
+pub struct Error {
     delta: usize,
     total: usize,
 }
 
-impl Display for Match {
+impl Debug for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "match rate: {:.2}%, delta: {}/{}",
-            100. * (self.total - self.delta) as f64 / self.total as f64,
-            self.delta,
-            self.total
-        )
+        Display::fmt(self, f)
     }
 }

@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 use remus::Machine;
 use rugby::core::dmg::cart::Cartridge;
 use rugby::core::dmg::GameBoy;
@@ -9,8 +7,10 @@ mod common;
 
 use common::image::{self, Result};
 
+/// Number of cycles after which the test is ready to be checked.
 const TIMEOUT: usize = 1_000_000;
 
+/// Perform integration test emulation.
 fn emulate(rom: &[u8], img: &[u8], diff: usize) -> Result<()> {
     // Instantiate a cartridge
     let cart = Cartridge::new(rom).unwrap();
