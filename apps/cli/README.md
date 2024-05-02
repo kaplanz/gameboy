@@ -1,5 +1,9 @@
 # rugby-cli
 
+![supports Linux][nix.badge]
+![supports macOS][mac.badge]
+![supports Windows][win.badge]
+
 This frontend provides a command-line interface (CLI) to quickly launch an
 emulator session right from your terminal. It has first-class support for all
 main features, including a full interactive debugger.
@@ -140,6 +144,11 @@ For information regarding licensure, please see the project's [README][license].
 <!--
   Reference-style links
 -->
+
+<!-- Badges -->
+[mac.badge]: https://img.shields.io/badge/macOS-000?logo=apple&logoColor=fff
+[nix.badge]: https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=000
+[win.badge]: https://img.shields.io/badge/Windows-0078D4?logo=windows&logoColor=fff
 
 <!-- Usage -->
 [config]:  ./docs/config.toml

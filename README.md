@@ -77,6 +77,36 @@ crates are used with the structure as follows:
 > rather than directly using `rugby-core`, as it better structured for end
 > users and includes useful supporting modules.
 
+### Components
+
+Main components of `rugby` are outlined below.
+
+- [`rugby`](./): is the high-level library that provides the public API.
+- [`rugby-core`](./core): contains the implementation of emulator cores.
+- [`rugby-gbd`](./gbd): provides an interactive prompt debugging interface.
+
+#### Frontends
+
+- [`rugby-cli`](./apps/cli): a command-line interface application with rich
+  configuration support and comprehensive debugging options.
+
+Several additional frontends are planned for the future:
+
+- `rugby-ios`: a native iOS/macOS application, most likely using SwiftUI.
+- `rugby-sdl`: a cross-platform application based upon the [SDL] framework.
+- `rugby-web`: an online hosted frontend powered by [Wasm].
+
+## [Testing](./docs/TESTING.md)
+
+Rigorous integration testing is provided to validate the implementation and
+prevent regressions in future versions.
+
+|   Suite                  | Passed | Failed |
+| ------------------------ | ------ | ------ |
+| [Acid2][acid2.doc]       |      0 |     17 |
+| [Blargg][blargg.doc]     |     17 |     28 |
+| [Mealybug][mealybug.doc] |      0 |     24 |
+| [Mooneye][mooneye.doc]   |     23 |     46 |
 
 ## References
 
@@ -156,6 +186,10 @@ chosen license.
 [deps.badge]: https://deps.rs/repo/github/kaplanz/rugby/status.svg
 [deps.hyper]: https://deps.rs/repo/github/kaplanz/rugby
 
+<!-- Organization -->
+[sdl]:  https://www.libsdl.org
+[wasm]: https://webassembly.org
+
 <!-- References -->
 [dmgcpu]:    https://github.com/emu-russia/dmgcpu
 [gbarch]:    https://www.copetti.org/writings/consoles/game-boy
@@ -171,14 +205,18 @@ chosen license.
 [2048.game]:        ./roms/games/2048/2048.gb
 [2048.license]:     ./roms/games/2048/LICENSE
 [acid2]:            https://github.com/mattcurrie/dmg-acid2
+[acid2.doc]:        ./docs/TESTING.md#acid2
 [acid2.test]:       ./roms/test/acid2/dmg-acid2.gb
 [acid2.license]:    ./roms/test/acid2/LICENSE
 [blargg]:           https://github.com/retrio/gb-test-roms
+[blargg.doc]:       ./docs/TESTING.md#blargg
 [blargg.test]:      ./roms/test/blargg
 [mealybug]:         https://github.com/mattcurrie/mealybug-tearoom-tests
+[mealybug.doc]:     ./docs/TESTING.md#mealybug
 [mealybug.test]:    ./roms/test/mealybug
 [mealybug.license]: ./roms/test/mealybug/LICENSE
 [mooneye]:          https://github.com/Gekkio/mooneye-test-suite
+[mooneye.doc]:      ./docs/TESTING.md#mooneye
 [mooneye.test]:     ./roms/test/mooneye
 [mooneye.license]:  ./roms/test/mooneye/LICENSE
 [sameboy]:          https://sameboy.github.io
