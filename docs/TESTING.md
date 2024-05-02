@@ -4,7 +4,15 @@ Outlined below is current testing results for various integration test suites.
 
 ## Integration
 
-### [Acid2](/tests/acid2.rs)
+### Acid2
+
+[![acid2 origin][acid2.git.badge]][acid2.git.hyper]
+[![acid2 source][acid2.src.badge]][acid2.src.hyper]
+
+A clever re-imagining of the [Web Standards Project's Acid2][wsp.acid2]
+rendering test for the Game Boy's PPU.
+
+#### Results
 
 ```
 0 passed; 17 failed;
@@ -30,7 +38,17 @@ Outlined below is current testing results for various integration test suites.
 |  ❌  | `failure_win_map`                                   |
 |  ❌  | `success`                                           |
 
-### [Blargg](/tests/blargg.rs)
+---
+
+### Blargg
+
+[![blargg origin][blargg.git.badge]][blargg.git.hyper]
+[![blargg source][blargg.src.badge]][blargg.src.hyper]
+
+Shay Green's classic suite of Game Boy testing ROMs, checking a wide variety of
+behaviours.
+
+#### Results
 
 ```
 17 passed; 28 failed;
@@ -84,7 +102,16 @@ Outlined below is current testing results for various integration test suites.
 |  ❌  | `oam_bug/rom_singles/7-timing_effect.gb`            |
 |  ❌  | `oam_bug/rom_singles/8-instr_effect.gb`             |
 
-### [Mealybug](/tests/mealybug.rs)
+---
+
+### Mealybug
+
+[![mealybug origin][mealybug.git.badge]][mealybug.git.hyper]
+[![mealybug source][mealybug.src.badge]][mealybug.src.hyper]
+
+Correctness tests focusing on runtime changes made to the PPU.
+
+#### Results
 
 ```
 0 passed; 24 failed;
@@ -117,7 +144,16 @@ Outlined below is current testing results for various integration test suites.
 |  ❌  | `m3_wx_5_change`                                    |
 |  ❌  | `m3_wx_6_change`                                    |
 
-### [Mooneye](/tests/mooneye.rs)
+---
+
+### Mooneye
+
+[![mooneye origin][mooneye.git.badge]][mooneye.git.hyper]
+[![mooneye source][mooneye.src.badge]][mooneye.src.hyper]
+
+Detailed tests on precise characteristics easily verifiable on actual hardware.
+
+#### Results
 
 ```
 23 passed; 46 failed;
@@ -194,3 +230,38 @@ Outlined below is current testing results for various integration test suites.
 |  ❌  | `acceptance/timer/tima_reload.gb`                   |
 |  ❌  | `acceptance/timer/tima_write_reloading.gb`          |
 |  ✅  | `acceptance/timer/tma_write_reloading.gb`           |
+
+---
+
+## Attribution
+
+Attribution of all included open-source software is listed in the project's
+[README][attrib].
+
+<!--
+  Reference-style links
+-->
+
+<!-- Badges -->
+[acid2.git.badge]:    https://img.shields.io/badge/acid2-origin-2188a7?logo=github
+[acid2.git.hyper]:    https://github.com/mattcurrie/dmg-acid2
+[acid2.src.badge]:    https://img.shields.io/badge/acid2-source-a72145?logo=rust
+[acid2.src.hyper]:    /tests/acid2.rs
+[blargg.git.badge]:   https://img.shields.io/badge/blargg-origin-2188a7?logo=github
+[blargg.git.hyper]:   https://github.com/retrio/gb-test-roms
+[blargg.src.badge]:   https://img.shields.io/badge/blargg-source-a72145?logo=rust
+[blargg.src.hyper]:   /tests/blargg.rs
+[mealybug.git.badge]: https://img.shields.io/badge/mealybug-origin-2188a7?logo=github
+[mealybug.git.hyper]: https://github.com/mattcurrie/mealybug-tearoom-tests
+[mealybug.src.badge]: https://img.shields.io/badge/mealybug-source-a72145?logo=rust
+[mealybug.src.hyper]: /tests/mealybug.rs
+[mooneye.git.badge]:  https://img.shields.io/badge/mooneye-origin-2188a7?logo=github
+[mooneye.git.hyper]:  https://github.com/Gekkio/mooneye-test-suite
+[mooneye.src.badge]:  https://img.shields.io/badge/mooneye-source-a72145?logo=rust
+[mooneye.src.hyper]:  /tests/mooneye.rs
+
+<!-- Integration -->
+[wsp.acid2]: https://webstandards.org/files/acid2/test.html
+
+<!-- Attribution -->
+[attrib]: /README.md#attribution
