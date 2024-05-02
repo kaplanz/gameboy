@@ -209,9 +209,8 @@ conditions of their respective licenses:
 - [Blargg's Test Suite][blargg.test] is included under presumptive permissive
   licensing, though no explicit license could be found. See the project
   [here][blargg].
-- [dmg-acid2 Test ROM][dmg-acid2.test] is included under the conditions of the
-  [MIT License][dmg-acid2.license] (dated 08 Jan 2024). See the project
-  [here][dmg-acid2].
+- [dmg-acid2 Test ROM][acid2.test] is included under the conditions of the [MIT
+  License][acid2.license] (dated 08 Jan 2024). See the project [here][acid2].
 - [Mealybug Tearoom Tests][mealybug.test] is included under the conditions of
   the [MIT License][mealybug.license] (dated 21 Apr 2024). See the project
   [here][mealybug].
@@ -246,20 +245,20 @@ chosen license.
 [pandocs]:   https://gbdev.io/pandocs/
 
 <!-- Attribution -->
-[2048]:              https://github.com/Sanqui/2048-gb
-[2048.game]:         ./roms/games/2048/2048.gb
-[2048.license]:      ./roms/games/2048/LICENSE
-[blargg]:            https://github.com/retrio/gb-test-roms
-[blargg.test]:       ./roms/test/blargg
-[dmg-acid2]:         https://github.com/mattcurrie/dmg-acid2
-[dmg-acid2.test]:    ./roms/test/acid2/dmg-acid2.gb
-[dmg-acid2.license]: ./roms/test/acid2/LICENSE
-[mealybug]:           https://github.com/mattcurrie/mealybug-tearoom-tests
-[mealybug.test]:      ./roms/test/mealybug
-[mealybug.license]:   ./roms/test/mealybug/LICENSE
-[mooneye]:           https://github.com/Gekkio/mooneye-test-suite
-[mooneye.test]:      ./roms/test/mooneye
-[mooneye.license]:   ./roms/test/mooneye/LICENSE
-[sameboy]:           https://sameboy.github.io
-[sameboy.boot]:      ./roms/boot/sameboy/dmg_boot.bin
-[sameboy.license]:   ./roms/boot/sameboy/LICENSE
+[2048]:             https://github.com/Sanqui/2048-gb
+[2048.game]:        ./roms/games/2048/2048.gb
+[2048.license]:     ./roms/games/2048/LICENSE
+[acid2]:            https://github.com/mattcurrie/dmg-acid2
+[acid2.test]:       ./roms/test/acid2/dmg-acid2.gb
+[acid2.license]:    ./roms/test/acid2/LICENSE
+[blargg]:           https://github.com/retrio/gb-test-roms
+[blargg.test]:      ./roms/test/blargg
+[mealybug]:         https://github.com/mattcurrie/mealybug-tearoom-tests
+[mealybug.test]:    ./roms/test/mealybug
+[mealybug.license]: ./roms/test/mealybug/LICENSE
+[mooneye]:          https://github.com/Gekkio/mooneye-test-suite
+[mooneye.test]:     ./roms/test/mooneye
+[mooneye.license]:  ./roms/test/mooneye/LICENSE
+[sameboy]:          https://sameboy.github.io
+[sameboy.boot]:     ./roms/boot/sameboy/dmg_boot.bin
+[sameboy.license]:  ./roms/boot/sameboy/LICENSE
