@@ -122,6 +122,17 @@ enabled, CTRL-C could be used to interrupt emulation and present the prompt.
 To list and get help with GBD, use the `help` command at the prompt or see its
 [documentation](/gbd/README.md).
 
+## Progress
+
+- [x] Static configuration
+  - [x] Palette customization
+  - [x] Frequency selection
+  - [ ] Re-mappable joypad
+- [x] Debugging support
+  - [x] Interactive debugging
+  - [x] CPU state logging
+  - [x] PPU VRAM visualizer
+
 ## License
 
 For information regarding licensure, please see the project's [README][license].

@@ -52,6 +52,25 @@ instruction boundary. When this occurs, the breakpoint will NOT trigger.
 Aliases: `br`, `b`
 ```
 
+## Progress
+
+- [x] Breakpoints
+  - [x] Instruction address (PC)
+  - [ ] Instruction opcode
+  - [ ] I/O operation (read/write)
+  - [ ] Softbreak (`ld b, b`)
+  - [ ] Dynamic condition
+- [x] Memory peek/poke
+- [x] Register manipulation
+  - [ ] APU
+  - [x] CPU
+  - [x] Interrupts
+  - [x] PPU
+  - [x] Serial
+  - [x] Timer
+- [x] Peripheral control
+  - [x] Serial interface
+
 ## License
 
 For information regarding licensure, please see the project's [README][license].
