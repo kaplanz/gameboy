@@ -19,7 +19,7 @@ COMMANDS:
 * `delete`,    `del`      : Delete breakpoint.
 * `disable`,   `dis`,  `d`: Disable breakpoint.
 * `enable`,    `en`,   `e`: Enable breakpoint.
-* `frequency`, `freq`, `d`: Change step frequency.
+* `frequency`, `freq`, `f`: Change step frequency.
 * `goto`,      `go`,   `g`: Goto address.
 * `help`,              `h`: Print help.
 * `ignore`,    `ig`       : Ignore breakpoint.
