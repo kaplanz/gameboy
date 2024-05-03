@@ -22,7 +22,10 @@ pub fn history() -> PathBuf {
 /// Interface over the user's console.
 #[derive(Debug)]
 pub struct Console {
+    /// Readline editor.
     edit: Editor,
+    /// Show news on launch.
+    news: bool,
 }
 
 impl Console {
@@ -30,6 +33,7 @@ impl Console {
     pub fn new() -> anyhow::Result<Self> {
         Self {
             edit: Editor::new()?,
+            news: false,
         }
         .init()
     }
@@ -56,6 +60,9 @@ impl Console {
         // Get histfile path
         let path = self::history();
         if !path.exists() {
+            // The likely hasn't used GBD before, so display help information
+            // upon first launch.
+            self.news = true;
             // Don't read any history if the file does not (yet) exist. Instead,
             // return without doing anything.
             return Ok(());
@@ -109,6 +116,10 @@ impl Drop for Console {
 
 impl Prompt for Console {
     fn prompt(&mut self, msg: &str) -> Result<String, Error> {
+        // Show news on launch
+        if std::mem::take(&mut self.news) {
+            return Ok("help".to_string());
+        }
         // Prompt the user for input
         let line = loop {
             match self.edit.readline(msg) {
