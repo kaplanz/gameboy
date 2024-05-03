@@ -61,72 +61,73 @@ pub enum Command {
     Disable(usize),
     /// [Enable][`Keyword::Enable`] a breakpoint.
     Enable(usize),
-    /// Change debugger [frequency][`Keyword::Freq`].
+    /// Change the step [unit][`Keyword::Freq`].
     Freq(Option<Tick>),
-    /// [Go-to][`Keyword::Goto`] an address.
+    /// [Goto][`Keyword::Goto`] an address.
     Goto(u16),
-    /// Print debugger [help][`Keyword::Help`].
+    /// Print [help][`Keyword::Help`].
     Help(Option<Keyword>),
-    /// [Ignore][`Keyword::Ignore`] crossings of a breakpoint.
+    /// [Ignore][`Keyword::Ignore`] a breakpoint.
     Ignore(usize, usize),
-    /// Print [info][`Keyword::Info`] about debugger state.
+    /// Print [info][`Keyword::Info`] debugger info.
     Info(Option<Keyword>),
-    /// [Jump][`Keyword::Jump`] and [continue][`Keyword::Continue`] execution at
-    /// an address.
+    /// [Jump][`Keyword::Jump`] and [continue][`Keyword::Continue`].
     Jump(u16),
     /// [List][`Keyword::List`] the current instruction.
     List,
-    /// [Load][`Keyword::Load`] a register's value.
+    /// [Load][`Keyword::Load`] from a register.
     Load(Vec<Location>),
     /// Change the [log][`Keyword::Log`] level.
     Log(Option<String>),
-    /// [Quit][`Keyword::Load`] the emulator.
+    /// [Quit][`Keyword::Quit`] the program.
     Quit,
-    /// [Read][`Keyword::Read`] a memory address.
+    /// [Read][`Keyword::Read`] from an address.
     Read(u16),
-    /// [Read][`Keyword::Read`] a range of memory addresses.
+    /// [Read][`Keyword::Read`] from an address range.
     ReadRange(Derange<u16>),
-    /// Perform a [serial][`Keyword::Serial`] operation.
-    Serial(Serial),
-    /// [Reset][`Keyword::Reset`] the emulator.
+    /// [Reset][`Keyword::Reset`] the console.
     Reset,
-    /// Perform a single execution [step][`Keyword::Step`].
+    /// Perform [serial][`Keyword::Serial`] I/O.
+    Serial(Serial),
+    /// Execute a single [step][`Keyword::Step`].
     Step(Option<usize>),
-    /// [Store][`Keyword::Load`] a value to a register.
+    /// [Store][`Keyword::Store`] to a register.
     Store(Vec<Location>, Value),
-    /// [Write][`Keyword::Write`] a value to a memory address.
+    /// [Write][`Keyword::Write`] to an address.
     Write(u16, u8),
-    /// [Write][`Keyword::Write`] a value to a range of memory addresses.
+    /// [Write][`Keyword::Write`] to an address range.
     WriteRange(Derange<u16>, u8),
 }
 
-/// Debugger keyword help.
+/// Debugger keywords.
 #[derive(Clone, Debug, Display)]
 pub enum Keyword {
     /**
      * Game Boy Debugger.
      *
      * COMMANDS:
-     * * `break`,     `br`,   `b`: Set breakpoint.
+     * * `break`,     `br`,   `b`: Set a breakpoint.
      * * `capture`,   `ps`       : Capture a screenshot.
-     * * `continue`,  `cont`, `c`: Resume execution.
-     * * `delete`,    `del`      : Delete breakpoint.
-     * * `disable`,   `dis`,  `d`: Disable breakpoint.
-     * * `enable`,    `en`,   `e`: Enable breakpoint.
-     * * `frequency`, `freq`, `f`: Change step frequency.
-     * * `goto`,      `go`,   `g`: Goto address.
+     * * `continue`,  `cont`, `c`: Continue execution.
+     * * `delete`,    `del`      : Delete a breakpoint.
+     * * `disable`,   `dis`,  `d`: Disable a breakpoint.
+     * * `enable`,    `en`,   `e`: Enable a breakpoint.
+     * * `frequency`, `freq`, `f`: Change the step unit.
+     * * `goto`,      `go`,   `g`: Goto an address.
      * * `help`,              `h`: Print help.
-     * * `ignore`,    `ig`       : Ignore breakpoint.
-     * * `jump`,      `jp`,   `j`: Jump and execute.
-     * * `list`,      `ls`,   `l`: List instruction.
-     * * `load`,      `ld`       : Load register.
-     * * `log`,       `lo`       : Change logging level.
-     * * `quit`,              `q`: Quit emulator.
-     * * `read`,      `rd`,   `r`: Read address.
-     * * `reset`,     `res`      : Reset emulator.
-     * * `step`,              `s`: Perform debugger step.
-     * * `store`,     `sr`       : Store register.
-     * * `write`,     `wr`,   `w`: Write address.
+     * * `ignore`,    `ig`       : Ignore a breakpoint.
+     * * `info`,              `i`: Print debugger info.
+     * * `jump`,      `jp`,   `j`: Jump and continue.
+     * * `list`,      `ls`,   `l`: List the current instruction.
+     * * `load`,      `ld`       : Load from a register.
+     * * `log`,       `lo`       : Change the logging level.
+     * * `quit`,              `q`: Quit the program.
+     * * `read`,      `rd`,   `r`: Read from an address.
+     * * `reset`,     `res`      : Reset the console.
+     * * `serial`,    `sx`       : Perform serial I/O.
+     * * `step`,              `s`: Execute a single step.
+     * * `store`,     `sr`       : Store to a register.
+     * * `write`,     `wr`,   `w`: Write to an address.
      *
      * Use `help` for more information about how to use a command.
      */
@@ -134,7 +135,7 @@ pub enum Keyword {
     /**
      * `break <ADDRESS>`
      *
-     * Set breakpoint at specified location.
+     * Set a breakpoint at the specified location.
      *
      * Note that due to the SM83 CPU supporting multi-byte instructions, there
      * is a chance that the specified breakpoint will not occur upon an
@@ -160,7 +161,7 @@ pub enum Keyword {
     /**
      * `continue`
      *
-     * Continue program being debugged, after signal or breakpoint.
+     * Continue program execution.
      *
      * Execution will continue until the next SIGINT signal (triggered most
      * commonly by supplying CTRL-C) is sent, or the executing program reaches a
@@ -172,7 +173,7 @@ pub enum Keyword {
     /**
      * `delete <BREAKPOINT>`
      *
-     * Delete breakpoint with specified index.
+     * Delete the breakpoint at the provided index.
      *
      * Note that breakpoint indices are generally not reused (monotonically
      * increasing), however, if another breakpoint is later created at the
@@ -202,7 +203,7 @@ pub enum Keyword {
     /**
      * `frequency [TICK]`
      *
-     * Print or set the debugger's execution frequency.
+     * Set the debugger's step frequency.
      *
      * `TICK` must be one of:
      * * `d`, `dot`:   True system clock, notably used by the PPU; occurs at a
@@ -223,7 +224,7 @@ pub enum Keyword {
     /**
      * `goto <ADDRESS>`
      *
-     * Set the PC to the specified address, without continuing execution.
+     * Set the PC to the specified address without continuing execution.
      *
      * Note that if the current instruction has already been fetched, it will
      * complete execution at the specified address. This has the consequence of
@@ -267,7 +268,7 @@ pub enum Keyword {
     /**
      * `jump <ADDRESS>`
      *
-     * Set the PC to the specified address, resuming execution.
+     * Set the PC to the specified address and continue execution.
      *
      * Note that if the current instruction has already been fetched, it will
      * complete execution at the specified address. This has the consequence of
@@ -325,7 +326,7 @@ pub enum Keyword {
     /**
      * `quit`
      *
-     * Exit the debugger, closing the program.
+     * Quit the program, closing the program.
      *
      * Aliases: `q`
      */
@@ -351,7 +352,7 @@ pub enum Keyword {
     /**
      * `reset`
      *
-     * Reset the emulator, equivalent to cycling the console's power switch.
+     * Reset the console, equivalent to cycling the power switch.
      *
      * Aliases: `res`
      */
@@ -359,7 +360,7 @@ pub enum Keyword {
     /**
      * `serial[!] [DATA]`
      *
-     * Receive or transmit data to the serial port.
+     * Receive or transmit data with the serial port.
      *
      * To read and drain the send data buffer, pass the `!` argument.
      *
@@ -373,7 +374,7 @@ pub enum Keyword {
     /**
      * `step [COUNT]`
      *
-     * Perform a (or many) steps of the debugger at the specified frequency.
+     * Execute a (or many) steps of the debugger at the specified frequency.
      *
      * Aliases: `s`
      *

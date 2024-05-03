@@ -13,26 +13,28 @@ To list and get help with GBD, use the `help` command at the prompt:
 Game Boy Debugger.
 
 COMMANDS:
-* `break`,     `br`,   `b`: Set breakpoint.
+* `break`,     `br`,   `b`: Set a breakpoint.
 * `capture`,   `ps`       : Capture a screenshot.
-* `continue`,  `cont`, `c`: Resume execution.
-* `delete`,    `del`      : Delete breakpoint.
-* `disable`,   `dis`,  `d`: Disable breakpoint.
-* `enable`,    `en`,   `e`: Enable breakpoint.
-* `frequency`, `freq`, `f`: Change step frequency.
-* `goto`,      `go`,   `g`: Goto address.
+* `continue`,  `cont`, `c`: Continue execution.
+* `delete`,    `del`      : Delete a breakpoint.
+* `disable`,   `dis`,  `d`: Disable a breakpoint.
+* `enable`,    `en`,   `e`: Enable a breakpoint.
+* `frequency`, `freq`, `f`: Change the step unit.
+* `goto`,      `go`,   `g`: Goto an address.
 * `help`,              `h`: Print help.
-* `ignore`,    `ig`       : Ignore breakpoint.
-* `jump`,      `jp`,   `j`: Jump and execute.
-* `list`,      `ls`,   `l`: List instruction.
-* `load`,      `ld`       : Load register.
-* `log`,       `lo`       : Change logging level.
-* `quit`,              `q`: Quit emulator.
-* `read`,      `rd`,   `r`: Read address.
-* `reset`,     `res`      : Reset emulator.
-* `step`,              `s`: Perform debugger step.
-* `store`,     `sr`       : Store register.
-* `write`,     `wr`,   `w`: Write address.
+* `ignore`,    `ig`       : Ignore a breakpoint.
+* `info`,              `i`: Print debugger info.
+* `jump`,      `jp`,   `j`: Jump and continue.
+* `list`,      `ls`,   `l`: List the current instruction.
+* `load`,      `ld`       : Load from a register.
+* `log`,       `lo`       : Change the logging level.
+* `quit`,              `q`: Quit the program.
+* `read`,      `rd`,   `r`: Read from an address.
+* `reset`,     `res`      : Reset the console.
+* `serial`,    `sx`       : Perform serial I/O.
+* `step`,              `s`: Execute a single step.
+* `store`,     `sr`       : Store to a register.
+* `write`,     `wr`,   `w`: Write to an address.
 
 Use `help` for more information about how to use a command.
 ```
@@ -43,7 +45,7 @@ example, `help break` will produce the following:
 ```
 `break <ADDRESS>`
 
-Set breakpoint at specified location.
+Set a breakpoint at the specified location.
 
 Note that due to the SM83 CPU supporting multi-byte instructions, there
 is a chance that the specified breakpoint will not occur upon an
