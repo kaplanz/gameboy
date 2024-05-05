@@ -61,14 +61,14 @@ Interface:
   -s, --speed <FREQ>     Simulated clock speed [possible values: half, actual,
                          double, max]
   -x, --exit             Exit after loading cartridge
-  -H, --headless         Run without UI
+  -H, --headless         Run in headless mode
       --host <ADDR>      Link cable local address
       --peer <ADDR>      Link cable peer address
 
 Debug:
       --doc <PATH>  Doctor logfile path
-  -i, --gbd         Enable interactive Game Boy Debugger
-      --win         Open debug windows
+  -i, --gbd         Enable interactive debugging
+      --win         Enable VRAM debug windows
 ```
 
 ### Configuration

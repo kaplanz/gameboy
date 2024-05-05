@@ -49,9 +49,9 @@ pub struct Cli {
     #[clap(help_heading = "Interface")]
     pub exit: bool,
 
-    /// Run without UI.
+    /// Run in headless mode.
     ///
-    /// Starts the emulator without initializing and opening the UI.
+    /// Starts without initializing or opening the UI.
     #[clap(short = 'H', long)]
     #[clap(help_heading = "Interface")]
     pub headless: bool,
@@ -81,7 +81,7 @@ pub struct Link {
 
     /// Link cable peer address.
     ///
-    /// Opens a UDP socket for serial communications at the specified address.
+    /// Opens a UDP socket at the specified address for serial communications.
     #[clap(long)]
     #[clap(value_name = "ADDR")]
     #[clap(required = false, requires = "host")]
@@ -102,18 +102,17 @@ pub struct Debug {
     pub doc: Option<PathBuf>,
 
     #[cfg(feature = "gbd")]
-    /// Enable interactive Game Boy Debugger.
+    /// Enable interactive debugging.
     ///
-    /// Starts emulation with the Game Boy Debugger (GBD) enabled, prompting
-    /// after.
+    /// Starts with Game Boy Debugger (GBD) enabled, presenting the prompt after
+    /// loading.
     #[clap(short = 'i', long)]
     pub gbd: bool,
 
     #[cfg(feature = "win")]
-    /// Open debug windows.
+    /// Enable VRAM debug windows.
     ///
-    /// Causes the emulator to open the debug windows, providing graphical
-    /// rendering of video RAM contents.
+    /// Starts with debug windows opened, visually rendering VRAM contents.
     #[clap(long)]
     pub win: bool,
 }
