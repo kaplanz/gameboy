@@ -106,7 +106,7 @@ prevent regressions in future versions.
 | [Acid2][acid2.doc]       |      0 |     17 |
 | [Blargg][blargg.doc]     |     23 |     22 |
 | [Mealybug][mealybug.doc] |      0 |     24 |
-| [Mooneye][mooneye.doc]   |     23 |     46 |
+| [Mooneye][mooneye.doc]   |     31 |     38 |
 
 ## References
 

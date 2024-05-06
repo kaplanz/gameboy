@@ -171,7 +171,7 @@ Detailed tests on precise characteristics easily verifiable on actual hardware.
 #### Results
 
 ```
-23 passed; 46 failed;
+31 passed; 38 failed;
 ```
 
 <details>
@@ -237,17 +237,17 @@ Detailed tests on precise characteristics easily verifiable on actual hardware.
   |  ❌  | `acceptance/serial/boot_sclk_align-dmgABCmgb.gb`    |
   |  ✅  | `acceptance/timer/div_write.gb`                     |
   |  ✅  | `acceptance/timer/rapid_toggle.gb`                  |
-  |  ❌  | `acceptance/timer/tim00.gb`                         |
-  |  ❌  | `acceptance/timer/tim00_div_trigger.gb`             |
-  |  ❌  | `acceptance/timer/tim01.gb`                         |
-  |  ❌  | `acceptance/timer/tim01_div_trigger.gb`             |
-  |  ❌  | `acceptance/timer/tim10.gb`                         |
-  |  ❌  | `acceptance/timer/tim10_div_trigger.gb`             |
-  |  ❌  | `acceptance/timer/tim11.gb`                         |
-  |  ❌  | `acceptance/timer/tim11_div_trigger.gb`             |
-  |  ❌  | `acceptance/timer/tima_reload.gb`                   |
+  |  ✅  | `acceptance/timer/tim00.gb`                         |
+  |  ✅  | `acceptance/timer/tim00_div_trigger.gb`             |
+  |  ✅  | `acceptance/timer/tim01.gb`                         |
+  |  ✅  | `acceptance/timer/tim01_div_trigger.gb`             |
+  |  ✅  | `acceptance/timer/tim10.gb`                         |
+  |  ✅  | `acceptance/timer/tim10_div_trigger.gb`             |
+  |  ✅  | `acceptance/timer/tim11.gb`                         |
+  |  ✅  | `acceptance/timer/tim11_div_trigger.gb`             |
+  |  ✅  | `acceptance/timer/tima_reload.gb`                   |
   |  ❌  | `acceptance/timer/tima_write_reloading.gb`          |
-  |  ✅  | `acceptance/timer/tma_write_reloading.gb`           |
+  |  ❌  | `acceptance/timer/tma_write_reloading.gb`           |
 
 </details>
 

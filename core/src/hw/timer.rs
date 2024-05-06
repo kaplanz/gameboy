@@ -31,7 +31,7 @@ pub enum Control {
 #[derive(Debug)]
 pub struct Timer {
     // State
-    last: bool,
+    prev: bool,
     // Control
     // ┌──────┬──────────┬─────┐
     // │ Size │   Name   │ Dev │
@@ -49,7 +49,7 @@ impl Timer {
     pub fn new(pic: Shared<Pic>) -> Self {
         Self {
             // State
-            last: bool::default(),
+            prev: bool::default(),
             // Control
             file: File::default(),
             // Shared
@@ -87,19 +87,18 @@ impl Timer {
     /// [Hacktix][gbedg].
     ///
     /// [gbedg]: https://github.com/Hacktix/GBEDG/blob/master/timers/index.md#timer-operation
-    fn and(&self) -> bool {
+    fn andres(&self) -> bool {
         let ena = self.file.tac.borrow().ena();
         let sel = self.file.tac.borrow().sel();
         let div = self.file.div.borrow().div();
-        let bit = sel & div != 0;
-        ena & bit
+        ena && (sel & div != 0)
     }
 }
 
 impl Block for Timer {
     fn reset(&mut self) {
         // State
-        std::mem::take(&mut self.last);
+        std::mem::take(&mut self.prev);
         // Control
         self.file.reset();
     }
@@ -152,42 +151,39 @@ impl Machine for Timer {
 
     #[rustfmt::skip]
     fn cycle(&mut self) {
-        // Extract control registers
-        let div = self.file.div.borrow().div();
-        let tima = self.file.tima.load();
-        let reload = self.file.tima.borrow().reload;
-        let tma = self.file.tma.load();
+        // Increment the divider every T-cycle.
+        //
+        // Since only the upper 8-bits of DIV are mapped, has the observable
+        // effect of incrementing DIV (as read by the CPU) every 256 T-cycles.
+        self.file.div.borrow_mut().inc();
 
-        // Check if TIMA should be incremented
-        let and = self.and();         // calculate AND result
-        let fell = self.last && !and; // check if falling
-        self.last = and;              // store for next cycle
-
-        // Calculate next TIMA
-        if fell {
-            // Increment TIMA
-            let (tima, carry) = tima.overflowing_add(1);
-            self.file.tima.store(tima);
-            trace!("timer: {tima}");
-            // Store a pending reload on overflow
-            if carry {
-                // Schedule reload 4 cycles later
-                self.file.tima.borrow_mut().reload = Some(div.wrapping_add(4));
-                debug!("scheduled timer reload");
-            }
-        }
-        // Reload TIMA from TMA
-        if Some(div) == reload {
+        // Reload TIMA
+        let reload = self.file.tima.borrow().rel == Reload::Active;
+        self.file.tima.borrow_mut().rel.tick();
+        if reload {
             // Reload from TMA
+            let tma = self.file.tma.load();
             self.file.tima.store(tma);
+            debug!("timer reloaded");
             // Request an interrupt
             self.pic.borrow_mut().req(Interrupt::Timer);
-            debug!("interrupt requested");
         }
 
-        // Increment the divider every T-cycle
-        // Note: This has the effect of incrementing DIV every 256 T-cycles.
-        self.file.div.borrow_mut().0.store(div.wrapping_add(1));
+        // Check if TIMA should be incremented
+        let this = self.andres();      // calculate AND result
+        let tick = self.prev && !this; // check for falling edge
+        self.prev = this;              // store for next cycle
+
+        // Increment TIMA
+        if tick {
+            let carry = self.file.tima.borrow_mut().inc();
+            trace!("timer: {}", self.file.tima.load());
+            // Trigger pending reload on overflow
+            if carry {
+                self.file.tima.borrow_mut().rel.sched();
+                debug!("timer reload pending");
+            }
+        }
     }
 }
 
@@ -254,6 +250,12 @@ impl Div {
     pub fn div(&self) -> u16 {
         self.0.load()
     }
+
+    /// Increment the divider register.
+    fn inc(&mut self) {
+        let value = self.0.load().wrapping_add(1);
+        self.0.store(value);
+    }
 }
 
 impl Address<u16, u8> for Div {
@@ -279,7 +281,7 @@ impl Cell<u8> for Div {
     }
 
     fn store(&mut self, _: u8) {
-        trace!("resetting divider");
+        debug!("resetting divider");
         self.0.store(0);
     }
 }
@@ -290,7 +292,56 @@ impl Device<u16, u8> for Div {}
 #[derive(Debug, Default)]
 pub struct Tima {
     reg: Register<u8>,
-    reload: Option<u16>,
+    rel: Reload,
+}
+
+/// Timer reload counter.
+///
+/// In effect, this models the 1 M-cycle (4 T-cycle) delay between a reload
+/// being triggered and it occuring.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+enum Reload {
+    /// Timer is not amid a reload.
+    #[default]
+    Inactive,
+    /// Reload pending in `N` cycles.
+    Pending(u8),
+    /// Reload occuring this cycle.
+    Active,
+}
+
+impl Reload {
+    /// Set a reload to occur.
+    fn sched(&mut self) {
+        assert!(matches!(self, Self::Inactive));
+        *self = Self::Pending(2);
+    }
+
+    /// Advance the reload counter.
+    fn tick(&mut self) {
+        *self = match self {
+            Reload::Pending(0) => Reload::Active,
+            // Decrement cycles until reload
+            Reload::Pending(mut count) => {
+                // Decrement cycles until reload
+                count -= 1;
+                // Update the reload counter
+                Reload::Pending(count)
+            }
+            // Reload just occured, or counter is inactive
+            _ => Reload::Inactive,
+        }
+    }
+}
+
+impl Tima {
+    /// Increment the timer counter.
+    #[must_use]
+    fn inc(&mut self) -> bool {
+        let (value, carry) = self.reg.load().overflowing_add(1);
+        self.reg.store(value);
+        carry
+    }
 }
 
 impl Address<u16, u8> for Tima {
@@ -315,8 +366,11 @@ impl Cell<u8> for Tima {
     }
 
     fn store(&mut self, value: u8) {
-        self.reg.store(value);
-        self.reload = None; // reloads overridden on store
+        // Ignore stores to TIMA right before a reload occurs
+        if self.rel != Reload::Active {
+            self.rel = Reload::Inactive;
+            self.reg.store(value);
+        }
     }
 }
 
@@ -326,7 +380,7 @@ impl Device<u16, u8> for Tima {}
 pub type Tma = Register<u8>;
 
 /// Timer control.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Tac(Register<u8>);
 
 impl Tac {
@@ -339,11 +393,11 @@ impl Tac {
     /// Gets the clock select rate.
     #[must_use]
     pub fn sel(&self) -> u16 {
-        match self.0.load() & 0b11 {
-            0b01 => 0x0008,
-            0b10 => 0x0020,
-            0b11 => 0x0080,
-            0b00 => 0x0200,
+        match self.0.load() & 0b011 {
+            0b01 => 1 << 3,
+            0b10 => 1 << 5,
+            0b11 => 1 << 7,
+            0b00 => 1 << 9,
             _ => unreachable!(),
         }
     }
@@ -367,17 +421,11 @@ impl Block for Tac {
 
 impl Cell<u8> for Tac {
     fn load(&self) -> u8 {
-        self.0.load()
+        0b1111_1000 | self.0.load()
     }
 
     fn store(&mut self, value: u8) {
         self.0.store(value & 0b111);
-    }
-}
-
-impl Default for Tac {
-    fn default() -> Self {
-        Self(Register::from(0b1111_1000))
     }
 }
 
@@ -389,42 +437,350 @@ mod tests {
 
     #[test]
     fn tima_reload_works() {
-        let mut timer = Timer::new(Shared::default());
-
         // Configure 65536 Hz timer (64 cycles)
-        timer.tac().store(0b0000_0110);
+        let mut timer = Timer::new(Shared::default());
+        timer.tac().store(0b110);
         timer.tma().store(0xfe);
         timer.tima().store(0xfe);
 
+        for _ in 0..64 {
+            assert_eq!(timer.tima().load(), 0xfe);
+            timer.cycle();
+        } // increment -> 0xff
+        for _ in 0..64 {
+            assert_eq!(timer.tima().load(), 0xff);
+            timer.cycle();
+        } // overflow  -> 0x00
+        for _ in 0..4 {
+            assert_eq!(timer.tima().load(), 0x00);
+            timer.cycle();
+        } // reload    -> 0xfe
+        for _ in 4..64 {
+            assert_eq!(timer.tima().load(), 0xfe);
+            timer.cycle();
+        } // increment -> 0xff
+        for _ in 0..64 {
+            assert_eq!(timer.tima().load(), 0xff);
+            timer.cycle();
+        } // overflow  -> 0x00
+        for _ in 0..4 {
+            assert_eq!(timer.tima().load(), 0x00);
+            timer.cycle();
+        } // reload    -> 0xfe
+        for _ in 4..64 {
+            assert_eq!(timer.tima().load(), 0xfe);
+            timer.cycle();
+        } // increment -> 0xff
+        assert_eq!(timer.tima().load(), 0xff);
+    }
+
+    #[test]
+    fn tima_write_reloading_working() {
         // Test 1
-        for _ in 0..64 {
-            timer.cycle();
+        {
+            // Configure 65536 Hz timer (64 cycles)
+            let mut timer = Timer::new(Shared::default());
+            timer.tac().store(0b110);
+            timer.tma().store(0xfe);
+            timer.tima().store(0xfe);
+
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xff);
+                timer.cycle();
+            } // overflow  -> 0x00
+            for _ in 0..0 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            }
+            timer.tima().store(0xfd);
+            //   overwrite -> 0xfd
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xfd);
+                timer.cycle();
+            } // increment -> 0xfe
+            assert_eq!(timer.tima().load(), 0xfe);
         }
-        for _ in 0..64 {
-            timer.cycle();
+
+        // Test 2
+        {
+            // Configure 65536 Hz timer (64 cycles)
+            let mut timer = Timer::new(Shared::default());
+            timer.tac().store(0b110);
+            timer.tma().store(0xfe);
+            timer.tima().store(0xfe);
+
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xff);
+                timer.cycle();
+            } // overflow  -> 0x00
+            for _ in 0..1 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            }
+            timer.tima().store(0xfd);
+            //   overwrite -> 0xfd
+            for _ in 1..64 {
+                assert_eq!(timer.tima().load(), 0xfd);
+                timer.cycle();
+            } // increment -> 0xfe
+            assert_eq!(timer.tima().load(), 0xfe);
         }
-        assert_eq!(timer.tima().load(), 0xff);
-        for _ in 0..4 {
-            timer.cycle();
+
+        // Test 3
+        {
+            // Configure 65536 Hz timer (64 cycles)
+            let mut timer = Timer::new(Shared::default());
+            timer.tac().store(0b110);
+            timer.tma().store(0xfe);
+            timer.tima().store(0xfe);
+
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xff);
+                timer.cycle();
+            } // overflow  -> 0x00
+            for _ in 0..2 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            }
+            timer.tima().store(0xfd);
+            //   overwrite -> 0xfd
+            for _ in 2..64 {
+                assert_eq!(timer.tima().load(), 0xfd);
+                timer.cycle();
+            } // increment -> 0xfe
+            assert_eq!(timer.tima().load(), 0xfe);
         }
-        assert_eq!(timer.tima().load(), 0x00);
-        for _ in 0..4 {
-            timer.cycle();
+
+        // Test 4
+        {
+            // Configure 65536 Hz timer (64 cycles)
+            let mut timer = Timer::new(Shared::default());
+            timer.tac().store(0b110);
+            timer.tma().store(0xfe);
+            timer.tima().store(0xfe);
+
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xff);
+                timer.cycle();
+            } // overflow  -> 0x00
+            for _ in 0..3 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            } // reloading now
+            timer.tima().store(0xfd); // write ignored!
+            {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            } // reload    -> 0xfe
+            for _ in 4..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            assert_eq!(timer.tima().load(), 0xff);
         }
-        assert_eq!(timer.tima().load(), 0xfe);
-        for _ in 0..56 {
-            timer.cycle();
+
+        // Test 5
+        {
+            // Configure 65536 Hz timer (64 cycles)
+            let mut timer = Timer::new(Shared::default());
+            timer.tac().store(0b110);
+            timer.tma().store(0xfe);
+            timer.tima().store(0xfe);
+
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xff);
+                timer.cycle();
+            } // overflow  -> 0x00
+            for _ in 0..4 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            } // reload    -> 0xfe
+            timer.tima().store(0xfd);
+            // overwrite   -> 0xfd
+            for _ in 4..64 {
+                assert_eq!(timer.tima().load(), 0xfd);
+                timer.cycle();
+            } // increment -> 0xfe
+            assert_eq!(timer.tima().load(), 0xfe);
         }
-        for _ in 0..64 {
-            timer.cycle();
+    }
+
+    #[test]
+    fn tma_write_reloading_working() {
+        // Test 1
+        {
+            // Configure 65536 Hz timer (64 cycles)
+            let mut timer = Timer::new(Shared::default());
+            timer.tac().store(0b110);
+            timer.tma().store(0xfe);
+            timer.tima().store(0xfe);
+
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xff);
+                timer.cycle();
+            } // overflow  -> 0x00
+            for _ in 0..0 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            }
+            timer.tma().store(0x69);
+            for _ in 0..4 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            } // reload    -> 0x69
+            for _ in 4..64 {
+                assert_eq!(timer.tima().load(), 0x69);
+                timer.cycle();
+            } // increment -> 0x6a
+            assert_eq!(timer.tima().load(), 0x6a);
         }
-        assert_eq!(timer.tima().load(), 0xff);
-        for _ in 0..4 {
-            timer.cycle();
+
+        // Test 2
+        {
+            // Configure 65536 Hz timer (64 cycles)
+            let mut timer = Timer::new(Shared::default());
+            timer.tac().store(0b110);
+            timer.tma().store(0xfe);
+            timer.tima().store(0xfe);
+
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xff);
+                timer.cycle();
+            } // overflow  -> 0x00
+            for _ in 0..1 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            }
+            timer.tma().store(0x69);
+            for _ in 1..4 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            } // reload    -> 0x69
+            for _ in 4..64 {
+                assert_eq!(timer.tima().load(), 0x69);
+                timer.cycle();
+            } // increment -> 0x6a
+            assert_eq!(timer.tima().load(), 0x6a);
         }
-        assert_eq!(timer.tima().load(), 0x00);
-        for _ in 0..4 {
-            timer.cycle();
+
+        // Test 3
+        {
+            // Configure 65536 Hz timer (64 cycles)
+            let mut timer = Timer::new(Shared::default());
+            timer.tac().store(0b110);
+            timer.tma().store(0xfe);
+            timer.tima().store(0xfe);
+
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xff);
+                timer.cycle();
+            } // overflow  -> 0x00
+            for _ in 0..2 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            }
+            timer.tma().store(0x69);
+            for _ in 2..4 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            } // reload    -> 0x69
+            for _ in 4..64 {
+                assert_eq!(timer.tima().load(), 0x69);
+                timer.cycle();
+            } // increment -> 0x6a
+            assert_eq!(timer.tima().load(), 0x6a);
+        }
+
+        // Test 4
+        {
+            // Configure 65536 Hz timer (64 cycles)
+            let mut timer = Timer::new(Shared::default());
+            timer.tac().store(0b110);
+            timer.tma().store(0xfe);
+            timer.tima().store(0xfe);
+
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xff);
+                timer.cycle();
+            } // overflow  -> 0x00
+            for _ in 0..3 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            }
+            timer.tma().store(0x69);
+            for _ in 3..4 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            } // reload    -> 0x69
+            for _ in 4..64 {
+                assert_eq!(timer.tima().load(), 0x69);
+                timer.cycle();
+            } // increment -> 0x6a
+            assert_eq!(timer.tima().load(), 0x6a);
+        }
+
+        // Test 5
+        {
+            // Configure 65536 Hz timer (64 cycles)
+            let mut timer = Timer::new(Shared::default());
+            timer.tac().store(0b110);
+            timer.tma().store(0xfe);
+            timer.tima().store(0xfe);
+
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            for _ in 0..64 {
+                assert_eq!(timer.tima().load(), 0xff);
+                timer.cycle();
+            } // overflow  -> 0x00
+            for _ in 0..4 {
+                assert_eq!(timer.tima().load(), 0x00);
+                timer.cycle();
+            } // reload    -> 0xfe
+            timer.tma().store(0x69); // too late!
+            for _ in 4..64 {
+                assert_eq!(timer.tima().load(), 0xfe);
+                timer.cycle();
+            } // increment -> 0xff
+            assert_eq!(timer.tima().load(), 0xff);
         }
     }
 }
