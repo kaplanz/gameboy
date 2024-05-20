@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Display};
 
-use remus::Machine;
+use remus::Block;
 use rugby::core::dmg::cart::Cartridge;
 use rugby::core::dmg::GameBoy;
 use rugby::emu::cart::Support as _;
@@ -10,6 +10,8 @@ use thiserror::Error;
 /// Number of cycles after which the test is considered to have failed due to a
 /// timeout error.
 const TIMEOUT: usize = 250_000_000;
+/// Period (in cycles) between checks for success.
+const PERIOD: usize = 10_000;
 
 /// Perform integration test emulation.
 fn emulate(rom: &[u8], check: fn(&mut GameBoy) -> Result<()>) -> Result<()> {
@@ -19,16 +21,16 @@ fn emulate(rom: &[u8], check: fn(&mut GameBoy) -> Result<()>) -> Result<()> {
     let mut emu = GameBoy::new();
     // Load the cartridge
     emu.load(cart);
-    // Write in-progress sentinal
+    // Write in-progress sentinel
     emu.cpu_mut().write(0xa000, 0x80);
 
     // Loop until completion or timeout
     for cycle in 0..TIMEOUT {
         emu.cycle();
 
-        // Every 256 cycles...
-        if cycle % 100 == 0 {
-            // ... check for success or failure
+        // Await end of period...
+        if cycle % PERIOD == 0 {
+            // ... then check for success or failure
             match check(&mut emu) {
                 Err(Error::Running) => continue,
                 res => return res,
@@ -46,7 +48,7 @@ mod check {
 
     use rugby::core::dmg::GameBoy;
     use rugby::emu::proc::Support as _;
-    use rugby::emu::serial::Support as _;
+    use rugby::emu::serial::{Serial as _, Support as _};
 
     use super::{Error, Result};
 
@@ -66,7 +68,7 @@ mod check {
     /// tests which print lots of information that scrolls off screen.
     pub fn console(emu: &mut GameBoy) -> Result<()> {
         // Extract serial output
-        let buf = emu.serial_mut().fill_buf()?;
+        let buf = emu.serial_mut().rx().fill_buf()?;
         // Calculate pass/fail conditions
         let repr = String::from_utf8_lossy(buf);
         let pass = repr.contains("Passed");

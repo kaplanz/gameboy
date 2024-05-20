@@ -2,7 +2,8 @@
 
 use std::fmt::{Debug, Display};
 
-use remus::{Location, Machine};
+use remus::reg::Port;
+use remus::{Block, Word};
 use rugby::core::dmg::cart::Cartridge;
 use rugby::core::dmg::cpu::Cpu;
 use rugby::core::dmg::GameBoy;
@@ -40,12 +41,12 @@ fn emulate(rom: &[u8]) -> Result<()> {
 
 /// Check for test results.
 fn check(emu: &GameBoy) -> Result<()> {
-    type Register = <Cpu as Location<u16>>::Register;
+    type Select = <Cpu as Port<Word>>::Select;
     // Extract register values
     let cpu = emu.cpu();
-    let bc: u16 = cpu.load(Register::BC);
-    let de: u16 = cpu.load(Register::DE);
-    let hl: u16 = cpu.load(Register::HL);
+    let bc: u16 = cpu.load(Select::BC);
+    let de: u16 = cpu.load(Select::DE);
+    let hl: u16 = cpu.load(Select::HL);
     // Calculate pass/fail conditions
     let pass = (bc == 0x0305) && (de == 0x080d) && (hl == 0x1522);
     let fail = (bc == 0x4242) && (de == 0x4242) && (hl == 0x4242);

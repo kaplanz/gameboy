@@ -41,10 +41,10 @@ impl Graphics {
 /// A convenient type alias for [`Result`](std::result::Result).
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// A type specifying categories of [`Graphics`] errors.
+/// An error caused by the graphical user interface.
 #[derive(Debug, Error)]
 pub enum Error {
-    /// Failed to render a window.
+    /// Window operation error.
     #[error(transparent)]
     Window(#[from] imp::Error),
 }

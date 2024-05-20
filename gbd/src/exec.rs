@@ -6,12 +6,14 @@ use std::ops::Not;
 use std::path::Path;
 
 use derange::Derange;
-use remus::{Block, Location as _};
+use remus::reg::Port;
+use remus::Block;
 use rugby::core::dmg::LCD;
 use rugby::emu::proc::{Processor, Support as _};
-use rugby::emu::serial::Support as _;
+use rugby::emu::serial::{Serial as _, Support as _};
+use rugby::emu::video::Support as _;
 
-use super::lang::{Keyword, Location, Serial, Value};
+use super::lang::{Keyword, Select, Serial, Value};
 use super::{Debugger, Error, GameBoy, Result, Tick};
 use crate::Breakpoint;
 
@@ -33,7 +35,7 @@ pub fn capture(emu: &mut GameBoy, path: &Path, force: bool) -> Result<()> {
     // Process screen data
     let lcd = emu
         // extract frame buffer
-        .ppu()
+        .video()
         .screen()
         // convert pixels to 2-bit value
         .map(|pix| pix as u8)
@@ -222,35 +224,35 @@ pub fn log(gbd: &mut Debugger, filter: Option<String>) -> Result<()> {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn loads(emu: &GameBoy, locs: Vec<Location>) -> Result<()> {
+pub fn loads(emu: &GameBoy, locs: Vec<Select>) -> Result<()> {
     locs.into_iter().try_for_each(|loc| load(emu, loc))
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn load(emu: &GameBoy, loc: Location) -> Result<()> {
+pub fn load(emu: &GameBoy, loc: Select) -> Result<()> {
     // Perform the load
     match loc {
-        Location::Byte(reg) => {
+        Select::Byte(reg) => {
             let byte: u8 = emu.cpu().load(reg);
             advise::info!("{reg:?}: {byte:#04x}");
         }
-        Location::Word(reg) => {
+        Select::Word(reg) => {
             let word: u16 = emu.cpu().load(reg);
             advise::info!("{reg:?}: {word:#06x}");
         }
-        Location::Pic(reg) => {
+        Select::Pic(reg) => {
             let byte: u8 = emu.pic().load(reg);
             advise::info!("{reg:?}: {byte:#04x}");
         }
-        Location::Ppu(reg) => {
-            let byte: u8 = emu.ppu().load(reg);
+        Select::Ppu(reg) => {
+            let byte: u8 = emu.video().load(reg);
             advise::info!("{reg:?}: {byte:#04x}");
         }
-        Location::Serial(reg) => {
+        Select::Serial(reg) => {
             let byte: u8 = emu.serial().load(reg);
             advise::info!("{reg:?}: {byte:#04x}");
         }
-        Location::Timer(reg) => {
+        Select::Timer(reg) => {
             let byte: u8 = emu.timer().load(reg);
             advise::info!("{reg:?}: {byte:#04x}");
         }
@@ -278,11 +280,11 @@ pub fn read_range(emu: &mut GameBoy, range: Derange<u16>) -> Result<()> {
     // Load all reads
     let data: Vec<_> = iter.map(|addr| emu.cpu().read(addr)).collect();
     // Display results
-    advise::info!(
-        "read {nbytes} bytes:\n{data}",
-        nbytes = data.len(),
-        data = phex::Printer::<u8>::new(start.into(), &data)
-    );
+    advise::info!("read {nbytes} bytes:", nbytes = data.len(),);
+    let data = format!("{}", phex::Printer::<u8>::new(start.into(), &data));
+    for line in data.split('\n') {
+        advise::info!("{line}");
+    }
 
     Ok(())
 }
@@ -305,11 +307,11 @@ pub fn serial(emu: &mut GameBoy, mode: Serial) -> Result<()> {
             let nbytes = match mode {
                 // Peek without draining output buffer
                 Serial::Peek => {
-                    data.extend_from_slice(emu.serial_mut().fill_buf()?);
+                    data.extend_from_slice(emu.serial_mut().rx().fill_buf()?);
                     data.len()
                 }
                 // Read, consuming output buffer
-                Serial::Recv => emu.serial_mut().read_to_end(&mut data)?,
+                Serial::Recv => emu.serial_mut().rx().read_to_end(&mut data)?,
                 Serial::Send(_) => unreachable!(),
             };
             // Decode assuming ASCII representation
@@ -326,7 +328,7 @@ pub fn serial(emu: &mut GameBoy, mode: Serial) -> Result<()> {
         }
         Serial::Send(data) => {
             // Transmit serial data
-            let nbytes = emu.serial_mut().write(&data)?;
+            let nbytes = emu.serial_mut().tx().write(&data)?;
             let extra = data.len() - nbytes;
             // Display results
             advise::info!("transmitted {nbytes} bytes");
@@ -347,15 +349,15 @@ pub fn step(gbd: &mut Debugger, many: Option<usize>) -> Result<()> {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn stores(emu: &mut GameBoy, locs: Vec<Location>, value: Value) -> Result<()> {
+pub fn stores(emu: &mut GameBoy, locs: Vec<Select>, value: Value) -> Result<()> {
     locs.into_iter()
         .try_for_each(|loc| store(emu, loc, value.clone()))
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
+pub fn store(emu: &mut GameBoy, loc: Select, value: Value) -> Result<()> {
     match loc {
-        Location::Byte(reg) => {
+        Select::Byte(reg) => {
             // Extract the byte
             let Value::Byte(byte) = value else {
                 return Err(Error::Value);
@@ -363,7 +365,7 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
             // Perform the store
             emu.cpu_mut().store(reg, byte);
         }
-        Location::Word(reg) => {
+        Select::Word(reg) => {
             // Extract the byte
             let Value::Word(word) = value else {
                 return Err(Error::Value);
@@ -371,7 +373,7 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
             // Perform the store
             emu.cpu_mut().store(reg, word);
         }
-        Location::Pic(reg) => {
+        Select::Pic(reg) => {
             // Extract the byte
             let Value::Byte(byte) = value else {
                 return Err(Error::Value);
@@ -379,15 +381,15 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
             // Perform the store
             emu.pic_mut().store(reg, byte);
         }
-        Location::Ppu(reg) => {
+        Select::Ppu(reg) => {
             // Extract the byte
             let Value::Byte(byte) = value else {
                 return Err(Error::Value);
             };
             // Perform the store
-            emu.ppu_mut().store(reg, byte);
+            emu.video_mut().store(reg, byte);
         }
-        Location::Serial(reg) => {
+        Select::Serial(reg) => {
             // Extract the byte
             let Value::Byte(byte) = value else {
                 return Err(Error::Value);
@@ -395,7 +397,7 @@ pub fn store(emu: &mut GameBoy, loc: Location, value: Value) -> Result<()> {
             // Perform the store
             emu.serial_mut().store(reg, byte);
         }
-        Location::Timer(reg) => {
+        Select::Timer(reg) => {
             // Extract the byte
             let Value::Byte(byte) = value else {
                 return Err(Error::Value);
@@ -442,10 +444,11 @@ pub fn write_range(emu: &mut GameBoy, range: Derange<u16>, byte: u8) -> Result<(
         advise::warn!("ignored some writes in {start:#06x}..{end:04x} <- {byte:02x}");
     }
     // Display results
-    advise::info!(
-        "wrote {nbytes} bytes:\n{data}",
-        data = phex::Printer::<u8>::new(start.into(), &data)
-    );
+    advise::info!("write {nbytes} bytes:", nbytes = data.len(),);
+    let data = format!("{}", phex::Printer::<u8>::new(start.into(), &data));
+    for line in data.split('\n') {
+        advise::info!("{line}");
+    }
 
     Ok(())
 }

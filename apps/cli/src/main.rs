@@ -39,7 +39,7 @@ fn run() -> Result<()> {
         cfg
     });
     // Initialize logger
-    #[allow(unused)]
+    #[cfg_attr(not(feature = "gbd"), allow(unused, clippy::let_unit_value))]
     let log = build::log(args.log.as_deref().unwrap_or_default())
         .context("could not initialize logger")?;
     // Log previous steps
@@ -67,12 +67,10 @@ mod build {
     use std::net::UdpSocket;
     use std::ops::Not;
     use std::path::Path;
-    use std::string::ToString;
 
     use anyhow::{ensure, Context, Result};
     #[cfg(feature = "gbd")]
-    use gbd::Debugger;
-    use gbd::Portal;
+    use gbd::{Debugger, Portal};
     use log::{debug, error, info, warn};
     use rugby::core::dmg::cart::Cartridge;
     use rugby::core::dmg::{Boot, GameBoy, LCD};
@@ -90,7 +88,10 @@ mod build {
     use crate::dbg::gbd::Console;
     use crate::def::NAME;
 
+    #[cfg(feature = "gbd")]
     type Log = Portal<String>;
+    #[cfg(not(feature = "gbd"))]
+    type Log = ();
 
     /// Installs the global logger, returning an abstracted reload handle.
     pub fn log(filter: &str) -> Result<Log> {
@@ -104,6 +105,7 @@ mod build {
             })
             .with_filter_reloading();
         // Extract handle
+        #[cfg(feature = "gbd")]
         let handle = {
             Portal {
                 get: {
@@ -116,6 +118,8 @@ mod build {
                 },
             }
         };
+        #[cfg(not(feature = "gbd"))]
+        let handle = ();
         // Install logger
         log.init();
         // Return handle
@@ -180,7 +184,7 @@ mod build {
         };
 
         // Initialize boot ROM
-        let boot = Boot::from(&rom);
+        let boot = Boot::from(rom);
         info!("loaded boot ROM");
 
         // Return success
@@ -283,6 +287,8 @@ mod build {
                 doc,
                 #[cfg(feature = "gbd")]
                 gbd,
+                #[cfg(feature = "win")]
+                win: args.dbg.win,
             },
             emu,
             gui: app::Frontend {

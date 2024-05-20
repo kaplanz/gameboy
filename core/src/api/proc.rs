@@ -1,17 +1,19 @@
 //! Processor API.
 
+use remus::{Byte, Word};
+
 /// Processor support.
 pub trait Support {
     /// Compute interface.
-    type Processor: Processor;
+    type Proc: Processor;
 
     /// Gets the core's processor.
     #[must_use]
-    fn cpu(&self) -> &Self::Processor;
+    fn cpu(&self) -> &Self::Proc;
 
     /// Mutably gets the core's processor.
     #[must_use]
-    fn cpu_mut(&mut self) -> &mut Self::Processor;
+    fn cpu_mut(&mut self) -> &mut Self::Proc;
 }
 
 /// Processor interface.
@@ -19,19 +21,19 @@ pub trait Processor {
     /// Instruction Set Architecture (ISA).
     ///
     /// Represents a valid instance of an instruction in the processor's ISA.
-    type Instruction;
+    type Insn;
 
     /// Gets the current instruction.
-    fn insn(&self) -> Self::Instruction;
+    fn insn(&self) -> Self::Insn;
 
     /// Move the PC to the provided address.
-    fn goto(&mut self, pc: u16);
+    fn goto(&mut self, pc: Word);
 
     /// Execute the provided instruction in-place.
-    fn exec(&mut self, opcode: u8);
+    fn exec(&mut self, code: Byte);
 
     /// Run the provided program (i.e. instruction sequence) in-place.
-    fn run(&mut self, prog: &[u8]);
+    fn run(&mut self, prog: &[Byte]);
 
     /// Enable (or wake) the processor.
     fn wake(&mut self);

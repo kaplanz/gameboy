@@ -1,6 +1,6 @@
 //! Emulator API.
 
-use remus::Machine;
+use remus::Block;
 
 pub mod audio;
 pub mod cart;
@@ -11,7 +11,7 @@ pub mod video;
 
 /// Core interface.
 pub trait Core:
-    Machine
+    Block
     + audio::Support
     + cart::Support
     + joypad::Support

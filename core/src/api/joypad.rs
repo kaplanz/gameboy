@@ -48,7 +48,7 @@ impl<I: Copy + Eq + Hash> From<(I, State)> for Event<I> {
 }
 
 /// Joypad button state.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum State {
     /// Button pressed.
     Dn,

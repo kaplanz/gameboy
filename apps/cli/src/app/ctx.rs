@@ -21,9 +21,9 @@ pub struct Context {
 #[derive(Clone, Debug, Default)]
 pub struct Counter {
     /// Total flushed cycles.
-    cycle: u64,
+    pub cycle: u64,
     /// Intermediate counter.
-    delta: u32,
+    pub delta: u32,
 }
 
 impl Counter {

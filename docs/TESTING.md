@@ -56,7 +56,7 @@ behaviours.
 #### Results
 
 ```
-23 passed; 22 failed;
+21 passed; 24 failed;
 ```
 
 <details>
@@ -64,9 +64,9 @@ behaviours.
 
   | Pass | Test                                                |
   |:----:| --------------------------------------------------- |
-  |  ✅  | `cpu_instrs/cpu_instrs.gb`                          |
+  |  ❌  | `cpu_instrs/cpu_instrs.gb`                          |
   |  ✅  | `cpu_instrs/individual/01-special.gb`               |
-  |  ✅  | `cpu_instrs/individual/02-interrupts.gb`            |
+  |  ❌  | `cpu_instrs/individual/02-interrupts.gb`            |
   |  ✅  | `cpu_instrs/individual/03-op sp,hl.gb`              |
   |  ✅  | `cpu_instrs/individual/04-op r,imm.gb`              |
   |  ✅  | `cpu_instrs/individual/05-op rp.gb`                 |
@@ -171,7 +171,7 @@ Detailed tests on precise characteristics easily verifiable on actual hardware.
 #### Results
 
 ```
-31 passed; 38 failed;
+24 passed; 45 failed;
 ```
 
 <details>
@@ -193,14 +193,14 @@ Detailed tests on precise characteristics easily verifiable on actual hardware.
   |  ❌  | `acceptance/call_cc_timing2.gb`                     |
   |  ❌  | `acceptance/call_timing.gb`                         |
   |  ❌  | `acceptance/call_timing2.gb`                        |
-  |  ✅  | `acceptance/di_timing-GS.gb`                        |
+  |  ❌  | `acceptance/di_timing-GS.gb`                        |
   |  ✅  | `acceptance/div_timing.gb`                          |
   |  ✅  | `acceptance/ei_sequence.gb`                         |
   |  ✅  | `acceptance/ei_timing.gb`                           |
-  |  ✅  | `acceptance/halt_ime0_ei.gb`                        |
-  |  ✅  | `acceptance/halt_ime0_nointr_timing.gb`             |
-  |  ✅  | `acceptance/halt_ime1_timing.gb`                    |
-  |  ✅  | `acceptance/halt_ime1_timing2-GS.gb`                |
+  |  ❌  | `acceptance/halt_ime0_ei.gb`                        |
+  |  ❌  | `acceptance/halt_ime0_nointr_timing.gb`             |
+  |  ❌  | `acceptance/halt_ime1_timing.gb`                    |
+  |  ❌  | `acceptance/halt_ime1_timing2-GS.gb`                |
   |  ✅  | `acceptance/if_ie_registers.gb`                     |
   |  ✅  | `acceptance/instr/daa.gb`                           |
   |  ❌  | `acceptance/interrupts/ie_push.gb`                  |
@@ -211,12 +211,12 @@ Detailed tests on precise characteristics easily verifiable on actual hardware.
   |  ✅  | `acceptance/oam_dma/basic.gb`                       |
   |  ✅  | `acceptance/oam_dma/reg_read.gb`                    |
   |  ❌  | `acceptance/oam_dma_restart.gb`                     |
-  |  ✅  | `acceptance/oam_dma/sources-GS.gb`                  |
+  |  ❌  | `acceptance/oam_dma/sources-GS.gb`                  |
   |  ❌  | `acceptance/oam_dma_start.gb`                       |
   |  ❌  | `acceptance/oam_dma_timing.gb`                      |
   |  ✅  | `acceptance/pop_timing.gb`                          |
   |  ❌  | `acceptance/ppu/hblank_ly_scx_timing-GS.gb`         |
-  |  ✅  | `acceptance/ppu/intr_1_2_timing-GS.gb`              |
+  |  ❌  | `acceptance/ppu/intr_1_2_timing-GS.gb`              |
   |  ❌  | `acceptance/ppu/intr_2_0_timing.gb`                 |
   |  ❌  | `acceptance/ppu/intr_2_mode0_timing.gb`             |
   |  ❌  | `acceptance/ppu/intr_2_mode0_timing_sprites.gb`     |

@@ -11,17 +11,21 @@ use anyhow::Context as _;
 use gbd::Debugger;
 #[allow(unused)]
 use log::{debug, error, trace};
-use remus::{Clock, Machine};
+use remus::{Block, Clock};
 use rugby::app::joypad::Joypad;
 use rugby::app::serial::Serial;
-use rugby::app::video::Video;
+use rugby::app::video::Video as _;
 #[cfg(any(feature = "doc", feature = "win"))]
 use rugby::core::dmg;
+#[cfg(feature = "doc")]
+use rugby::core::dmg::cpu::Stage;
 use rugby::core::dmg::{Cartridge, GameBoy};
 use rugby::emu::cart::Support as _;
 use rugby::emu::joypad::{Joypad as _, Support as _};
+#[cfg(feature = "doc")]
+use rugby::emu::proc::Support as _;
 use rugby::emu::serial::{Serial as _, Support as _};
-use rugby::emu::video::{Support as _, Video as _};
+use rugby::emu::video::{Support as _, Video};
 
 use self::ctx::Counter;
 #[cfg(feature = "win")]
@@ -76,6 +80,9 @@ pub struct Debug {
     /// Interactive debugger.
     #[cfg(feature = "gbd")]
     pub gbd: Option<Debugger>,
+    /// Graphical VRAM rendering.
+    #[cfg(feature = "win")]
+    pub win: bool,
 }
 
 impl App {
@@ -106,10 +113,6 @@ impl App {
             .context("failed to set interrupt handler")?;
             rx
         };
-
-        // Enable doctor
-        #[cfg(feature = "doc")]
-        self.emu.doctor(self.dbg.doc.is_some());
 
         // Prepare debugger
         #[cfg(feature = "gbd")]
@@ -145,7 +148,7 @@ impl App {
                 gbd.sync(&self.emu);
 
                 // Run debugger when enabled
-                if gbd.enabled() {
+                if gbd.ready() {
                     let res = gbd.run(&mut self.emu, &mut clk);
                     // Quit if requested
                     if matches!(res, Err(gbd::Error::Quit)) {
@@ -187,7 +190,7 @@ impl App {
 
             // Draw next frame
             let video = self.emu.video();
-            if video.ready() {
+            if Video::ready(video) {
                 // Borrow frame
                 let frame = video.frame();
                 // Redraw screen
@@ -196,7 +199,7 @@ impl App {
 
             // Redraw debug windows
             #[cfg(feature = "win")]
-            if count.delta() == 0 {
+            if self.dbg.win && count.delta() == 0 {
                 if let Some(dbg) = self.gui.win.as_mut().map(|gui| &mut gui.dbg) {
                     // Gather debug info
                     let info = dmg::dbg::ppu(&mut self.emu);
@@ -224,12 +227,13 @@ impl App {
             // Log doctor entries
             #[cfg(feature = "doc")]
             if let Some(out) = &mut self.dbg.doc {
-                // Gather debug info
-                let info = dmg::dbg::doc(&mut self.emu);
-                // Format, writing if non-empty
-                let note = format!("{info}");
-                if !note.is_empty() {
-                    writeln!(out, "{note}").context("failed to write doctor log")?;
+                if matches!(self.emu.cpu().stage(), Stage::Done) && count.delta % 4 == 0 {
+                    // Gather debug info
+                    let info = dmg::dbg::cpu(&mut self.emu);
+                    // Format, writing if non-empty
+                    if !info.doc.is_empty() {
+                        writeln!(out, "{}", info.doc).context("failed to write doctor entry")?;
+                    }
                 }
             }
 

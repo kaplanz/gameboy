@@ -66,6 +66,7 @@ crates are used with the structure as follows:
 ├── crates/          # support crates
 ├── docs/            # documentation
 ├── gbd/             # game boy debugger
+├── remus/           # architecture primitives
 ├── roms/            # open-source ROMs
 ├── src/             # emulation library
 └── tests/           # integration tests
@@ -104,9 +105,9 @@ prevent regressions in future versions.
 |   Suite                  | Passed | Failed |
 | ------------------------ | ------ | ------ |
 | [Acid2][acid2.doc]       |      0 |     17 |
-| [Blargg][blargg.doc]     |     23 |     22 |
+| [Blargg][blargg.doc]     |     21 |     24 |
 | [Mealybug][mealybug.doc] |      0 |     24 |
-| [Mooneye][mooneye.doc]   |     31 |     38 |
+| [Mooneye][mooneye.doc]   |     24 |     45 |
 
 ## References
 

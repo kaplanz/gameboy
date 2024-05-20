@@ -76,7 +76,7 @@ pub enum Command {
     /// [List][`Keyword::List`] the current instruction.
     List,
     /// [Load][`Keyword::Load`] from a register.
-    Load(Vec<Location>),
+    Load(Vec<Select>),
     /// Change the [log][`Keyword::Log`] level.
     Log(Option<String>),
     /// [Quit][`Keyword::Quit`] the program.
@@ -92,7 +92,7 @@ pub enum Command {
     /// Execute a single [step][`Keyword::Step`].
     Step(Option<usize>),
     /// [Store][`Keyword::Store`] to a register.
-    Store(Vec<Location>, Value),
+    Store(Vec<Select>, Value),
     /// [Write][`Keyword::Write`] to an address.
     Write(u16, u8),
     /// [Write][`Keyword::Write`] to an address range.
@@ -426,14 +426,15 @@ pub enum Keyword {
     Write,
 }
 
+/// Register select.
 #[derive(Clone, Debug)]
-pub enum Location {
-    Byte(cpu::reg::Byte),
-    Word(cpu::reg::Word),
-    Pic(pic::Control),
-    Ppu(ppu::Control),
-    Serial(serial::Control),
-    Timer(timer::Control),
+pub enum Select {
+    Byte(cpu::Select8),
+    Word(cpu::Select16),
+    Pic(pic::Select),
+    Ppu(ppu::Select),
+    Serial(serial::Select),
+    Timer(timer::Select),
 }
 
 #[derive(Clone, Debug)]

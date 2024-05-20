@@ -6,9 +6,8 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::similar_names)]
 
-pub(crate) mod dev;
-pub(crate) mod hw;
-pub(crate) mod model;
+mod model;
+mod parts;
 
 pub mod api;
 

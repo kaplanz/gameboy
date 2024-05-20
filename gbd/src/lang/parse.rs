@@ -7,7 +7,7 @@ use pest::Parser;
 use pest_derive::Parser;
 use thiserror::Error;
 
-use super::{Command, Keyword, Location, Program, Serial, Tick, Value};
+use super::{Command, Keyword, Program, Select, Serial, Tick, Value};
 
 mod imp;
 
@@ -80,7 +80,7 @@ impl Display for Rule {
 /// A convenient type alias for [`Result`](std::result::Result).
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// A type specifying categories of [`Language`] errors.
+/// An error caused by parsing debugger commands.
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum Error {

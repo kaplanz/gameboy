@@ -42,7 +42,7 @@ xdir = { workspace = true }
 
 [features]
 default = ["doc", "gbd", "win"]
-debug = []
+debug = ["rugby/debug"]
 doc = ["debug"]
 gbd = [
     "debug",

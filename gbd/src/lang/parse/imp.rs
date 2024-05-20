@@ -11,7 +11,7 @@ use pest::iterators::Pair;
 use rugby::core::dmg::{cpu, pic, ppu, serial, timer};
 use thiserror::Error;
 
-use super::{Command, Keyword, Location, Result, Rule, Serial, Tick, Value};
+use super::{Command, Keyword, Result, Rule, Select, Serial, Tick, Value};
 
 #[allow(clippy::cast_sign_loss)]
 #[allow(clippy::similar_names)]
@@ -175,11 +175,11 @@ pub fn command(input: Pair<Rule>) -> Result<Command> {
                 .map(self::location)
                 .collect::<Result<Vec<_>>>()?;
             let value = match locs.first().exception()? {
-                Location::Byte(_) | Location::Pic(_) | Location::Ppu(_) | Location::Serial(_) | Location::Timer(_) => Value::Byte(
+                Select::Byte(_) | Select::Pic(_) | Select::Ppu(_) | Select::Serial(_) | Select::Timer(_) => Value::Byte(
                     self::integer(value.clone()) // attempt both `u8` and `i8`
                         .or_else(|_| self::integer::<i8>(value).map(|int| int as u8))?,
                 ),
-                Location::Word(_) => Value::Word(
+                Select::Word(_) => Value::Word(
                     self::integer(value.clone()) // attempt both `u16` and `i16`
                         .or_else(|_| self::integer::<i16>(value).map(|int| int as u16))?,
                 ),
@@ -341,76 +341,76 @@ pub fn keyword(pair: Pair<Rule>) -> Result<Keyword> {
 #[rustfmt::skip]
 #[allow(clippy::needless_pass_by_value)]
 #[allow(clippy::unnecessary_wraps)]
-pub fn location(pair: Pair<Rule>) -> Result<Location> {
+pub fn location(pair: Pair<Rule>) -> Result<Select> {
     // Extract the register rule
     Ok(match pair.as_rule() {
         Rule::Byte => {
             let reg = pair.into_inner().next().exception()?;
-            Location::Byte(match reg.as_rule() {
-                Rule::A => cpu::reg::Byte::A,
-                Rule::F => cpu::reg::Byte::F,
-                Rule::B => cpu::reg::Byte::B,
-                Rule::C => cpu::reg::Byte::C,
-                Rule::D => cpu::reg::Byte::D,
-                Rule::E => cpu::reg::Byte::E,
-                Rule::H => cpu::reg::Byte::H,
-                Rule::L => cpu::reg::Byte::L,
+            Select::Byte(match reg.as_rule() {
+                Rule::A => cpu::Select8::A,
+                Rule::F => cpu::Select8::F,
+                Rule::B => cpu::Select8::B,
+                Rule::C => cpu::Select8::C,
+                Rule::D => cpu::Select8::D,
+                Rule::E => cpu::Select8::E,
+                Rule::H => cpu::Select8::H,
+                Rule::L => cpu::Select8::L,
                 rule => return rule.exception(),
             })
         }
         Rule::Word => {
             let reg = pair.into_inner().next().exception()?;
-            Location::Word(match reg.as_rule() {
-                Rule::AF => cpu::reg::Word::AF,
-                Rule::BC => cpu::reg::Word::BC,
-                Rule::DE => cpu::reg::Word::DE,
-                Rule::HL => cpu::reg::Word::HL,
-                Rule::SP => cpu::reg::Word::SP,
-                Rule::PC => cpu::reg::Word::PC,
+            Select::Word(match reg.as_rule() {
+                Rule::AF => cpu::Select16::AF,
+                Rule::BC => cpu::Select16::BC,
+                Rule::DE => cpu::Select16::DE,
+                Rule::HL => cpu::Select16::HL,
+                Rule::SP => cpu::Select16::SP,
+                Rule::PC => cpu::Select16::PC,
                 rule => return rule.exception(),
             })
         }
         Rule::Pic => {
             let reg = pair.into_inner().next().exception()?;
-            Location::Pic(match reg.as_rule() {
-                Rule::If => pic::Control::If,
-                Rule::Ie => pic::Control::Ie,
+            Select::Pic(match reg.as_rule() {
+                Rule::If => pic::Select::If,
+                Rule::Ie => pic::Select::Ie,
                 rule => return rule.exception(),
             })
         }
         Rule::Ppu => {
             let reg = pair.into_inner().next().exception()?;
-            Location::Ppu(match reg.as_rule() {
-                Rule::Lcdc => ppu::Control::Lcdc,
-                Rule::Stat => ppu::Control::Stat,
-                Rule::Scy  => ppu::Control::Scy,
-                Rule::Scx  => ppu::Control::Scx,
-                Rule::Ly   => ppu::Control::Ly,
-                Rule::Lyc  => ppu::Control::Lyc,
-                Rule::Dma  => ppu::Control::Dma,
-                Rule::Bgp  => ppu::Control::Bgp,
-                Rule::Obp0 => ppu::Control::Obp0,
-                Rule::Obp1 => ppu::Control::Obp1,
-                Rule::Wy   => ppu::Control::Wy,
-                Rule::Wx   => ppu::Control::Wx,
+            Select::Ppu(match reg.as_rule() {
+                Rule::Lcdc => ppu::Select::Lcdc,
+                Rule::Stat => ppu::Select::Stat,
+                Rule::Scy  => ppu::Select::Scy,
+                Rule::Scx  => ppu::Select::Scx,
+                Rule::Ly   => ppu::Select::Ly,
+                Rule::Lyc  => ppu::Select::Lyc,
+                Rule::Dma  => ppu::Select::Dma,
+                Rule::Bgp  => ppu::Select::Bgp,
+                Rule::Obp0 => ppu::Select::Obp0,
+                Rule::Obp1 => ppu::Select::Obp1,
+                Rule::Wy   => ppu::Select::Wy,
+                Rule::Wx   => ppu::Select::Wx,
                 rule => return rule.exception(),
             })
         }
         Rule::SerialX => {
             let reg = pair.into_inner().next().exception()?;
-            Location::Serial(match reg.as_rule() {
-                Rule::Sb => serial::Control::Sb,
-                Rule::Sc => serial::Control::Sc,
+            Select::Serial(match reg.as_rule() {
+                Rule::Sb => serial::Select::Sb,
+                Rule::Sc => serial::Select::Sc,
                 rule => return rule.exception(),
             })
         }
         Rule::Timer => {
             let reg = pair.into_inner().next().exception()?;
-            Location::Timer(match reg.as_rule() {
-                Rule::Div  => timer::Control::Div,
-                Rule::Tima => timer::Control::Tima,
-                Rule::Tma  => timer::Control::Tma,
-                Rule::Tac  => timer::Control::Tac,
+            Select::Timer(match reg.as_rule() {
+                Rule::Div  => timer::Select::Div,
+                Rule::Tima => timer::Select::Tima,
+                Rule::Tma  => timer::Select::Tma,
+                Rule::Tac  => timer::Select::Tac,
                 rule => return rule.exception(),
             })
         }
@@ -443,13 +443,15 @@ impl From<ErrorKind> for Error {
 /// A type specifying categories of parser errors.
 #[derive(Debug, Error)]
 pub enum ErrorKind {
+    /// Expected pair, found none.
     #[error("expected pair, found none")]
     Expected,
+    /// Invalid rule.
     #[error("invalid rule: {0:?}")]
     Invalid(Rule),
 }
 
-/// Exception shorthand for [`Language`] errors.
+/// Exception shorthand for parsing errors.
 trait Exception<T> {
     type Err: std::error::Error;
 

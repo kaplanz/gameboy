@@ -18,6 +18,10 @@ thiserror = { workspace = true }
 [dev-dependencies]
 png = { workspace = true }
 
+[features]
+default = []
+debug = ["rugby-core/debug"]
+
 [profile.dev]
 opt-level = 3
 
@@ -27,6 +31,7 @@ members = [
     "core",
     "crates/*",
     "gbd",
+    "remus",
 ]
 
 [workspace.package]
@@ -46,7 +51,7 @@ log = "0.4.21"
 num = "0.4.1"
 phex = { version = "0.1.0", path = "crates/phex" }
 png = "0.17.13"
-remus = { git = "https://github.com/kaplanz/remus" }
+remus = { version = "0.1.0", path = "remus" }
 rugby = { version = "0.1.0", path = "." }
 rugby-core = { version = "0.1.0", path = "core" }
 serde = { version = "1.0.197", features = ["derive"] }

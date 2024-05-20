@@ -1,15 +1,17 @@
 //! Game Boy Debugger (GBD).
 
+#![warn(clippy::pedantic)]
 #![allow(clippy::result_large_err)]
 
 use std::fmt::{Debug, Display, Write};
 
 use indexmap::IndexMap;
 use log::debug;
-use remus::{Block, Clock, Location, Machine};
-use rugby::core::dmg::cpu::{self, reg};
-use rugby::core::dmg::{ppu, GameBoy};
+use remus::reg::Port;
+use remus::{Block, Clock};
+use rugby::core::dmg::{cpu, ppu, GameBoy};
 use rugby::emu::proc::Support as _;
+use rugby::emu::video::Support as _;
 use thiserror::Error;
 
 use self::lang::Program;
@@ -86,11 +88,11 @@ impl Debugger {
     /// Synchronizes the debugger with the console.
     pub fn sync(&mut self, emu: &GameBoy) {
         // Update program counter
-        self.pc = emu.cpu().load(reg::Word::PC);
+        self.pc = emu.cpu().load(cpu::Select16::PC);
         self.state = State {
             cpu: emu.cpu().stage().clone(),
-            dot: emu.ppu().dot(),
-            ppu: emu.ppu().mode().clone(),
+            dot: emu.video().dot(),
+            ppu: emu.video().mode().clone(),
         };
     }
 
@@ -277,14 +279,7 @@ impl Debugger {
 }
 
 impl Block for Debugger {
-    fn reset(&mut self) {
-        // Application
-        std::mem::take(&mut self.cycle);
-    }
-}
-
-impl Machine for Debugger {
-    fn enabled(&self) -> bool {
+    fn ready(&self) -> bool {
         // Is this an edge cycle?
         let edge = self.edge();
         // Is this cycle being stepped over?
@@ -316,6 +311,11 @@ impl Machine for Debugger {
             // Decrement ignore count
             bpt.ignore = bpt.ignore.saturating_sub(1);
         }
+    }
+
+    fn reset(&mut self) {
+        // Application
+        std::mem::take(&mut self.cycle);
     }
 }
 
@@ -420,7 +420,7 @@ impl<T: Debug> Debug for Portal<T> {
 /// A convenient type alias for [`Result`](std::result::Result).
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// A type specifying categories of [`Debugger`] errors.
+/// An error caused by a debugger command.
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Error)]
 pub enum Error {

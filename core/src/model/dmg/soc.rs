@@ -1,95 +1,87 @@
-use remus::bus::Mux;
-use remus::dev::Device;
-use remus::{Block, Board, Shared};
+//! System-on-chip.
+
+use remus::mio::{Bus, Mmio};
+use remus::{Block, Shared};
 
 use super::cpu::Cpu;
-use super::noc::NoC;
+use super::joypad::Joypad;
+use super::mem::Bank;
+use super::noc::Mmap;
 use super::pic::Pic;
-use super::ppu::{Oam, Ppu, Vram};
-use super::{boot, Hram};
-use crate::dev::{Bus, Unmapped};
-use crate::hw::apu::Apu;
-use crate::hw::dma::Dma;
+use super::ppu::{Ppu, Vram};
+use super::serial::Serial;
+use super::timer::Timer;
+use crate::parts::apu::Apu;
+use crate::parts::dma::Dma;
 
-/// Sharp LR35902 system-on-chip.
+/// Sharp LR35902 (DMG-CPU).
 #[derive(Debug)]
-pub struct SoC {
-    // Processors
+pub struct Chip {
+    /// Audio processing unit.
     pub apu: Apu,
+    /// Central processing unit.
     pub cpu: Cpu,
-    pub ppu: Ppu,
+    /// Direct memory access controller.
     pub dma: Dma,
-    // Memory
-    pub boot: Option<boot::Rom>,
-    pub hram: Shared<Hram>,
+    /// Joypad controller.
+    pub joy: Joypad,
+    /// Embedded memory.
+    pub mem: Bank,
+    /// Programmable interrupt controller.
+    pub pic: Pic,
+    /// Picture processing unit
+    pub ppu: Ppu,
+    /// Serial communications port.
+    pub ser: Serial,
+    /// Hardware timer.
+    pub tma: Timer,
 }
 
-impl SoC {
+impl Chip {
     /// Constructs a new `SoC`.
-    pub fn new(vram: Shared<Vram>, noc: &NoC, pic: Shared<Pic>) -> Self {
-        // Create memory maps
-        let cpu = noc.cpu().to_shared();
-        let dma = noc.dma().to_shared();
-        // Create shared memory
-        let oam = Shared::new(Oam::default());
-        // Create shared blocks
-        let dma = Dma::new(dma, oam.clone());
-
-        // Construct self
+    #[must_use]
+    pub fn new(noc: &Mmap, vram: Shared<Vram>) -> Self {
+        let mem = Bank::new();
+        let dma = Dma::new(noc.dma(), mem.oam.clone());
+        let pic = Pic::new();
         Self {
-            // Processors
-            apu: Apu::default(),
-            cpu: Cpu::new(cpu, pic.clone()),
-            ppu: Ppu::new(vram, oam, dma.ctrl(), pic),
+            apu: Apu::new(),
+            cpu: Cpu::new(noc.cpu(), pic.line.clone()),
+            joy: Joypad::new(pic.line.clone()),
+            ppu: Ppu::new(vram, mem.oam.clone(), dma.reg.clone(), pic.line.clone()),
+            ser: Serial::new(pic.line.clone()),
+            tma: Timer::new(pic.line.clone()),
             dma,
-            // Memory
-            boot: Option::default(),
-            hram: Shared::new(Hram::default()),
+            mem,
+            pic,
         }
     }
 }
 
-impl Block for SoC {
+impl Block for Chip {
+    fn ready(&self) -> bool {
+        self.cpu.ready()
+    }
+
     fn reset(&mut self) {
-        // Processors
         self.apu.reset();
         self.cpu.reset();
+        self.dma.reset();
+        self.joy.reset();
         self.ppu.reset();
-        // Memory
-        if let Some(boot) = &mut self.boot {
-            boot.reset();
-        }
-        self.hram.reset();
+        self.ser.reset();
+        self.tma.reset();
     }
 }
 
-impl Board<u16, u8> for SoC {
-    #[rustfmt::skip]
-    fn connect(&self, bus: &mut Bus) {
-        // Connect boards
-        self.apu.connect(bus);
-        self.cpu.connect(bus);
-        self.dma.connect(bus);
-        self.ppu.connect(bus);
-
-        // Extract devices
-        let hram = self.hram.clone().to_dynamic();
-
-        // Map devices on bus           // ┌──────┬────────┬──────┬─────┐
-                                        // │ Addr │  Size  │ Name │ Dev │
-                                        // ├──────┼────────┼──────┼─────┤
-        // mapped by `boot`             // │ 0000 │  256 B │ Boot │ ROM │
-        // mapped by `boot`             // │ ff50 │    1 B │ Boot │ Reg │
-        bus.map(0xff80..=0xfffe, hram); // │ ff80 │  127 B │ High │ RAM │
-                                        // └──────┴────────┴──────┴─────┘
-
-        // Memory
-        if let Some(boot) = &self.boot {
-            boot.connect(bus);
-        }
-
-        // Report unmapped reads as `0xff`
-        let unmap = Unmapped::<0x200>::new().to_dynamic();
-        bus.map(0xfe00..=0xffff, unmap);
+impl Mmio for Chip {
+    fn attach(&self, bus: &mut Bus) {
+        self.apu.attach(bus);
+        self.joy.attach(bus);
+        self.mem.attach(bus);
+        self.pic.attach(bus);
+        self.ppu.attach(bus);
+        self.ser.attach(bus);
+        self.tma.attach(bus);
     }
 }
