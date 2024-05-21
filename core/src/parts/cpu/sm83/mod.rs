@@ -2,7 +2,6 @@
 
 use std::fmt::{Debug, Display};
 
-use enuf::Enuf;
 use log::{debug, error, trace, warn};
 use remus::mem::Memory;
 use remus::mio::Bus;
@@ -530,11 +529,17 @@ pub enum Flag {
     C = 0b0001_0000,
 }
 
-impl Enuf for Flag {}
+impl Flag {
+    /// Gets the value of the corresponding bit to the flag.
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    #[must_use]
+    fn get(self, value: &Byte) -> bool {
+        value & self as Byte != 0
+    }
 
-impl From<Flag> for Byte {
-    fn from(value: Flag) -> Self {
-        value as Byte
+    /// Sets the value of the corresponding bit from the flag.
+    fn set(self, value: &mut Byte, enable: bool) {
+        *value ^= (*value & self as Byte) ^ (!Byte::from(enable).wrapping_sub(1) & self as Byte);
     }
 }
 

@@ -52,11 +52,11 @@ impl Fetch {
         // Determine the tile base
         let base = match loc {
             Background => {
-                let bgmap = Lcdc::BgMap.get(lcdc);
+                let bgmap = Lcdc::BgMap.get(&lcdc);
                 [0x1800, 0x1c00][bgmap as usize]
             }
             Window => {
-                let winmap = Lcdc::WinMap.get(lcdc);
+                let winmap = Lcdc::WinMap.get(&lcdc);
                 [0x1800, 0x1c00][winmap as usize]
             }
             Sprite => unreachable!(),
@@ -98,7 +98,7 @@ impl Fetch {
         } % 8;
 
         // Calculate the tile data address
-        let bgwin = Lcdc::BgWinData.get(lcdc);
+        let bgwin = Lcdc::BgWinData.get(&lcdc);
         let tidx = Self::tidx(loc, bgwin, tnum);
         let toff = (2 * yoff) as Word;
         tidx | toff
@@ -153,7 +153,7 @@ impl Stage {
                 let tnum = if let Some(obj) = sprite {
                     // Check if the sprite is tall (8x16)
                     let lcdc = ppu.reg.lcdc.load();
-                    let tall = Lcdc::ObjSize.get(lcdc);
+                    let tall = Lcdc::ObjSize.get(&lcdc);
                     if tall {
                         // Determine if we're fetching the top or bottom
                         // tile of the tall sprite.

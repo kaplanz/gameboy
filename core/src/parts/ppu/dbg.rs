@@ -38,7 +38,7 @@ impl Debug {
     fn new(ppu: &Ppu) -> Self {
         // Extract scanline info
         let loc = Location::default();
-        let bgw = Lcdc::BgMap.get(ppu.reg.lcdc.load());
+        let bgw = Lcdc::BgMap.get(&ppu.reg.lcdc.load());
         let tidx = |tnum| usize::from(Fetch::tidx(loc, bgw, tnum) >> 4);
 
         // Extract tile data, maps

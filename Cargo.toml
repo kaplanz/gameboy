@@ -45,7 +45,6 @@ anyhow = "1.0.82"
 chex = { version = "0.1.0", path = "crates/chex" }
 clap = { version = "4.5.4", features = ["derive"] }
 derange = { version = "0.1.0", path = "crates/derange" }
-enuf = { version = "0.1.0", path = "crates/enuf" }
 gbd = { version = "0.1.0", path = "gbd" }
 log = "0.4.21"
 num = "0.4.1"

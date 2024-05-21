@@ -1,4 +1,3 @@
-use enuf::Enuf;
 use remus::reg::Register;
 use remus::Byte;
 

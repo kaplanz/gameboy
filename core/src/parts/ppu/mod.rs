@@ -242,7 +242,7 @@ impl Api for Ppu {
 
 impl Block for Ppu {
     fn ready(&self) -> bool {
-        Lcdc::Enable.get(self.reg.lcdc.load())
+        Lcdc::Enable.get(&self.reg.lcdc.load())
     }
 
     fn cycle(&mut self) {
@@ -416,7 +416,10 @@ enum Lcdc {
 }
 
 impl Lcdc {
-    pub fn get(self, lcdc: Byte) -> bool {
-        lcdc & self as Byte != 0
+    /// Gets the value of the corresponding bit to the flag.
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    #[must_use]
+    fn get(self, value: &Byte) -> bool {
+        *value & self as Byte != 0
     }
 }

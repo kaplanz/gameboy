@@ -21,7 +21,7 @@ impl Scan {
     pub fn exec(mut self, ppu: &mut Ppu) -> Mode {
         // Extract the sprite and scanline info
         let lcdc = ppu.reg.lcdc.load();
-        let size = Lcdc::ObjSize.get(lcdc);
+        let size = Lcdc::ObjSize.get(&lcdc);
         let ht = [8, 16][usize::from(size)];
         let ly = ppu.reg.ly.load();
 
@@ -30,7 +30,7 @@ impl Scan {
             // Sprites should only be scanned when the following are met:
             // - Objects are are enabled
             // - Fewer than 10 sprites have been found per scanline
-            if Lcdc::ObjEnable.get(lcdc) && self.objs.len() < 10 {
+            if Lcdc::ObjEnable.get(&lcdc) && self.objs.len() < 10 {
                 // Scan the current OAM entry
                 let mut obj = [0; 4];
                 for (off, byte) in obj.iter_mut().enumerate() {

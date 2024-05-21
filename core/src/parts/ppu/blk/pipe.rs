@@ -77,7 +77,7 @@ impl Pipeline {
         let pixel = if let Some(mut bgwin) = self.bgwin.fifo.pop() {
             // Overwrite the background/window pixel data if disabled
             let lcdc = ppu.reg.lcdc.load();
-            if !Lcdc::BgWinEnable.get(lcdc) {
+            if !Lcdc::BgWinEnable.get(&lcdc) {
                 bgwin.col = Color::C0;
             }
 
@@ -119,7 +119,7 @@ impl Pipeline {
 
         // The window is reached if:
         // - window is enabled
-        let enabled = Lcdc::WinEnable.get(lcdc);
+        let enabled = Lcdc::WinEnable.get(&lcdc);
         // - y-position is NOT above window
         let above = ly < wy;
         // - x-position is NOT left of window
