@@ -32,7 +32,7 @@ pub struct Instruction {
 impl Instruction {
     /// Constructs a new `Instruction` with the given opcode.
     #[must_use]
-    pub fn new(code: Byte) -> Self {
+    pub fn decode(code: Byte) -> Self {
         table::DECODE[code as usize].clone()
     }
 
@@ -143,9 +143,6 @@ pub enum Error {
     /// Unexpected opcode.
     #[error("unexpected opcode: {0:#04X}")]
     Opcode(Byte),
-    /// Request to overwrite instruction.
-    #[error("instruction overwrite: {0:?}")]
-    Overwrite(Instruction),
     /// Unimplemented instruction.
     #[error("unimplemented: {0:#04X}")]
     Unimplemented(Byte),

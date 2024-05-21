@@ -1,6 +1,6 @@
 use remus::Byte;
 
-use super::{Cpu, Error, Execute, Instruction, Operation, Return};
+use super::{Cpu, Error, Execute, Operation, Return};
 
 pub const fn default() -> Operation {
     Operation::Prefix(Prefix::Fetch)
@@ -33,11 +33,9 @@ fn fetch(code: Byte, cpu: &mut Cpu) -> Return {
         return Err(Error::Opcode(code));
     }
 
-    // Fetch [PC++]
-    let code = cpu.fetchbyte();
-    // Decode
-    let insn = Instruction::prefix(code);
+    // Execute PREFIX
+    cpu.etc.prefix = true;
 
     // Proceed
-    Err(Error::Overwrite(insn)) // FIXME: replace with `cpu.etc.prefix = true`
+    Ok(None)
 }

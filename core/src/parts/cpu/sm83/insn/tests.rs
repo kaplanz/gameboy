@@ -18,7 +18,7 @@ fn cycle_count() {
         let expect = CYCLES[code as usize];
         // Create CPU model, decode instruction
         let mut cpu = setup();
-        let mut insn = Instruction::new(code);
+        let mut insn = Instruction::decode(code);
         // Count instruction execution cycles
         let found = if expect > 0 {
             1 + iter::from_fn(move || {
@@ -36,7 +36,7 @@ fn cycle_count() {
             expect,
             found,
             "mismatch in cycle count for insn: {code:#04X} ; {insn}",
-            insn = Instruction::new(code)
+            insn = Instruction::decode(code)
         );
     }
 }

@@ -78,6 +78,8 @@ pub struct Cpu {
 /// Processor internals.
 #[derive(Debug, Default)]
 struct Internal {
+    /// Prefix instruction.
+    prefix: bool,
     /// Execution stage.
     stage: Stage,
     /// Running status.
@@ -266,7 +268,7 @@ impl Processor for Cpu {
             let pc = self.reg.pc.load();
             let op = self.read(pc);
             // Construct instruction
-            Instruction::new(op)
+            Instruction::decode(op)
         }
     }
 
@@ -276,7 +278,7 @@ impl Processor for Cpu {
 
     fn exec(&mut self, code: Byte) {
         // Create a new instruction...
-        let mut insn = Ok(Some(Instruction::new(code)));
+        let mut insn = Ok(Some(Instruction::decode(code)));
         // ... then execute it until completion
         while let Ok(Some(work)) = insn {
             insn = work.exec(self);
@@ -552,7 +554,6 @@ pub enum Status {
     /// Halted; awaiting interrupt.
     Halted,
     /// Stopped; very low-power.
-    #[allow(unused)]
     Stopped,
 }
 
@@ -604,7 +605,11 @@ impl Stage {
             let op = cpu.fetchbyte();
 
             // Decode the instruction
-            let insn = Instruction::new(op);
+            let insn = if std::mem::take(&mut cpu.etc.prefix) {
+                Instruction::prefix
+            } else {
+                Instruction::decode
+            }(op);
 
             // Check for HALT bug
             if cpu.etc.halt_bug {
@@ -645,7 +650,6 @@ impl Stage {
             self = match insn {
                 Ok(Some(insn)) => Stage::Execute(insn),
                 Ok(None) => Stage::Done,
-                Err(insn::Error::Overwrite(insn)) => Stage::Execute(insn),
                 Err(err) => {
                     // Log the error
                     error!("{err}");

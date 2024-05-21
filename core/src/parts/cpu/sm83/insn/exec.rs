@@ -19,7 +19,7 @@
 
 use remus::Byte;
 
-use super::{help, Cpu, Error, Execute, Flag, Ime, Instruction, Result, Status};
+use super::{help, Cpu, Error, Execute, Flag, Ime, Result, Status};
 
 type Return = Result<Option<Operation>>;
 
