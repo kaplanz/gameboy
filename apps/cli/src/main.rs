@@ -5,6 +5,7 @@ use std::path::Path;
 use anyhow::Context;
 use clap::Parser;
 use log::{trace, warn};
+use rugby::emu::cart::Support as _;
 
 use crate::cfg::Config;
 use crate::cli::Cli;
@@ -52,9 +53,23 @@ fn run() -> Result<()> {
         return Ok(());
     }
     // Prepare application
-    let app = build::app(&args, emu, log)?;
+    let mut app = build::app(&args, emu, log)?;
+    // Flash cartridge RAM
+    build::flash(
+        args.cfg.sw.ram().as_deref(),
+        app.emu.cart_mut(),
+        args.cfg.sw.save.unwrap_or_default(),
+    )
+    .context("could not flash RAM")?;
     // Run application
     app.run()?;
+    // Dump cartridge RAM
+    build::dump(
+        app.emu.cart(),
+        args.cfg.sw.ram().as_deref(),
+        args.cfg.sw.save.unwrap_or_default(),
+    )
+    .context("could not dump RAM")?;
 
     // Terminate normally
     Ok(())
@@ -72,6 +87,7 @@ mod build {
     #[cfg(feature = "gbd")]
     use gbd::{Debugger, Portal};
     use log::{debug, error, info, warn};
+    use rugby::core::dmg::cart::mbc::Mbc;
     use rugby::core::dmg::cart::Cartridge;
     use rugby::core::dmg::{Boot, GameBoy, LCD};
     use rugby::emu::cart::Support as _;
@@ -86,7 +102,7 @@ mod build {
     use crate::dbg::doc::Doctor;
     #[cfg(feature = "gbd")]
     use crate::dbg::gbd::Console;
-    use crate::def::NAME;
+    use crate::def::{Tristate, NAME};
 
     #[cfg(feature = "gbd")]
     type Log = Portal<String>;
@@ -359,5 +375,71 @@ mod build {
         gbd.logger(log);
         // Return constructed debugger
         Ok(gbd)
+    }
+
+    /// Flashes the cartridge RAM from a save file.
+    pub fn flash(path: Option<&Path>, cart: Option<&mut Cartridge>, save: Tristate) -> Result<()> {
+        let Some(path) = path else {
+            return Ok(());
+        };
+        let Some(cart) = cart else {
+            return Ok(());
+        };
+        if save == Tristate::Never {
+            return Ok(());
+        }
+        if save == Tristate::Auto && cart.header().info.has_battery() {
+            return Ok(());
+        }
+        if !path.exists() {
+            return Ok(());
+        }
+
+        // Open RAM file
+        let mut file = File::open(path)
+            .with_context(|| format!("failed to open: `{}`", path.display()))?
+            .take(0x0002_0000); // cartridge ROM has a maximum of 128 KiB
+
+        // Load into cartridge
+        let nbytes = cart
+            .body_mut()
+            .flash(&mut file)
+            .with_context(|| format!("failed to read: `{}", path.display()))?;
+        info!("flashed {nbytes} bytes: `{}`", path.display());
+
+        Ok(())
+    }
+
+    /// Dumps the cartridge RAM to a save file.
+    pub fn dump(cart: Option<&Cartridge>, path: Option<&Path>, save: Tristate) -> Result<()> {
+        let Some(cart) = cart else {
+            return Ok(());
+        };
+        let Some(path) = path else {
+            return Ok(());
+        };
+        if save == Tristate::Never {
+            return Ok(());
+        }
+        if save == Tristate::Auto && !cart.header().info.has_battery() {
+            return Ok(());
+        }
+        if !cart.header().info.has_ram() {
+            error!("cannot dump: cartridge does not support RAM");
+            return Ok(());
+        }
+
+        // Open RAM file
+        let mut file =
+            File::create(path).with_context(|| format!("failed to open: `{}`", path.display()))?;
+
+        // Save from cartridge
+        let nbytes = cart
+            .body()
+            .dump(&mut file)
+            .with_context(|| format!("failed to write: `{}", path.display()))?;
+        info!("dumped {nbytes} bytes: `{}`", path.display());
+
+        Ok(())
     }
 }

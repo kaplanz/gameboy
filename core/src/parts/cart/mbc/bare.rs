@@ -1,4 +1,6 @@
-use remus::mio::{Bus, Mmio};
+use std::io;
+
+use remus::mio::Device;
 use remus::{Block, Shared};
 
 use super::{Data, Mbc};
@@ -29,23 +31,19 @@ impl Bare {
 impl Block for Bare {}
 
 impl Mbc for Bare {
-    fn rom(&self) -> Data {
-        self.rom.borrow().inner().clone()
+    fn rom(&self) -> Device {
+        self.rom.clone().into()
     }
 
-    fn ram(&self) -> Data {
-        self.ram.borrow().inner().clone()
-    }
-}
-
-impl Mmio for Bare {
-    fn attach(&self, bus: &mut Bus) {
-        bus.map(0x0000..=0x7fff, self.rom.clone().into());
-        bus.map(0xa000..=0xbfff, self.ram.clone().into());
+    fn ram(&self) -> Device {
+        self.ram.clone().into()
     }
 
-    fn detach(&self, bus: &mut Bus) {
-        assert!(bus.unmap(&self.rom.clone().into()));
-        assert!(bus.unmap(&self.ram.clone().into()));
+    fn flash(&mut self, buf: &mut impl io::Read) -> io::Result<usize> {
+        buf.read(self.ram.borrow_mut().inner_mut())
+    }
+
+    fn dump(&self, buf: &mut impl io::Write) -> io::Result<usize> {
+        buf.write(self.ram.borrow().inner())
     }
 }

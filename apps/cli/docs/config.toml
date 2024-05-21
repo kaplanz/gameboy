@@ -24,6 +24,8 @@
 check = true
 # Force cartridge construction
 force = false
+# Cartridge RAM persistence
+save = "always"
 
 [interface]
 # DMG color palette

@@ -12,14 +12,28 @@ use serde::Deserialize;
 /// This may be used for base subdirectories.
 pub const NAME: &str = "rugby";
 
+/// Tristate value.
+#[derive(Copy, Clone, Debug, Default, Deserialize, PartialEq, ValueEnum)]
+#[serde(rename_all = "kebab-case")]
+pub enum Tristate {
+    /// Never enable.
+    Never,
+    /// Smartly enable.
+    #[default]
+    Auto,
+    /// Always enable.
+    Always,
+}
+
 /// Cartridge options.
 #[derive(Args, Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Cartridge {
     /// Cartridge ROM image file.
     ///
-    /// A cartridge will be constructed from the data specified in the ROM. The
-    /// cartridge header specifies precisely what hardware will be instantiated.
+    /// A cartridge will be constructed from the data specified in this file.
+    /// The cartridge header specifies precisely what hardware will be
+    /// instantiated.
     #[clap(required_unless_present("force"))]
     #[clap(value_hint = ValueHint::FilePath)]
     #[clap(help_heading = None)]
@@ -40,6 +54,25 @@ pub struct Cartridge {
     /// not contain valid data.
     #[clap(short, long)]
     pub force: bool,
+
+    /// Cartridge RAM persistence.
+    ///
+    /// This option can be used to override the cartridge's hardware support for
+    /// persistent RAM. When enabled, RAM will be loaded and saved from a file
+    /// with the same path and name as the ROM, but using the ".sav" extension.
+    #[clap(long)]
+    #[clap(value_name = "WHEN")]
+    #[clap(value_enum)]
+    pub save: Option<Tristate>,
+}
+
+impl Cartridge {
+    /// Cartridge RAM save file.
+    ///
+    /// The cartridge's RAM be initialized from the data specified in this file.
+    pub fn ram(&self) -> Option<PathBuf> {
+        self.rom.as_ref().map(|path| path.with_extension("sav"))
+    }
 }
 
 impl Cartridge {
@@ -61,6 +94,7 @@ impl Cartridge {
         self.rom = self.rom.take().or(other.rom);
         self.check |= other.check;
         self.force |= other.force;
+        self.save = self.save.take().or(other.save);
     }
 }
 

@@ -52,6 +52,8 @@ Cartridge:
   -b, --boot <PATH>  Boot ROM image file
   -c, --check        Check cartridge integrity
   -f, --force        Force cartridge construction
+      --save <WHEN>  Cartridge RAM persistence [possible values: never, auto,
+                     always]
 
 Interface:
   -p, --palette <COLOR>  DMG color palette [possible values: autumn-chill,
@@ -95,6 +97,8 @@ The default configuration is as follows:
 check = false
 # Force cartridge construction
 force = false
+# Cartridge RAM persistence
+save = "auto"
 
 [interface]
 # DMG color palette

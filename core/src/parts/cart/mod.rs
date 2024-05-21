@@ -15,7 +15,7 @@ use remus::{Block, Byte};
 use thiserror::Error;
 
 use self::header::{Header, Info};
-use self::mbc::{Bare, Mbc};
+use self::mbc::{Bare, Body};
 use crate::api::cart::Cartridge as Api;
 
 pub mod header;
@@ -29,8 +29,8 @@ pub mod mbc;
 pub struct Cartridge {
     /// Cartridge header.
     head: Header,
-    /// Cartridge data.
-    data: Box<dyn Mbc>,
+    /// Cartridge body.
+    body: Body,
 }
 
 impl Cartridge {
@@ -42,7 +42,7 @@ impl Cartridge {
     pub fn new(rom: &[Byte]) -> Result<Self> {
         let head = Header::new(rom)?;
         Ok(Self {
-            data: mbc::make(&head, rom)?,
+            body: Body::new(&head, rom)?,
             head,
         })
     }
@@ -57,9 +57,9 @@ impl Cartridge {
         let head = Header::check(rom).and_then(|()| Header::try_from(rom))?;
 
         // Construct memory bank controller
-        let body = mbc::make(&head, rom)?;
+        let body = Body::new(&head, rom)?;
 
-        Ok(Self { head, data: body })
+        Ok(Self { head, body })
     }
 
     /// Constructs a new `Cartridge` without checking the header.
@@ -72,9 +72,9 @@ impl Cartridge {
         let head = Header::new(rom).ok().unwrap_or_else(Header::blank);
 
         // Construct memory bank controller
-        let body = mbc::make(&head, rom).ok().unwrap();
+        let body = Body::new(&head, rom).ok().unwrap();
 
-        Self { head, data: body }
+        Self { head, body }
     }
 
     /// Constructs a blank `Cartridge`.
@@ -84,9 +84,9 @@ impl Cartridge {
         let head = Header::blank();
 
         // Construct a membory bank controller
-        let body = Box::new(Bare::new(Box::default(), Box::default()));
+        let body = Body::Bare(Bare::new(Box::default(), Box::default()));
 
-        Self { head, data: body }
+        Self { head, body }
     }
 
     /// Gets the cartridge's title.
@@ -103,8 +103,14 @@ impl Cartridge {
 
     /// Gets the cartridge's body.
     #[must_use]
-    pub fn body(&self) -> &dyn Mbc {
-        &*self.data
+    pub fn body(&self) -> &Body {
+        &self.body
+    }
+
+    /// Mutably gets the cartridge's body.
+    #[must_use]
+    pub fn body_mut(&mut self) -> &mut Body {
+        &mut self.body
     }
 }
 
@@ -112,17 +118,17 @@ impl Api for Cartridge {}
 
 impl Block for Cartridge {
     fn reset(&mut self) {
-        self.data.reset();
+        self.body.reset();
     }
 }
 
 impl Mmio for Cartridge {
     fn attach(&self, bus: &mut Bus) {
-        self.data.attach(bus);
+        self.body.attach(bus);
     }
 
     fn detach(&self, bus: &mut Bus) {
-        self.data.detach(bus);
+        self.body.detach(bus);
     }
 }
 

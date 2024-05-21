@@ -1,6 +1,8 @@
+use std::io;
+
 use log::{debug, trace, warn};
 use remus::mem::{Error, Memory, Result};
-use remus::mio::{Bus, Mmio};
+use remus::mio::{Bus, Device, Mmio};
 use remus::reg::Register;
 use remus::{Block, Byte, Shared, Word};
 
@@ -37,12 +39,20 @@ impl Block for Mbc1 {
 }
 
 impl Mbc for Mbc1 {
-    fn rom(&self) -> Data {
-        self.rom.borrow().mem.clone()
+    fn rom(&self) -> Device {
+        self.rom.clone().into()
     }
 
-    fn ram(&self) -> Data {
-        self.ram.borrow().mem.clone()
+    fn ram(&self) -> Device {
+        self.ram.clone().into()
+    }
+
+    fn flash(&mut self, buf: &mut impl io::Read) -> io::Result<usize> {
+        buf.read(&mut self.ram.borrow_mut().mem)
+    }
+
+    fn dump(&self, buf: &mut impl io::Write) -> io::Result<usize> {
+        buf.write(&self.ram.borrow().mem)
     }
 }
 
@@ -79,20 +89,6 @@ impl Memory for Mbc1 {
             _ => unreachable!(), // TODO: some error here
         }
         Ok(())
-    }
-}
-
-impl Mmio for Mbc1 {
-    fn attach(&self, bus: &mut Bus) {
-        self.ctl.attach(bus);
-        bus.map(0x0000..=0x7fff, self.rom.clone().into());
-        bus.map(0xa000..=0xbfff, self.ram.clone().into());
-    }
-
-    fn detach(&self, bus: &mut Bus) {
-        self.ctl.detach(bus);
-        assert!(bus.unmap(&self.rom.clone().into()));
-        assert!(bus.unmap(&self.ram.clone().into()));
     }
 }
 

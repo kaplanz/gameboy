@@ -157,6 +157,14 @@ impl api::cart::Support for GameBoy {
     /// Game ROM cartridge.
     type Cartridge = Cartridge;
 
+    fn cart(&mut self) -> Option<&Self::Cartridge> {
+        self.cart.as_ref()
+    }
+
+    fn cart_mut(&mut self) -> Option<&mut Self::Cartridge> {
+        self.cart.as_mut()
+    }
+
     /// Loads a game [`Cartridge`] into the [`GameBoy`].
     ///
     /// If a cartridge has already been loaded, it will be disconnected and
@@ -170,10 +178,6 @@ impl api::cart::Support for GameBoy {
         let ebus = &mut *self.pcb.noc.ebus.borrow_mut();
         cart.attach(ebus);
         self.cart = Some(cart);
-    }
-
-    fn cart(&mut self) -> Option<&Self::Cartridge> {
-        self.cart.as_ref()
     }
 
     fn eject(&mut self) -> Option<Self::Cartridge> {

@@ -316,6 +316,35 @@ pub enum Info {
     Camera,
 }
 
+impl Info {
+    /// Check if the cartridge has a battery.
+    #[must_use]
+    pub fn has_battery(&self) -> bool {
+        match self {
+            Info::Bare { pwr, .. }
+            | Info::Mbc1 { pwr, .. }
+            | Info::Mbc2 { pwr, .. }
+            | Info::Mbc3 { pwr, .. }
+            | Info::Mbc5 { pwr, .. }
+            | Info::Mmm01 { pwr, .. } => *pwr,
+            _ => false,
+        }
+    }
+
+    /// Check if the cartridge has any RAM.
+    #[must_use]
+    pub fn has_ram(&self) -> bool {
+        match self {
+            Info::Bare { ram, .. }
+            | Info::Mbc1 { ram, .. }
+            | Info::Mbc3 { ram, .. }
+            | Info::Mbc5 { ram, .. }
+            | Info::Mmm01 { ram, .. } => *ram,
+            _ => false,
+        }
+    }
+}
+
 impl Display for Info {
     #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

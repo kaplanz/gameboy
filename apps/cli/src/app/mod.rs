@@ -88,7 +88,7 @@ pub struct Debug {
 impl App {
     /// Runs the application.
     #[allow(clippy::too_many_lines)]
-    pub fn run(mut self) -> crate::Result<()> {
+    pub fn run(&mut self) -> crate::Result<()> {
         // Construct clock for emulator sync
         let mut clk = self
             .cfg

@@ -3,6 +3,7 @@ use remus::Byte;
 
 use self::api::cart::Support as _;
 use self::api::proc::Support as _;
+use self::cart::mbc::Mbc;
 use self::pic::Pic;
 use self::timer::Timer;
 use super::*;
