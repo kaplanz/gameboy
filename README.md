@@ -17,6 +17,7 @@
 ---
 
 [![dependency status][deps.badge]][deps.hyper]
+[![lines of code][loc.badge]](/)
 [![cli frontend][cli.badge]](./apps/cli)
 
 A cycle accurate emulator of the original 1989 Nintendo Game Boy.
@@ -186,6 +187,7 @@ chosen license.
 [cli.badge]:  https://img.shields.io/badge/frontend-cli-blue
 [deps.badge]: https://deps.rs/repo/github/kaplanz/rugby/status.svg
 [deps.hyper]: https://deps.rs/repo/github/kaplanz/rugby
+[loc.badge]:  https://tokei.rs/b1/github/kaplanz/rugby?style=flat
 
 <!-- Organization -->
 [sdl]:  https://www.libsdl.org
