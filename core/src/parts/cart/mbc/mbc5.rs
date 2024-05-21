@@ -2,7 +2,7 @@ use std::io;
 
 use log::{debug, trace};
 use remus::mem::{Error, Memory, Result};
-use remus::mio::{Bus, Device, Mmio};
+use remus::mio::Device;
 use remus::reg::Register;
 use remus::{Block, Byte, Shared, Word};
 
@@ -24,8 +24,8 @@ impl Mbc5 {
     pub fn new(rom: Data, ram: Data) -> Self {
         let ctl = Control::default();
         Self {
-            rom: Rom::new(ctl.rom.0.clone(), ctl.rom.1.clone(), rom).into(),
-            ram: Ram::new(ctl.ena.clone(), ctl.ram.clone(), ram).into(),
+            rom: Rom::new(ctl.clone(), rom).into(),
+            ram: Ram::new(ctl.clone(), ram).into(),
             ctl,
         }
     }
@@ -33,8 +33,7 @@ impl Mbc5 {
 
 impl Block for Mbc5 {
     fn reset(&mut self) {
-        self.rom.reset();
-        self.ram.reset();
+        self.ctl.reset();
     }
 }
 
@@ -56,49 +55,14 @@ impl Mbc for Mbc5 {
     }
 }
 
-impl Memory for Mbc5 {
-    fn read(&self, _: Word) -> Result<Byte> {
-        Err(Error::Misuse)
-    }
-
-    #[allow(clippy::match_same_arms)]
-    fn write(&mut self, addr: Word, data: Byte) -> Result<()> {
-        trace!("Mbc5::write({addr:#06x}, {data:#04x})");
-        match addr {
-            // RAM Enable
-            0x0000..=0x1fff => {
-                // ctl.ena <- data[3:0] == 0xA
-                self.ctl.ena.store(data);
-            }
-            // ROM Bank Number [8:0]
-            0x2000..=0x2fff => {
-                // ctl.rom[8:0] <- data[8:0]
-                self.ctl.rom.0.store(data);
-            }
-            // ROM Bank Number [9]
-            0x3000..=0x3fff => {
-                // ctl.rom[9] <- data[0]
-                self.ctl.rom.1.store(data);
-            }
-            // RAM Bank Number
-            0x4000..=0x5fff => {
-                // ctl.ram[2:0] <- data[1:0]
-                self.ctl.ram.store(data);
-            }
-            _ => unreachable!(), // TODO: some error here
-        }
-        Ok(())
-    }
-}
-
 /// MBC5 registers.
 ///
-/// | Address | Size | Name | Description           |
-/// |:-------:|------|------|-----------------------|
-/// | `$0000` | 1bit | ENA  | RAM Enable.           |
-/// | `$2000` | 8bit | LO   | ROM Bank Number (LO). |
-/// | `$3000` | 1bit | HI   | ROM Bank Number (HI). |
-/// | `$4000` | 4bit | RAM  | RAM Bank Number.      |
+/// |     Address     | Size | Name | Description           |
+/// |:---------------:|------|------|-----------------------|
+/// | `$0000..=$1FFF` | 1bit | ENA  | RAM Enable.           |
+/// | `$2000..=$2FFF` | 8bit | LO   | ROM Bank Number (LO). |
+/// | `$3000..=$3FFF` | 1bit | HI   | ROM Bank Number (HI). |
+/// | `$4000..=$7FFF` | 4bit | RAM  | RAM Bank Number.      |
 #[rustfmt::skip]
 #[derive(Clone, Debug, Default)]
 struct Control {
@@ -116,22 +80,6 @@ impl Block for Control {
         self.rom.0.take();
         self.rom.1.take();
         self.ram.take();
-    }
-}
-
-impl Mmio for Control {
-    fn attach(&self, bus: &mut Bus) {
-        bus.map(0x0000..=0x1fff, self.ena.clone().into());
-        bus.map(0x2000..=0x2fff, self.rom.0.clone().into());
-        bus.map(0x3000..=0x3fff, self.rom.1.clone().into());
-        bus.map(0x4000..=0x5fff, self.ram.clone().into());
-    }
-
-    fn detach(&self, bus: &mut Bus) {
-        assert!(bus.unmap(&self.ena.clone().into()));
-        assert!(bus.unmap(&self.rom.0.clone().into()));
-        assert!(bus.unmap(&self.rom.1.clone().into()));
-        assert!(bus.unmap(&self.ram.clone().into()));
     }
 }
 
@@ -250,32 +198,25 @@ impl Register for RamBank {
 /// MBC5 ROM.
 #[derive(Debug)]
 struct Rom {
-    ilo: Shared<RomBankLo>,
-    ihi: Shared<RomBankHi>,
+    ctl: Control,
     mem: Data,
 }
 
 impl Rom {
     /// Constructs a new `Rom`.
-    fn new(ilo: Shared<RomBankLo>, ihi: Shared<RomBankHi>, mem: Data) -> Self {
-        Self { ilo, ihi, mem }
+    fn new(ctl: Control, mem: Data) -> Self {
+        Self { ctl, mem }
     }
 
     /// Adjusts addresses by internal bank number.
     fn adjust(&self, addr: Word) -> usize {
         let bank = {
-            let lo = usize::from(self.ilo.load());
-            let hi = usize::from(self.ihi.load());
+            let lo = usize::from(self.ctl.rom.0.load());
+            let hi = usize::from(self.ctl.rom.1.load());
             hi << 8 | lo
         };
         let addr = usize::from(addr);
-        (bank << 14 | addr & 0x3fff) % self.mem.len()
-    }
-}
-
-impl Block for Rom {
-    fn reset(&mut self) {
-        std::mem::take(&mut self.ilo);
+        (bank << 14 | addr & 0x3fff) % self.mem.len().max(0x8000)
     }
 }
 
@@ -289,44 +230,60 @@ impl Memory for Rom {
         self.mem.get(index).ok_or(Error::Range).copied()
     }
 
-    fn write(&mut self, _: Word, _: Byte) -> Result<()> {
-        Err(Error::Misuse)
+    fn write(&mut self, addr: Word, data: Byte) -> Result<()> {
+        trace!("Mbc5::write({addr:#06x}, {data:#04x})");
+        match addr {
+            // RAM Enable
+            0x0000..=0x1fff => {
+                // ctl.ena <- data[3:0] == 0xA
+                self.ctl.ena.store(data);
+            }
+            // ROM Bank Number [8:0]
+            0x2000..=0x2fff => {
+                // ctl.rom[8:0] <- data[8:0]
+                self.ctl.rom.0.store(data);
+            }
+            // ROM Bank Number [9]
+            0x3000..=0x3fff => {
+                // ctl.rom[9] <- data[0]
+                self.ctl.rom.1.store(data);
+            }
+            // RAM Bank Number
+            0x4000..=0x5fff => {
+                // ctl.ram[2:0] <- data[1:0]
+                self.ctl.ram.store(data);
+            }
+            _ => return Err(Error::Range),
+        }
+        Ok(())
     }
 }
 
 /// MBC5 RAM.
 #[derive(Debug)]
 struct Ram {
-    ena: Shared<Enable>,
-    idx: Shared<RamBank>,
+    ctl: Control,
     mem: Data,
 }
 
 impl Ram {
     /// Constructs a new `Ram`.
-    fn new(ena: Shared<Enable>, idx: Shared<RamBank>, mem: Data) -> Self {
-        Self { ena, idx, mem }
+    fn new(ctl: Control, mem: Data) -> Self {
+        Self { ctl, mem }
     }
 
     /// Adjusts addresses by internal bank number.
     fn adjust(&self, addr: Word) -> usize {
-        let bank = usize::from(self.idx.load());
+        let bank = usize::from(self.ctl.ram.load());
         let addr = usize::from(addr);
-        (bank << 13 | addr & 0x1fff) % self.mem.len()
-    }
-}
-
-impl Block for Ram {
-    fn reset(&mut self) {
-        std::mem::take(&mut self.ena);
-        std::mem::take(&mut self.idx);
+        (bank << 13 | addr & 0x1fff) % self.mem.len().max(0x2000)
     }
 }
 
 impl Memory for Ram {
     fn read(&self, addr: Word) -> Result<Byte> {
         // Error when disabled
-        if self.ena.load() == 0 {
+        if self.ctl.ena.load() == 0 {
             return Err(Error::Busy);
         }
         // Perform adjusted read
@@ -336,7 +293,7 @@ impl Memory for Ram {
 
     fn write(&mut self, addr: Word, data: Byte) -> Result<()> {
         // Error when disabled
-        if self.ena.load() == 0 {
+        if self.ctl.ena.load() == 0 {
             return Err(Error::Busy);
         }
         // Perform adjusted write
