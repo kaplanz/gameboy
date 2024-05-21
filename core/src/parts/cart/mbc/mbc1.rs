@@ -8,7 +8,7 @@ use remus::{Block, Byte, Shared, Word};
 
 use super::{Data, Mbc};
 
-/// [MBC1][mbc1] cartridge kind.
+/// [MBC1][mbc1] cartridge type.
 ///
 /// [mbc1]: https://gbdev.io/pandocs/MBC1.html
 #[derive(Debug)]

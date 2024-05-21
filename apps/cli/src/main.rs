@@ -228,20 +228,16 @@ mod build {
 
         // Initialize cartridge
         let cart = if force {
-            // Force cartridge creation from ROM
-            Cartridge::checked(&rom)
-                .inspect_err(|err| error!("{err:#}"))
-                .ok() // discard the error
-                .unwrap_or_else(|| Cartridge::unchecked(&rom))
+            // Force cartridge creation
+            Cartridge::unchecked(&rom)
         } else if check {
-            // Check ROM integrity and create a cartridge
-            Cartridge::checked(&rom)
-                .inspect(|_| info!("passed ROM integrity check"))
-                .with_context(|| format!("failed to load: `{}`", path.display()))?
+            // Ensure ROM integrity
+            Cartridge::checked(&rom).inspect(|_| info!("passed ROM integrity check"))
         } else {
-            // Attempt to create a cartridge
-            Cartridge::new(&rom).with_context(|| format!("failed to load: `{}`", path.display()))?
-        };
+            // Create a cartridge
+            Cartridge::new(&rom)
+        }
+        .with_context(|| format!("failed to load: `{}`", path.display()))?;
         info!("loaded cartridge:\n{}", cart.header());
 
         // Return success

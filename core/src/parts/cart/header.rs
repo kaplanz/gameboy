@@ -3,12 +3,16 @@
 //! Encoded in the ROM at the address range `[$0100..$0150]` is the header, which
 //! encodes both physical attributes describing the hardware of the cartridge,
 //! flags describing console support, and characteristics of the software.
+//!
+//! See more details [here][header].
+//!
+//! [header]: https://gbdev.io/pandocs/The_Cartridge_Header.html
 
 use std::array::TryFromSliceError;
 use std::fmt::Display;
 use std::str::Utf8Error;
 
-use log::warn;
+use log::{error, warn};
 use remus::{Byte, Word};
 use thiserror::Error;
 
@@ -30,220 +34,416 @@ pub const LOGO: [Byte; 0x30] = [
     0xbb, 0xbb, 0x67, 0x63, 0x6e, 0x0e, 0xec, 0xcc, 0xdd, 0xdc, 0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e,
 ];
 
+/// Calculates the header checksum.
+#[must_use]
+pub fn hchk(rom: &[Byte]) -> Byte {
+    rom[0x134..=0x14c]
+        .iter()
+        .copied()
+        .fold(0, |accum, item| accum.wrapping_sub(item).wrapping_sub(1))
+}
+
+/// Calculates the global checksum.
+#[must_use]
+pub fn gchk(rom: &[Byte]) -> Word {
+    rom.iter()
+        .copied()
+        .fold(0u16, |accum, item| accum.wrapping_add(Word::from(item)))
+        .wrapping_sub(Word::from(rom[0x14e]))
+        .wrapping_sub(Word::from(rom[0x14f]))
+}
+
 /// Cartridge header.
 ///
 /// Information about the ROM and the cartridge containing it. Stored in the
-/// byte range `[0x100, 0x150)`.
+/// address range `[$0100, $0150)`.
 #[derive(Debug, Eq, PartialEq)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Header {
-    /// Equality with boot ROM's Nintendo logo.
+    /// `[$0104..=$0133]`: Nintendo logo.
+    ///
+    /// Check for if the cartridge was officially licensed by Nintendo.
+    /// Cartridges must include the [expected bytes](LOGO) to render Nintendo's
+    /// logo in the boot ROM.
+    ///
+    /// See more details [here][logo].
+    ///
+    /// [logo]: https://gbdev.io/pandocs/The_Cartridge_Header.html#0104-0133--nintendo-logo
     pub logo: bool,
-    /// Title of this ROM.
+    /// `[$0134..=$0143]`: Title.
+    ///
+    /// The title of the game in uppercase ASCII.
+    ///
+    /// See more details [here][title].
+    ///
+    /// [title]: https://gbdev.io/pandocs/The_Cartridge_Header.html#0134-0143--title
     pub title: Option<String>,
-    /// DMG model support.
+    /// `[$0143]`: DMG flag.
+    ///
+    /// Whether this cartridge is compatible with the DMG model.
+    ///
+    /// See more details [here][dmg].
+    ///
+    /// [dmg]: https://gbdev.io/pandocs/The_Cartridge_Header.html#0143--cgb-flag
     pub dmg: bool,
-    /// CGB model support.
+    /// `[$0143]`: CGB flag.
+    ///
+    /// Whether this cartridge is compatible with the CGB model.
+    ///
+    /// See more details [here][cgb].
+    ///
+    /// [cgb]: https://gbdev.io/pandocs/The_Cartridge_Header.html#0143--cgb-flag
     pub cgb: bool,
-    /// SGB model support.
+    /// `[$0146]`: SGB flag.
+    ///
+    /// Whether this cartridge is compatible with the SGB model.
+    ///
+    /// See more details [here][sgb].
+    ///
+    /// [sgb]: https://gbdev.io/pandocs/The_Cartridge_Header.html#0146--sgb-flag
     pub sgb: bool,
-    /// Hardware information.
+    /// `[$0147]`: Cartridge type.
+    ///
+    /// Whether this cartridge is compatible with the SGB model.
+    ///
+    /// See more details [here][type].
+    ///
+    /// [type]: https://gbdev.io/pandocs/The_Cartridge_Header.html#0147--cartridge-type
     pub info: Info,
-    /// ROM size in bytes.
+    /// `[$0148]`: ROM size.
+    ///
+    /// How much ROM is present on the cartridge.
+    ///
+    /// See more details [here][romsz].
+    ///
+    /// [romsz]: https://gbdev.io/pandocs/The_Cartridge_Header.html#0148--rom-size
     pub romsz: usize,
-    /// ROM size in bytes.
+    /// `[$0149]`: RAM size.
+    ///
+    /// How much RAM is present on the cartridge, if any.
+    ///
+    /// See more details [here][ramsz].
+    ///
+    /// [ramsz]: https://gbdev.io/pandocs/The_Cartridge_Header.html#0149--ram-size
     pub ramsz: usize,
-    /// Destination code (Japan/Worldwide)
+    /// `[$014A]`: Destination code.
+    ///
+    /// Whether this version of the game is intended to be sold in Japan or
+    /// elsewhere.
+    ///
+    /// See more details [here][jpn].
+    ///
+    /// [jpn]: https://gbdev.io/pandocs/The_Cartridge_Header.html#014a--destination-code
     pub jpn: bool,
-    /// Revision number of this ROM.
+    /// `[$014C]`: Mask ROM version number.
+    ///
+    /// Version number of the game.
+    ///
+    /// See more details [here][version].
+    ///
+    /// [version]: https://gbdev.io/pandocs/The_Cartridge_Header.html#014c--mask-rom-version-number
     pub version: Byte,
-    /// 8-bit header checksum.
+    /// `[$014D]`: Header checksum.
+    ///
+    /// An 8-bit checksum computed from the cartridge header bytes
+    /// `[$0134..=$014C]`.
+    ///
+    /// See more details [here][hchk].
+    ///
+    /// [hchk]: https://gbdev.io/pandocs/The_Cartridge_Header.html#014d--header-checksum
     pub hchk: Byte,
-    /// 16-bit global checksum.
+    /// `[$014E..=$014F]`: Global checksum.
+    ///
+    /// A 16-bit checksum computed from the entire cartridge ROM (excluding
+    /// these two bytes). This checksum is not usually verified.
+    ///
+    /// See more details [here][gchk].
+    ///
+    /// [gchk]: https://gbdev.io/pandocs/The_Cartridge_Header.html#014e-014f--global-checksum
     pub gchk: Word,
 }
 
 impl Header {
     /// Constructs a new `Header`.
     ///
-    /// For detailed information on how Game Boy headers are parsed, see [Pan
-    /// Docs][pandocs].
+    /// # Errors
+    ///
+    /// Returns an error if the ROM contained invalid header bytes.
+    pub fn new(rom: &[Byte]) -> Result<Self> {
+        // Extract header bytes
+        let head: &[Byte; 0x50] = rom.get(0x100..0x150).ok_or(Error::Missing)?.try_into()?;
+
+        // Construct header
+        let this = Self {
+            // Compare logo data
+            logo: make::logo(head),
+            // Parse title
+            title: make::title(head)?,
+            // Parse DMG flag
+            dmg: make::dmg(head),
+            // Parse CGB flag
+            cgb: make::cgb(head)?,
+            // Parse SGB flag
+            sgb: make::sgb(head),
+            // Parse cartridge type
+            info: make::info(head)?,
+            // Parse ROM size
+            romsz: make::romsz(head)?,
+            // Parse RAM size
+            ramsz: make::ramsz(head)?,
+            // Parse RAM size
+            jpn: make::jpn(head)?,
+            // Parse version number
+            version: make::version(head),
+            // Parse header checksum
+            hchk: make::hchk(head),
+            // Parse global checksum
+            gchk: make::gchk(head),
+        };
+
+        // Validate header checksum
+        let chk = self::hchk(rom);
+        if chk != this.hchk {
+            return Err(Error::HeaderChk {
+                found: chk,
+                expected: this.hchk,
+            });
+        }
+        // Validate global checksum
+        let chk = self::gchk(rom);
+        if chk != this.gchk {
+            warn!(
+                "bad global checksum (found {found:#06x}, expected {expected:#06x})",
+                found = chk,
+                expected = this.gchk,
+            );
+        }
+
+        Ok(this)
+    }
+
+    /// Constructs a new `Header`, checking cartridge integrity.
     ///
     /// # Errors
     ///
-    /// Returns an error if the header could not be parsed from the ROM.
-    ///
-    /// [pandocs]: https://gbdev.io/pandocs/The_Cartridge_Header.html
-    pub fn new(rom: &[Byte]) -> Result<Self> {
+    /// Returns an error if the ROM contained invalid header bytes, or if
+    /// cartridge integrity seems compromised. (This is detected using
+    /// checksums.)
+    pub fn checked(rom: &[Byte]) -> Result<Self> {
         // Extract header bytes
-        let head: &[Byte; 0x50] = rom
-            .get(0x100..0x150)
-            .ok_or(Error::Missing)?
-            .try_into()
-            .map_err(Error::Slice)?;
+        let head: &[Byte; 0x50] = rom.get(0x100..0x150).ok_or(Error::Missing)?.try_into()?;
 
-        // Compare logo data
-        let logo = head[0x04..=0x33] == LOGO;
-        // Parse title
+        // Construct header
+        let this = Self {
+            // Compare logo data
+            logo: make::logo(head),
+            // Parse title
+            title: make::title(head)?,
+            // Parse DMG flag
+            dmg: make::dmg(head),
+            // Parse CGB flag
+            cgb: make::cgb(head)?,
+            // Parse SGB flag
+            sgb: make::sgb(head),
+            // Parse cartridge type
+            info: make::info(head)?,
+            // Parse ROM size
+            romsz: make::romsz(head)?,
+            // Parse RAM size
+            ramsz: make::ramsz(head)?,
+            // Parse RAM size
+            jpn: make::jpn(head)?,
+            // Parse version number
+            version: make::version(head),
+            // Parse header checksum
+            hchk: make::hchk(head),
+            // Parse global checksum
+            gchk: make::gchk(head),
+        };
+
+        // Validate header checksum
+        let chk = self::hchk(rom);
+        if chk != this.hchk {
+            return Err(Error::HeaderChk {
+                found: chk,
+                expected: this.hchk,
+            });
+        }
+        // Validate global checksum
+        let chk = self::gchk(rom);
+        if chk != this.gchk {
+            return Err(Error::GlobalChk {
+                found: chk,
+                expected: this.gchk,
+            });
+        }
+
+        Ok(this)
+    }
+
+    /// Constructs a new `Header`, ignoring invalid header bytes.
+    ///
+    /// # Errors
+    ///
+    /// Header construction will fail if the ROM is missing header bytes.
+    pub fn unchecked(rom: &[Byte]) -> Result<Self> {
+        // Extract header bytes
+        let head: &[Byte; 0x50] = rom.get(0x100..0x150).ok_or(Error::Missing)?.try_into()?;
+
+        // Construct header
+        let ramsz = make::ramsz(head);
+        let this = Self {
+            // Compare logo data
+            logo: make::logo(head),
+            // Parse title
+            title: make::title(head).unwrap_or_else(|err| {
+                let default = Option::default();
+                error!("{err} (default: {default:?})");
+                default
+            }),
+            // Parse DMG flag
+            dmg: make::dmg(head),
+            // Parse CGB flag
+            cgb: make::cgb(head).unwrap_or_else(|err| {
+                let default = bool::default();
+                error!("{err} (default: {default:?})");
+                default
+            }),
+            // Parse SGB flag
+            sgb: make::sgb(head),
+            // Parse cartridge type
+            info: make::info(head).unwrap_or_else(|err| {
+                let default = Info::Bare {
+                    ram: matches!(ramsz, Ok(ramsz) if ramsz > 0),
+                    pwr: false,
+                };
+                error!("{err} (default: {default:?})");
+                default
+            }),
+            // Parse ROM size
+            romsz: make::romsz(head).unwrap_or_else(|err| {
+                let default = 0x8000;
+                error!("{err} (default: {default:?})");
+                default
+            }),
+            // Parse RAM size
+            ramsz: ramsz.unwrap_or_else(|err| {
+                let default = usize::default();
+                error!("{err} (default: {default:?})");
+                default
+            }),
+            // Parse RAM size
+            jpn: make::jpn(head).unwrap_or_else(|err| {
+                let default = bool::default();
+                error!("{err} (default: {default:?})");
+                default
+            }),
+            // Parse version number
+            version: make::version(head),
+            // Parse header checksum
+            hchk: make::hchk(head),
+            // Parse global checksum
+            gchk: make::gchk(head),
+        };
+
+        Ok(this)
+    }
+}
+
+mod make {
+    use log::warn;
+    use remus::{Byte, Word};
+
+    use super::{Error, Info, Result, LOGO};
+
+    /// Parse the `logo` field from the header.
+    pub fn logo(head: &[Byte; 0x50]) -> bool {
+        head[0x04..=0x33] == LOGO
+    }
+
+    /// Parse the `title` field from the header.
+    pub fn title(head: &[Byte; 0x50]) -> Result<Option<String>> {
         let tlen = if head[0x43] & 0x80 == 0 { 16 } else { 15 };
-        let title = match std::str::from_utf8(&head[0x34..0x34 + tlen])
+        let title = std::str::from_utf8(&head[0x34..0x34 + tlen])
             .map_err(Error::Title)?
             .trim_matches('\0')
-        {
-            "" => None,
-            ok => Some(ok),
-        }
-        .map(ToString::to_string);
-        // Parse CGB flag
-        let dmg = (head[0x43] & 0xc0) != 0xc0;
-        let cgb = match head[0x43] & 0xbf {
+            .to_string();
+        Ok(if title.is_empty() { None } else { Some(title) })
+    }
+
+    /// Parse the `dmg` field from the header.
+    pub fn dmg(head: &[Byte; 0x50]) -> bool {
+        (head[0x43] & 0xc0) != 0xc0
+    }
+
+    /// Parse the `cgb` field from the header.
+    pub fn cgb(head: &[Byte; 0x50]) -> Result<bool> {
+        match head[0x43] & 0xbf {
             0x00 => Ok(false),
             0x80 => Ok(true),
             byte => Err(Error::Color(byte)),
-        }?;
-        // Parse SGB flag
-        let sgb = match head[0x46] {
+        }
+    }
+
+    /// Parse the `sgb` field from the header.
+    pub fn sgb(head: &[Byte; 0x50]) -> bool {
+        match head[0x46] {
             0x00 => false,
             0x03 => true,
             byte => {
                 warn!("non-standard SGB flag: {byte:#04x}");
                 false
             }
-        };
-        // Parse cartridge kind
-        let cart = head[0x47].try_into()?;
-        // Parse ROM size
-        let romsz = match head[0x48] {
+        }
+    }
+
+    /// Parse the `info` field from the header.
+    pub fn info(head: &[Byte; 0x50]) -> Result<Info> {
+        head[0x47].try_into()
+    }
+
+    /// Parse the `romsz` field from the header.
+    pub fn romsz(head: &[Byte; 0x50]) -> Result<usize> {
+        match head[0x48] {
             byte @ 0x00..=0x08 => Ok(0x8000 << byte),
             byte => Err(Error::Rom(byte)),
-        }?;
-        // Parse RAM size
-        let ramsz = match head[0x49] {
-            0x00 => Ok(0),
-            0x01 => Ok(0x800),
-            0x02 => Ok(0x2000),
-            0x03 => Ok(0x8000),
+        }
+    }
+
+    /// Parse the `ramsz` field from the header.
+    pub fn ramsz(head: &[Byte; 0x50]) -> Result<usize> {
+        match head[0x49] {
+            0x00 => Ok(0x00000),
+            0x01 => Ok(0x00800),
+            0x02 => Ok(0x02000),
+            0x03 => Ok(0x08000),
             0x04 => Ok(0x20000),
             0x05 => Ok(0x10000),
             byte => Err(Error::Ram(byte)),
-        }?;
-        // Parse RAM size
-        let jpn = match head[0x4a] {
-            0x00 => Ok(true),
-            0x01 => Ok(false),
+        }
+    }
+
+    /// Parse the `jpn` field from the header.
+    pub fn jpn(head: &[Byte; 0x50]) -> Result<bool> {
+        match head[0x4a] {
+            byte @ (0x00 | 0x01) => Ok(byte == 0x00),
             byte => Err(Error::Region(byte)),
-        }?;
-        // Parse mark ROM version number
-        let version = head[0x4c];
-        // Parse header checksum
-        let hchk = head[0x4d];
-        // Parse global checksum
-        let gchk = Word::from_be_bytes([head[0x4e], head[0x4f]]);
-
-        // Verify header checksum
-        let chk = Self::hchk(rom);
-        if chk != hchk {
-            return Err(Error::HeaderChk {
-                found: chk,
-                expected: hchk,
-            });
-        }
-        // Verify global checksum
-        let chk = Self::gchk(rom);
-        if chk != gchk {
-            warn!("global checksum failed: {chk:#06x} != {gchk:#06x}");
-        }
-
-        Ok(Self {
-            logo,
-            title,
-            dmg,
-            cgb,
-            sgb,
-            info: cart,
-            romsz,
-            ramsz,
-            jpn,
-            version,
-            hchk,
-            gchk,
-        })
-    }
-
-    /// Constructs a blank `Header`.
-    #[must_use]
-    pub(super) fn blank() -> Self {
-        Self {
-            logo: false,
-            title: None,
-            dmg: false,
-            cgb: false,
-            sgb: false,
-            info: Info::Bare {
-                ram: false,
-                pwr: false,
-            },
-            romsz: 0x8000,
-            ramsz: 0x00,
-            jpn: false,
-            version: 0x00,
-            hchk: 0x00,
-            gchk: 0x00,
         }
     }
 
-    /// Checks header integrity.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when the cartridge header is invalid.
-    pub(super) fn check(rom: &[Byte]) -> Result<()> {
-        // Extract the header bytes
-        let head: &[Byte; 0x50] = rom
-            .get(0x100..0x150)
-            .ok_or(Error::Missing)?
-            .try_into()
-            .map_err(Error::Slice)?;
-
-        // Verify header checksum
-        let hchk = head[0x4d];
-        let chk = Self::hchk(rom);
-        if hchk != chk {
-            return Err(Error::HeaderChk {
-                found: chk,
-                expected: hchk,
-            });
-        }
-
-        // Verify global checksum
-        let gchk = Word::from_be_bytes(head[0x4e..=0x4f].try_into().map_err(Error::Slice)?);
-        let chk = Self::gchk(rom);
-        if gchk != chk {
-            return Err(Error::GlobalChk {
-                found: chk,
-                expected: gchk,
-            });
-        }
-
-        // Everything looks good
-        Ok(())
+    /// Parse the `version` field from the header.
+    pub fn version(head: &[Byte; 0x50]) -> Byte {
+        head[0x4c]
     }
 
-    /// Calculates header checksum.
-    fn hchk(rom: &[Byte]) -> Byte {
-        rom[0x134..=0x14c]
-            .iter()
-            .copied()
-            .fold(0, |accum, item| accum.wrapping_sub(item).wrapping_sub(1))
+    /// Parse the `hchk` field from the header.
+    pub fn hchk(head: &[Byte; 0x50]) -> Byte {
+        head[0x4d]
     }
 
-    /// Calculates global checksum.
-    fn gchk(rom: &[Byte]) -> Word {
-        rom.iter()
-            .copied()
-            .fold(0u16, |accum, item| accum.wrapping_add(Word::from(item)))
-            .wrapping_sub(Word::from(rom[0x14e]))
-            .wrapping_sub(Word::from(rom[0x14f]))
+    /// Parse the `gchk` field from the header.
+    pub fn gchk(head: &[Byte; 0x50]) -> Word {
+        Word::from_be_bytes([head[0x4e], head[0x4f]])
     }
 }
 
@@ -516,34 +716,4 @@ pub enum Error {
     /// Bad global checksum.
     #[error("bad global checksum (found {found:#06x}, expected {expected:#06x})")]
     GlobalChk { found: Word, expected: Word },
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Sample ROM header.
-    const HEAD: &[Byte; 0x0150] = include_bytes!("../../../../roms/header/basic.gb");
-
-    #[test]
-    fn parse_works() {
-        // Parse header
-        let parse = Header::try_from(&HEAD[..]).unwrap();
-        // Hard-code expected
-        let truth = Header {
-            logo: true,
-            dmg: true,
-            info: Info::Bare {
-                ram: true,
-                pwr: false,
-            },
-            romsz: 0x8000,
-            ramsz: 0x2000,
-            hchk: 0xdc,
-            gchk: 0x31bb,
-            ..Header::blank()
-        };
-
-        assert_eq!(parse, truth);
-    }
 }

@@ -15,7 +15,7 @@ use remus::{Block, Byte};
 use thiserror::Error;
 
 use self::header::{Header, Info};
-use self::mbc::{Bare, Body};
+use self::mbc::Body;
 use crate::api::cart::Cartridge as Api;
 
 pub mod header;
@@ -38,7 +38,8 @@ impl Cartridge {
     ///
     /// # Errors
     ///
-    /// Returns an error when the cartridge header cannot be parsed.
+    /// Returns an error when the cartridge could not be constructed. This will
+    /// either be due to invalid header bytes or an unsupported cartridge type.
     pub fn new(rom: &[Byte]) -> Result<Self> {
         let head = Header::new(rom)?;
         Ok(Self {
@@ -51,42 +52,28 @@ impl Cartridge {
     ///
     /// # Errors
     ///
-    /// Returns an error when the cartridge header contained an error.
+    /// Returns an error when the cartridge could not be constructed. This will
+    /// either be due to invalid header bytes or an unsupported cartridge type.
     pub fn checked(rom: &[Byte]) -> Result<Self> {
-        // Check then parse cartridge header
-        let head = Header::check(rom).and_then(|()| Header::try_from(rom))?;
-
-        // Construct memory bank controller
-        let body = Body::new(&head, rom)?;
-
-        Ok(Self { head, body })
+        let head = Header::checked(rom)?;
+        Ok(Self {
+            body: Body::new(&head, rom)?,
+            head,
+        })
     }
 
     /// Constructs a new `Cartridge` without checking the header.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the memory bank controller could not be constructed.
-    pub fn unchecked(rom: &[Byte]) -> Self {
-        // Parse cartridge header
-        let head = Header::new(rom).ok().unwrap_or_else(Header::blank);
-
-        // Construct memory bank controller
-        let body = Body::new(&head, rom).ok().unwrap();
-
-        Self { head, body }
-    }
-
-    /// Constructs a blank `Cartridge`.
-    #[must_use]
-    pub fn blank() -> Self {
-        // Construct a blank header
-        let head = Header::blank();
-
-        // Construct a membory bank controller
-        let body = Body::Bare(Bare::new(Box::default(), Box::default()));
-
-        Self { head, body }
+    /// Returns an error when the cartridge could not be constructed. This will
+    /// either be due to missing header bytes or an unsupported cartridge type.
+    pub fn unchecked(rom: &[Byte]) -> Result<Self> {
+        let head = Header::unchecked(rom)?;
+        Ok(Self {
+            body: Body::new(&head, rom)?,
+            head,
+        })
     }
 
     /// Gets the cartridge's title.
@@ -141,7 +128,7 @@ pub enum Error {
     /// Failed to parse header.
     #[error("failed to parse header")]
     Header(#[from] header::Error),
-    /// Unsupported cartridge kind.
+    /// Unsupported cartridge type.
     #[error("unsupported cartridge: {0}")]
     Unsupported(Info),
 }

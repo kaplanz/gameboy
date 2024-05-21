@@ -59,9 +59,9 @@ pub trait Mbc {
 pub enum Body {
     /// Bare ROM + RAM.
     Bare(Bare),
-    /// MBC1 cartridge kind.
+    /// MBC1 cartridge type.
     Mbc1(Mbc1),
-    /// MBC5 cartridge kind.
+    /// MBC5 cartridge type.
     Mbc5(Mbc5),
 }
 
@@ -70,7 +70,7 @@ impl Body {
     ///
     /// # Errors
     ///
-    /// Returns an error if unsupported cartridge kind is specified in the
+    /// Returns an error if unsupported cartridge type is specified in the
     /// header.
     pub fn new(head: &Header, rom: &[Byte]) -> Result<Self> {
         // Initialize ROM
