@@ -223,14 +223,19 @@ where
     let mut int = pair
         .into_inner() // `Int` is composed of `Sign` and `Num`
         .rev(); // since sign is optional, reverse to process it last
-    let num = int.next().exception()?;
+    let (radix, value) = {
+        let mut num = int.next().exception()?.into_inner();
+        let radix = num.next().exception()?;
+        let value = num.next().exception()?;
+        (radix, value)
+    };
     let sign = int.next().map_or("", |rule| rule.as_str()).to_string();
     // Parse into an integer type
-    match num.as_rule() {
-        Rule::Bin => I::from_str_radix(&(sign + &num.as_str()[2..]), 2),
-        Rule::Oct => I::from_str_radix(&(sign + &num.as_str()[2..]), 8),
-        Rule::Dec => I::from_str_radix(&(sign + &num.as_str()[0..]), 10),
-        Rule::Hex => I::from_str_radix(&(sign + &num.as_str()[2..]), 16),
+    match radix.as_rule() {
+        Rule::BinRadix => I::from_str_radix(&(sign + value.as_str()), 2),
+        Rule::OctRadix => I::from_str_radix(&(sign + value.as_str()), 8),
+        Rule::DecRadix => I::from_str_radix(&(sign + value.as_str()), 10),
+        Rule::HexRadix => I::from_str_radix(&(sign + value.as_str()), 16),
         rule => return Err(Error::from(ErrorKind::Invalid(rule)).into()),
     }
     .map_err(super::Error::ParseInt)
