@@ -653,6 +653,8 @@ impl Stage {
                 Err(err) => {
                     // Log the error
                     error!("{err}");
+                    // Stop the CPU
+                    cpu.etc.run = Status::Stopped;
                     // Continue to next instruction
                     Stage::Done
                 }
