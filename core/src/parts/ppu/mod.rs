@@ -216,7 +216,7 @@ impl Api for Ppu {
 
     type Pixel = Color;
 
-    fn ready(&self) -> bool {
+    fn vsync(&self) -> bool {
         // In order to consider the frame ready to be rendered, the following
         // conditions must be met:
         //

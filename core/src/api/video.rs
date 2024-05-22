@@ -22,9 +22,11 @@ pub trait Video {
     /// Pixel data.
     type Pixel: Pixel;
 
-    /// Checks if the frame is ready to be rendered.
+    /// Checks for the vertical sync.
+    ///
+    /// Signals that the frame is ready to be rendered.
     #[must_use]
-    fn ready(&self) -> bool;
+    fn vsync(&self) -> bool;
 
     /// Gets the current video framebuffer.
     ///

@@ -17,7 +17,6 @@ use rugby::core::dmg;
 #[cfg(feature = "doc")]
 use rugby::core::dmg::cpu::Stage;
 use rugby::core::dmg::{Cartridge, GameBoy};
-use rugby::emu::video::Video;
 use rugby::prelude::*;
 
 use self::ctx::Counter;
@@ -183,7 +182,7 @@ impl App {
 
             // Draw next frame
             let video = self.emu.video();
-            if Video::ready(video) {
+            if video.vsync() {
                 // Borrow frame
                 let frame = video.frame();
                 // Redraw screen
