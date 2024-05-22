@@ -6,9 +6,10 @@
 //! # Examples
 //!
 //! ```
+//! use rugby::emu::cart::Support;
 //! use rugby::core::dmg::cart::Cartridge;
 //! use rugby::core::dmg::GameBoy;
-//! use remus::Machine; // for `Machine::cycle`
+//! use remus::Block; // for `Block::cycle`
 //!
 //! // Instantiate a cartridge from ROM bytes
 //! let rom: &[u8]; // -- snip --
