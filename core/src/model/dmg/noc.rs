@@ -69,17 +69,17 @@ impl Mmap {
     /// Constructs a bus for the CPU.
     pub(super) fn cpu(&self) -> Bus {
         Bus::from([
-            (0x0000..=0xffff, self.ibus.clone().into()),
-            (0x0000..=0xffff, self.ebus.clone().into()),
-            (0x0000..=0xffff, self.vbus.clone().into()),
+            (0x0000..=0xffff, self.ibus.clone().into()), // Internal
+            (0x0000..=0xfdff, self.ebus.clone().into()), // External
+            (0x0000..=0xfdff, self.vbus.clone().into()), // Video
         ])
     }
 
     /// Constructs a bus for the DMA.
     pub(super) fn dma(&self) -> Bus {
         Bus::from([
-            (0x0000..=0xffff, self.ebus.clone().into()),
-            (0x0000..=0xffff, self.vbus.clone().into()),
+            (0x0000..=0xffff, self.ebus.clone().into()), // External
+            (0x0000..=0xffff, self.vbus.clone().into()), // Video
         ])
     }
 }
