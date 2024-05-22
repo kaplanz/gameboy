@@ -242,6 +242,10 @@ impl Mmio for Control {
 #[derive(Debug, Default)]
 pub struct Register(Byte);
 
+impl Register {
+    const MASK: u8 = 0b0001_1111;
+}
+
 impl Memory for Register {
     fn read(&self, _: Word) -> remus::mem::Result<Byte> {
         Ok(self.load())
@@ -257,11 +261,11 @@ impl remus::reg::Register for Register {
     type Value = Byte;
 
     fn load(&self) -> Self::Value {
-        self.0.load() | 0xe0
+        self.0.load() | !Self::MASK
     }
 
     fn store(&mut self, value: Self::Value) {
-        self.0.store(value & 0x1f);
+        self.0.store(value & Self::MASK);
     }
 }
 
@@ -288,7 +292,7 @@ impl Line {
     pub fn pending(&self) -> bool {
         let flg = self.flg.load();
         let ena = self.ena.load();
-        (flg & ena) != 0
+        (flg & ena & Register::MASK) != 0
     }
 
     /// Fetches the first pending interrupt.

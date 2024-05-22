@@ -106,9 +106,9 @@ prevent regressions in future versions.
 |   Suite                  | Passed | Failed |
 | ------------------------ | ------ | ------ |
 | [Acid2][acid2.doc]       |      0 |     17 |
-| [Blargg][blargg.doc]     |     21 |     24 |
+| [Blargg][blargg.doc]     |     23 |     22 |
 | [Mealybug][mealybug.doc] |      0 |     24 |
-| [Mooneye][mooneye.doc]   |     24 |     45 |
+| [Mooneye][mooneye.doc]   |     30 |     39 |
 
 ## References
 
