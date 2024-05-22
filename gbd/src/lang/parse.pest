@@ -9,6 +9,7 @@ String          =  { "\"" ~ Inner ~ "\"" }
     Char        = _{ !("\"" | NEWLINE) ~ ANY }
 Int             = @{ Sign? ~ Num }
   Sign          = ${ ("+" | "-") }
+SInt            = @{ Sign ~ Num }
 UInt            = @{ Num }
   Num           = @{ Bin | Oct | Hex | Dec }
     Bin         = ${ ^"0b" ~ ASCII_BIN_DIGIT+ }
@@ -17,12 +18,12 @@ UInt            = @{ Num }
     Dec         = ${         ASCII_DIGIT+ }
 RangeBounds     =  { RangeInc | Range | RangeFrom | RangeToInc | RangeTo |
                      RangeFull }
-  Range         = ${ UInt ~ ".."  ~ UInt }
-  RangeFrom     = ${ UInt ~ ".."         }
-  RangeFull     = ${        ".."         }
-  RangeInc      = ${ UInt ~ "..=" ~ UInt }
-  RangeTo       = ${        ".."  ~ UInt }
-  RangeToInc    = ${        "..=" ~ UInt }
+  Range         = ${ UInt ~ ".."  ~ (UInt | SInt) }
+  RangeFrom     = ${ UInt ~ ".."                  }
+  RangeFull     = ${        ".."                  }
+  RangeInc      = ${ UInt ~ "..=" ~ (UInt | SInt) }
+  RangeTo       = ${        ".."  ~ (UInt | SInt) }
+  RangeToInc    = ${        "..=" ~ (UInt | SInt) }
 
 Path            =  { Char* }
 

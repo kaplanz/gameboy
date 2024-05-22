@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use derange::Derange;
 use log::trace;
-use num::traits::WrappingSub;
+use num::traits::{WrappingAdd, WrappingSub};
 use num::{Bounded, Integer};
 use pest::iterators::Pair;
 use rugby::core::dmg::{cpu, pic, ppu, serial, timer};
@@ -238,7 +238,13 @@ where
 
 pub fn range<I>(pair: Pair<Rule>) -> Result<Derange<I>>
 where
-    I: Bounded + Clone + Copy + Integer<FromStrRadixErr = ParseIntError> + WrappingSub + 'static,
+    I: Bounded
+        + Clone
+        + Copy
+        + Integer<FromStrRadixErr = ParseIntError>
+        + WrappingAdd
+        + WrappingSub
+        + 'static,
     RangeInclusive<I>: Iterator<Item = I>,
 {
     // Extract the range rule
@@ -249,8 +255,12 @@ where
             let stx = range.next().exception()?;
             let end = range.next().exception()?;
             // Parse
-            let stx = self::integer(stx)?;
-            let end = self::integer(end)?;
+            let stx: I = self::integer(stx)?;
+            let end: I = match end.as_rule() {
+                Rule::UInt => self::integer(end)?,
+                Rule::SInt => stx.wrapping_add(&self::integer(end)?),
+                rule => return Err(Error::from(ErrorKind::Invalid(rule)).into()),
+            };
             // Define
             let range = Derange::from(stx..end);
             Ok(range)
@@ -276,8 +286,12 @@ where
             let stx = range.next().exception()?;
             let end = range.next().exception()?;
             // Parse
-            let stx = self::integer(stx)?;
-            let end = self::integer(end)?;
+            let stx: I = self::integer(stx)?;
+            let end: I = match end.as_rule() {
+                Rule::UInt => self::integer(end)?,
+                Rule::SInt => stx.wrapping_add(&self::integer(end)?),
+                rule => return Err(Error::from(ErrorKind::Invalid(rule)).into()),
+            };
             // Define
             let range = Derange::from(stx..=end);
             Ok(range)
@@ -287,7 +301,11 @@ where
             // Extract
             let end = range.next().exception()?;
             // Parse
-            let end = self::integer(end)?;
+            let end: I = match end.as_rule() {
+                Rule::UInt => self::integer(end)?,
+                Rule::SInt => I::zero().wrapping_add(&self::integer(end)?),
+                rule => return Err(Error::from(ErrorKind::Invalid(rule)).into()),
+            };
             // Define
             let range = Derange::from(..end);
             Ok(range)
@@ -297,7 +315,11 @@ where
             // Extract
             let end = range.next().exception()?;
             // Parse
-            let end = self::integer(end)?;
+            let end: I = match end.as_rule() {
+                Rule::UInt => self::integer(end)?,
+                Rule::SInt => I::zero().wrapping_add(&self::integer(end)?),
+                rule => return Err(Error::from(ErrorKind::Invalid(rule)).into()),
+            };
             // Define
             let range = Derange::from(..=end);
             Ok(range)
