@@ -259,6 +259,10 @@ pub enum Speed {
     ///
     /// Convenience preset resulting in emulation at double speed.
     Double,
+    /// Maximum possible.
+    ///
+    /// Unconstrained, limited only by the host system's capabilities.
+    Max,
     /// Frame rate.
     ///
     /// Frequency that targets supplied frame rate (FPS).
@@ -271,10 +275,6 @@ pub enum Speed {
     #[clap(skip)]
     #[serde(rename = "hz")]
     Freq(u32),
-    /// Maximum possible.
-    ///
-    /// Unconstrained, limited only by the host system's capabilities.
-    Max,
 }
 
 impl Speed {
