@@ -75,10 +75,14 @@ impl Body {
     pub fn new(head: &Header, rom: &[Byte]) -> Result<Self> {
         // Initialize ROM
         let rom = make::rom(head, rom);
-        trace!("ROM:\n{rom}", rom = phex::Printer::<Byte>::new(0, &rom));
+        if !rom.is_empty() {
+            trace!("ROM:\n{rom}", rom = phex::Printer::<Byte>::new(0, &rom));
+        }
         // Initialize RAM
         let ram = make::ram(head);
-        trace!("RAM:\n{ram}", ram = phex::Printer::<Byte>::new(0, &ram));
+        if !ram.is_empty() {
+            trace!("RAM:\n{ram}", ram = phex::Printer::<Byte>::new(0, &ram));
+        }
         // Construct body
         match &head.info {
             &Info::Bare { .. } => Ok(Body::Bare(Bare::new(rom, ram))),
