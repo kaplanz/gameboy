@@ -10,14 +10,14 @@ license.workspace = true
 
 [dependencies]
 advise = { workspace = true }
-bytecount = { version = "0.6.7" }
+bytecount = { version = "0.6.8" }
 derange = { workspace = true }
 displaydoc = { version = "0.2.4" }
 indexmap = { version = "2.2.6" }
 log = { workspace = true }
 num = { workspace = true }
-pest = { version = "2.7.9" }
-pest_derive = { version = "2.7.9" }
+pest = { version = "2.7.10" }
+pest_derive = { version = "2.7.10" }
 phex = { workspace = true }
 png = { workspace = true }
 remus = { workspace = true }

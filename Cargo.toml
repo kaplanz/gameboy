@@ -41,19 +41,19 @@ license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
 advise = "0.1.0"
-anyhow = "1.0.82"
+anyhow = "1.0.86"
 chex = { version = "0.1.0", path = "crates/chex" }
 clap = { version = "4.5.4", features = ["derive"] }
 derange = { version = "0.1.0", path = "crates/derange" }
 gbd = { version = "0.1.0", path = "gbd" }
 log = "0.4.21"
-num = "0.4.1"
+num = "0.4.3"
 phex = { version = "0.1.0", path = "crates/phex" }
 png = "0.17.13"
 remus = { version = "0.1.0", path = "remus" }
 rugby = { version = "0.1.0", path = "." }
 rugby-core = { version = "0.1.0", path = "core" }
-serde = { version = "1.0.197", features = ["derive"] }
-thiserror = "1.0.58"
-toml = "0.8.12"
+serde = { version = "1.0.202", features = ["derive"] }
+thiserror = "1.0.61"
+toml = "0.8.13"
 xdir = "0.1.0"

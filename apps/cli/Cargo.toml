@@ -19,12 +19,12 @@ clap = { workspace = true, features = ["cargo", "derive", "env", "wrap_help"] }
 ctrlc = { version = "3.4.4", optional = true }
 gbd = { workspace = true, optional = true }
 log = { workspace = true }
-minifb = "0.25.0"
+minifb = "0.27.0"
 remus = { workspace = true }
 rugby = { workspace = true }
 rustyline = { version = "14.0.0", optional = true }
 serde = { workspace = true }
-sysexits = "0.7.12"
+sysexits = "0.7.14"
 thiserror = { workspace = true }
 toml = { workspace = true }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
