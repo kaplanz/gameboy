@@ -1,4 +1,4 @@
-//! Color Palettes.
+//! Preset color palettes.
 
 use std::fmt::Debug;
 use std::ops::Index;
@@ -34,7 +34,7 @@ impl Index<usize> for Palette {
 mod decl {
     use super::{Color, Palette};
 
-    /// Autumn Chill.
+    /// *Autumn Chill*.
     ///
     /// Nostalgic autumn sunsets.
     ///
@@ -49,7 +49,7 @@ mod decl {
         Color::new(0x2c1e74),
     ]);
 
-    /// Blk Aqu.
+    /// *Blk Aqu*.
     ///
     /// Aquatic blues.
     ///
@@ -64,7 +64,7 @@ mod decl {
         Color::new(0x002b59),
     ]);
 
-    /// Blue Dream.
+    /// *Blue Dream*.
     ///
     /// Winter snowstorm blues.
     ///
@@ -79,7 +79,7 @@ mod decl {
         Color::new(0x1f285d),
     ]);
 
-    /// Coldfire.
+    /// *Coldfire*.
     ///
     /// Combining cool and warm tones.
     ///
@@ -94,7 +94,7 @@ mod decl {
         Color::new(0x46425e),
     ]);
 
-    /// Coral.
+    /// *Coral*.
     ///
     /// Soft and pastel coral hues.
     ///
@@ -109,7 +109,7 @@ mod decl {
         Color::new(0x68518a),
     ]);
 
-    /// Demichrome.
+    /// *Demichrome*.
     ///
     /// Cold metallic darks with warm dated plastic lights.
     ///
@@ -124,7 +124,7 @@ mod decl {
         Color::new(0x211e20),
     ]);
 
-    /// Earth.
+    /// *Earth*.
     ///
     /// Greens and warm browns with an earthy feel.
     ///
@@ -139,7 +139,7 @@ mod decl {
         Color::new(0x774346),
     ]);
 
-    /// Ice Cream.
+    /// *Ice Cream*.
     ///
     /// Creamsicle inspired orange.
     ///
@@ -154,9 +154,9 @@ mod decl {
         Color::new(0x7c3f58),
     ]);
 
-    /// Legacy.
+    /// *Legacy*.
     ///
-    /// Old-school dot-matrix display.
+    /// Old school dot-matrix display.
     ///
     /// Based upon [Legacy][source] by [Patrick Adams][author].
     ///
@@ -169,7 +169,7 @@ mod decl {
         Color::new(0x2a453b),
     ]);
 
-    /// Mist.
+    /// *Mist*.
     ///
     /// Misty forest greens.
     ///
@@ -184,7 +184,7 @@ mod decl {
         Color::new(0x2d1b00),
     ]);
 
-    /// Mono.
+    /// *Mono*.
     ///
     /// Simple blacks and whites.
     pub const MONO: Palette = Palette([
@@ -194,7 +194,7 @@ mod decl {
         Color::new(0x000000),
     ]);
 
-    /// Morris.
+    /// *Morris*.
     ///
     /// William Morris's rural palette.
     ///
@@ -209,7 +209,7 @@ mod decl {
         Color::new(0x264b38),
     ]);
 
-    /// Purple Dawn.
+    /// *Purple Dawn*.
     ///
     /// Waterfront at dawn.
     ///
@@ -224,7 +224,7 @@ mod decl {
         Color::new(0x001b2e),
     ]);
 
-    /// Rustic.
+    /// *Rustic*.
     ///
     /// Rusty red and brown hues.
     ///
@@ -239,7 +239,7 @@ mod decl {
         Color::new(0x2c2137),
     ]);
 
-    /// Velvet Cherry.
+    /// *Velvet Cherry*.
     ///
     /// Deep and passionate purples.
     ///
