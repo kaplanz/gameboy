@@ -12,20 +12,13 @@ use gbd::Debugger;
 #[allow(unused)]
 use log::{debug, error, trace};
 use remus::{Block, Clock};
-use rugby::app::joypad::Joypad;
-use rugby::app::serial::Serial;
-use rugby::app::video::Video as _;
 #[cfg(any(feature = "doc", feature = "win"))]
 use rugby::core::dmg;
 #[cfg(feature = "doc")]
 use rugby::core::dmg::cpu::Stage;
 use rugby::core::dmg::{Cartridge, GameBoy};
-use rugby::emu::cart::Support as _;
-use rugby::emu::joypad::{Joypad as _, Support as _};
-#[cfg(feature = "doc")]
-use rugby::emu::proc::Support as _;
-use rugby::emu::serial::{Serial as _, Support as _};
-use rugby::emu::video::{Support as _, Video};
+use rugby::emu::video::Video;
+use rugby::prelude::*;
 
 use self::ctx::Counter;
 #[cfg(feature = "win")]

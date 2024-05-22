@@ -5,7 +5,7 @@ use std::path::Path;
 use anyhow::Context;
 use clap::Parser;
 use log::{trace, warn};
-use rugby::emu::cart::Support as _;
+use rugby::prelude::*;
 
 use crate::cfg::Config;
 use crate::cli::Cli;
@@ -88,10 +88,9 @@ mod build {
     use gbd::{Debugger, Portal};
     use log::{debug, error, info, warn};
     use rugby::core::dmg::cart::mbc::Mbc;
-    use rugby::core::dmg::cart::Cartridge;
-    use rugby::core::dmg::{Boot, GameBoy, LCD};
-    use rugby::emu::cart::Support as _;
+    use rugby::core::dmg::{Boot, Cartridge, GameBoy, LCD};
     use rugby::emu::video;
+    use rugby::prelude::*;
     use tracing_subscriber::filter::LevelFilter;
     use tracing_subscriber::EnvFilter;
 

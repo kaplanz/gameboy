@@ -6,9 +6,8 @@
 //! # Examples
 //!
 //! ```
-//! use rugby::emu::cart::Support;
-//! use rugby::core::dmg::cart::Cartridge;
-//! use rugby::core::dmg::GameBoy;
+//! use rugby::core::dmg::{Cartridge, GameBoy};
+//! use rugby::prelude::*;
 //! use remus::Block; // for `Block::cycle`
 //!
 //! // Instantiate a cartridge from ROM bytes
@@ -39,3 +38,30 @@ pub mod pal;
 pub use rugby_core as core;
 
 pub use crate::core::api as emu;
+
+/// A prelude for conveniently writing emulator code.
+///
+/// The purpose of this module is to alleviate imports of many common traits by
+/// adding a glob import to the top of modules:
+///
+/// ```rust
+/// use rugby::prelude::*;
+/// ```
+///
+/// Includes all core and library API traits.
+#[rustfmt::skip]
+pub mod prelude {
+    // Application
+    pub use crate::app::audio::Audio as _;
+    pub use crate::app::joypad::Joypad as _;
+    pub use crate::app::serial::Serial as _;
+    pub use crate::app::video::Video as _;
+
+    // Emulator
+    pub use crate::emu::audio::{Audio as _, Support as _};
+    pub use crate::emu::cart::{Cartridge as _, Support as _};
+    pub use crate::emu::joypad::{Joypad as _, Support as _, };
+    pub use crate::emu::proc::{Processor as _, Support as _};
+    pub use crate::emu::serial::{Serial as _, Support as _};
+    pub use crate::emu::video::{Video as _, Support as _};
+}

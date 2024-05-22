@@ -1,12 +1,10 @@
 use remus::Block;
-use rugby::core::dmg::cart::Cartridge;
-use rugby::core::dmg::GameBoy;
-use rugby::emu::cart::Support as _;
+use rugby::core::dmg::{Cartridge, GameBoy};
+use rugby::prelude::*;
 
 mod common;
 
 use common::image::{self, Result};
-use rugby::emu::video::Support as _;
 
 /// Number of cycles after which the test is ready to be checked.
 const TIMEOUT: usize = 1_000_000;

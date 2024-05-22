@@ -10,8 +10,7 @@ use log::debug;
 use remus::reg::Port;
 use remus::{Block, Clock};
 use rugby::core::dmg::{cpu, ppu, GameBoy};
-use rugby::emu::proc::Support as _;
-use rugby::emu::video::Support as _;
+use rugby::prelude::*;
 use thiserror::Error;
 
 use self::lang::Program;

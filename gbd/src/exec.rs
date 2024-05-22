@@ -9,9 +9,7 @@ use derange::Derange;
 use remus::reg::Port;
 use remus::Block;
 use rugby::core::dmg::LCD;
-use rugby::emu::proc::{Processor, Support as _};
-use rugby::emu::serial::{Serial as _, Support as _};
-use rugby::emu::video::Support as _;
+use rugby::prelude::*;
 
 use super::lang::{Keyword, Select, Serial, Value};
 use super::{Debugger, Error, GameBoy, Result, Tick};

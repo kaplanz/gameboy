@@ -1,10 +1,8 @@
 use std::fmt::{Debug, Display};
 
 use remus::Block;
-use rugby::core::dmg::cart::Cartridge;
-use rugby::core::dmg::GameBoy;
-use rugby::emu::cart::Support as _;
-use rugby::emu::proc::Support as _;
+use rugby::core::dmg::{Cartridge, GameBoy};
+use rugby::prelude::*;
 use thiserror::Error;
 
 /// Number of cycles after which the test is considered to have failed due to a
@@ -47,8 +45,7 @@ mod check {
     use std::io::BufRead;
 
     use rugby::core::dmg::GameBoy;
-    use rugby::emu::proc::Support as _;
-    use rugby::emu::serial::{Serial as _, Support as _};
+    use rugby::prelude::*;
 
     use super::{Error, Result};
 
