@@ -143,6 +143,15 @@ mod build {
 
     /// Builds an emulator instance.
     pub fn emu(args: &Cli) -> Result<GameBoy> {
+        // Load cartridge
+        let cart = {
+            let cart = &args.cfg.sw;
+            cart.rom
+                .as_deref()
+                .map(|path| self::cart(path, cart.check, cart.force))
+                .transpose()
+        }
+        .context("could not load cartridge")?;
         // Load boot ROM
         let boot = (|| {
             let boot = &args.cfg.hw.boot;
@@ -154,15 +163,6 @@ mod build {
                 .transpose()
         })() // NOTE: This weird syntax is in lieu of using unstable try blocks.
         .context("could not load boot ROM")?;
-        // Load cartridge
-        let cart = {
-            let cart = &args.cfg.sw;
-            cart.rom
-                .as_deref()
-                .map(|path| self::cart(path, cart.check, cart.force))
-                .transpose()
-        }
-        .context("could not load cartridge")?;
 
         // Instantiate emulator
         let mut emu = boot.map_or_else(GameBoy::new, GameBoy::with);
@@ -228,15 +228,19 @@ mod build {
 
         // Initialize cartridge
         let cart = if force {
-            // Force cartridge creation
-            Cartridge::unchecked(&rom)
+            // If both force and check are supplied, default to force
+            if check {
+                warn!("use of `--force` overrides `--check`");
+            }
+            // Force cartridge construction
+            Cartridge::unchecked
         } else if check {
-            // Ensure ROM integrity
-            Cartridge::checked(&rom).inspect(|_| info!("passed ROM integrity check"))
+            // Check cartridge integrity
+            Cartridge::checked
         } else {
-            // Create a cartridge
-            Cartridge::new(&rom)
-        }
+            // Construct a cartridge
+            Cartridge::new
+        }(&rom)
         .with_context(|| format!("failed to load: `{}`", path.display()))?;
         info!("loaded cartridge:\n{}", cart.header());
 

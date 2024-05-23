@@ -2,7 +2,7 @@
 
 use std::fmt::Debug;
 
-use log::debug;
+use log::{debug, trace};
 use remus::mem::{Error, Memory, Result};
 use remus::mio::{Bus, Mmio};
 use remus::reg::Register;
@@ -24,6 +24,10 @@ impl Chip {
     /// Constructs a new `Rom`.
     #[must_use]
     pub fn new(rom: Boot) -> Self {
+        trace!(
+            "BOOT:\n{rom}",
+            rom = phex::Printer::<Byte>::new(0, rom.inner())
+        );
         let reg = Shared::from(Control::new());
         Self {
             mem: Bank::new(reg.clone(), rom).into(),
