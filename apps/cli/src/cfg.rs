@@ -22,17 +22,17 @@ pub fn path() -> PathBuf {
 #[derive(Args, Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
-    /// Hardware options.
-    #[clap(flatten)]
-    #[clap(next_help_heading = None)]
-    #[serde(rename = "hardware")]
-    pub hw: Hardware,
-
     /// Cartridge options.
     #[clap(flatten)]
     #[clap(next_help_heading = "Cartridge")]
     #[serde(rename = "cartridge")]
     pub sw: Cartridge,
+
+    /// Hardware options.
+    #[clap(flatten)]
+    #[clap(next_help_heading = "Hardware")]
+    #[serde(rename = "hardware")]
+    pub hw: Hardware,
 
     /// Interface options.
     #[clap(flatten)]

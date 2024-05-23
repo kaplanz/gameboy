@@ -83,7 +83,7 @@ mod build {
     use std::ops::Not;
     use std::path::Path;
 
-    use anyhow::{ensure, Context, Result};
+    use anyhow::{anyhow, ensure, Context, Result};
     #[cfg(feature = "gbd")]
     use gbd::{Debugger, Portal};
     use log::{debug, error, info, warn};
@@ -144,24 +144,25 @@ mod build {
     /// Builds an emulator instance.
     pub fn emu(args: &Cli) -> Result<GameBoy> {
         // Load boot ROM
-        let boot = args
-            .cfg
-            .hw
-            .boot
-            .as_deref()
-            .map(boot)
-            .transpose()
-            .context("could not load boot ROM")?;
+        let boot = (|| {
+            let boot = &args.cfg.hw.boot;
+            boot.skip
+                .not()
+                .then(|| boot.image.as_deref().map(self::boot))
+                .map(|res| res.ok_or(anyhow!("missing path; unspecified by `--boot`")))
+                .transpose()?
+                .transpose()
+        })() // NOTE: This weird syntax is in lieu of using unstable try blocks.
+        .context("could not load boot ROM")?;
         // Load cartridge
-        let load = |path| cart(path, args.cfg.sw.check, args.cfg.sw.force);
-        let cart = args
-            .cfg
-            .sw
-            .rom
-            .as_deref()
-            .map(load)
-            .transpose()
-            .context("could not load cartridge")?;
+        let cart = {
+            let cart = &args.cfg.sw;
+            cart.rom
+                .as_deref()
+                .map(|path| self::cart(path, cart.check, cart.force))
+                .transpose()
+        }
+        .context("could not load cartridge")?;
 
         // Instantiate emulator
         let mut emu = boot.map_or_else(GameBoy::new, GameBoy::with);

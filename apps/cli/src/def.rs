@@ -2,6 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
+use clap::builder::ArgPredicate;
 use clap::{Args, ValueEnum, ValueHint};
 use rugby::core::dmg::FREQ;
 use rugby::pal;
@@ -102,14 +103,10 @@ impl Cartridge {
 #[derive(Args, Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Hardware {
-    /// Boot ROM image file.
-    ///
-    /// Embedded firmware ROM executed upon booting.
-    #[clap(short, long)]
-    #[clap(value_name = "PATH")]
-    #[clap(value_hint = ValueHint::FilePath)]
-    #[clap(help_heading = "Cartridge")]
-    pub boot: Option<PathBuf>,
+    /// Boot ROM options.
+    #[clap(flatten)]
+    #[serde(flatten)]
+    pub boot: BootRom,
 }
 
 impl Hardware {
@@ -118,7 +115,7 @@ impl Hardware {
     /// Any relative paths will have be rebased such that they are not relative
     /// to the provided root.
     pub fn rebase(&mut self, root: &Path) {
-        self.boot = self.boot.take().map(|path| root.join(path));
+        self.boot.rebase(root);
     }
 
     /// Combines two configuration instances.
@@ -128,7 +125,58 @@ impl Hardware {
     /// from the cli to those saved on-disk. To do so, prefer keeping data
     /// fields from `self` when conflicting with `other`.
     pub fn merge(&mut self, other: Self) {
-        self.boot = self.boot.take().or(other.boot);
+        self.boot.merge(other.boot);
+    }
+}
+
+/// Boot ROM options.
+#[derive(Args, Debug, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct BootRom {
+    /// Boot ROM image file.
+    ///
+    /// If the path to the image file is specified within the configuration, it
+    /// can be selected by passing `-b/--boot` without specifying an argument.
+    /// Otherwise, the path to the image file must be provided.
+    ///
+    /// May be negated with `--no-boot`.
+    #[clap(name = "boot")]
+    #[clap(short, long)]
+    #[clap(num_args(0..=1))]
+    #[clap(value_name = "PATH")]
+    #[clap(value_hint = ValueHint::FilePath)]
+    #[serde(rename = "boot")]
+    pub image: Option<PathBuf>,
+
+    /// Skip the boot ROM.
+    ///
+    /// Negates `-b/--boot`.
+    #[clap(hide = true)]
+    #[clap(long = "no-boot")]
+    #[clap(overrides_with = "boot")]
+    #[clap(default_value_t = true)]
+    #[clap(default_value_if("boot", ArgPredicate::IsPresent, "false"))]
+    #[serde(skip)]
+    pub skip: bool,
+}
+
+impl BootRom {
+    /// Rebase relative paths to the provided root.
+    ///
+    /// Any relative paths will have be rebased such that they are not relative
+    /// to the provided root.
+    pub fn rebase(&mut self, root: &Path) {
+        self.image = self.image.take().map(|path| root.join(path));
+    }
+
+    /// Combines two configuration instances.
+    ///
+    /// This is useful when some configurations may also be supplied on the
+    /// command-line. When merging, it is best practice to prioritize options
+    /// from the cli to those saved on-disk. To do so, prefer keeping data
+    /// fields from `self` when conflicting with `other`.
+    pub fn merge(&mut self, other: Self) {
+        self.image = self.image.take().or(other.image);
     }
 }
 
