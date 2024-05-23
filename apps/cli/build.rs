@@ -34,9 +34,11 @@ mod dir;
 const MANSECT: &str = "6";
 
 fn main() -> Result<()> {
+    // Environment variables
     let out = env::var_os("OUT_DIR")
         .map(PathBuf::from)
         .ok_or(io::ErrorKind::NotFound)?;
+    env::set_var(cli::env::CFG, "");
 
     // Build clap command
     let cmd = cli::Cli::command();

@@ -42,8 +42,7 @@ Arguments:
   [ROM]  Cartridge ROM image file
 
 Options:
-      --conf <PATH>   Configuration file [env: RUGBY_CONF=] [default:
-                      $XDG_CONFIG_HOME/rugby/config.toml]
+      --conf <PATH>   Configuration file [env: RUGBY_CONF=]
   -l, --log <FILTER>  Logging level [env: RUGBY_LOG=]
   -h, --help          Print help (see more with '--help')
   -V, --version       Print version

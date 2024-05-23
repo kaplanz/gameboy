@@ -8,6 +8,15 @@ use clap::{Args, Parser, ValueHint};
 use crate::cfg::{self, Config};
 use crate::def::NAME;
 
+/// Environment variables.
+pub mod env {
+    /// Configuration file.
+    pub const CFG: &str = "RUGBY_CONF";
+
+    /// Logging level.
+    pub const LOG: &str = "RUGBY_LOG";
+}
+
 /// Emulate the Nintendo Game Boy.
 ///
 /// Cycle-accurate emulation with support for custom palettes, configurable
@@ -20,9 +29,11 @@ pub struct Cli {
     ///
     /// When options are specified in multiple locations, they will be applied
     /// with the following precedence: cli > env > file.
-    #[clap(long, env = "RUGBY_CONF")]
+    #[clap(long, env = env::CFG)]
     #[clap(value_name = "PATH")]
     #[clap(default_value_os_t = cfg::path())]
+    #[clap(hide_default_value = std::env::var(env::CFG).is_ok())]
+    #[clap(hide_env_values    = std::env::var(env::CFG).is_err())]
     #[clap(value_hint = ValueHint::FilePath)]
     pub conf: PathBuf,
 
@@ -34,7 +45,7 @@ pub struct Cli {
     /// Logging level.
     ///
     /// A comma-separated list of logging directives.
-    #[clap(short, long, env = "RUGBY_LOG")]
+    #[clap(short, long, env = env::LOG)]
     #[clap(value_name = "FILTER")]
     #[clap(help_heading = None)]
     pub log: Option<String>,
@@ -91,28 +102,28 @@ pub struct Link {
 /// Debugging options.
 #[derive(Args, Debug)]
 pub struct Debug {
-    #[cfg(feature = "doc")]
     /// Doctor logfile path.
     ///
     /// Enables logging at the provided path of the emulator's state after every
     /// instruction in the format used by Gameboy Doctor.
+    #[cfg(feature = "doc")]
     #[clap(long)]
     #[clap(value_name = "PATH")]
     #[clap(value_hint = ValueHint::FilePath)]
     pub doc: Option<PathBuf>,
 
-    #[cfg(feature = "gbd")]
     /// Enable interactive debugging.
     ///
     /// Starts with Game Boy Debugger (GBD) enabled, presenting the prompt after
     /// loading.
+    #[cfg(feature = "gbd")]
     #[clap(short = 'i', long)]
     pub gbd: bool,
 
-    #[cfg(feature = "win")]
     /// Enable VRAM debug windows.
     ///
     /// Starts with debug windows opened, visually rendering VRAM contents.
+    #[cfg(feature = "win")]
     #[clap(long)]
     pub win: bool,
 }
