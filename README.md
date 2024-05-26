@@ -99,7 +99,7 @@ Several additional frontends are planned for the future:
 - `rugby-sdl`: a cross-platform application based upon the [SDL] framework.
 - `rugby-web`: an online hosted frontend powered by [Wasm].
 
-## [Testing](./docs/TESTING.md)
+## [Testing](./tests/README.md)
 
 Rigorous integration testing is provided to validate the implementation and
 prevent regressions in future versions.
@@ -209,18 +209,18 @@ chosen license.
 [2048.game]:        ./roms/games/2048/2048.gb
 [2048.license]:     ./roms/games/2048/LICENSE
 [acid2]:            https://github.com/mattcurrie/dmg-acid2
-[acid2.doc]:        ./docs/TESTING.md#acid2
+[acid2.doc]:        ./tests/README.md#acid2
 [acid2.test]:       ./roms/test/acid2/dmg-acid2.gb
 [acid2.license]:    ./roms/test/acid2/LICENSE
 [blargg]:           https://github.com/retrio/gb-test-roms
-[blargg.doc]:       ./docs/TESTING.md#blargg
+[blargg.doc]:       ./tests/README.md#blargg
 [blargg.test]:      ./roms/test/blargg
 [mealybug]:         https://github.com/mattcurrie/mealybug-tearoom-tests
-[mealybug.doc]:     ./docs/TESTING.md#mealybug
+[mealybug.doc]:     ./tests/README.md#mealybug
 [mealybug.test]:    ./roms/test/mealybug
 [mealybug.license]: ./roms/test/mealybug/LICENSE
 [mooneye]:          https://github.com/Gekkio/mooneye-test-suite
-[mooneye.doc]:      ./docs/TESTING.md#mooneye
+[mooneye.doc]:      ./tests/README.md#mooneye
 [mooneye.test]:     ./roms/test/mooneye
 [mooneye.license]:  ./roms/test/mooneye/LICENSE
 [sameboy]:          https://sameboy.github.io

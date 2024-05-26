@@ -266,19 +266,19 @@ Attribution of all included open-source software is listed in the project's
 [acid2.git.badge]:    https://img.shields.io/badge/acid2-origin-2188a7?logo=github
 [acid2.git.hyper]:    https://github.com/mattcurrie/dmg-acid2
 [acid2.src.badge]:    https://img.shields.io/badge/acid2-source-a72145?logo=rust
-[acid2.src.hyper]:    /tests/acid2.rs
+[acid2.src.hyper]:    ./acid2.rs
 [blargg.git.badge]:   https://img.shields.io/badge/blargg-origin-2188a7?logo=github
 [blargg.git.hyper]:   https://github.com/retrio/gb-test-roms
 [blargg.src.badge]:   https://img.shields.io/badge/blargg-source-a72145?logo=rust
-[blargg.src.hyper]:   /tests/blargg.rs
+[blargg.src.hyper]:   ./blargg.rs
 [mealybug.git.badge]: https://img.shields.io/badge/mealybug-origin-2188a7?logo=github
 [mealybug.git.hyper]: https://github.com/mattcurrie/mealybug-tearoom-tests
 [mealybug.src.badge]: https://img.shields.io/badge/mealybug-source-a72145?logo=rust
-[mealybug.src.hyper]: /tests/mealybug.rs
+[mealybug.src.hyper]: ./mealybug.rs
 [mooneye.git.badge]:  https://img.shields.io/badge/mooneye-origin-2188a7?logo=github
 [mooneye.git.hyper]:  https://github.com/Gekkio/mooneye-test-suite
 [mooneye.src.badge]:  https://img.shields.io/badge/mooneye-source-a72145?logo=rust
-[mooneye.src.hyper]:  /tests/mooneye.rs
+[mooneye.src.hyper]:  ./mooneye.rs
 
 <!-- Integration -->
 [wsp.acid2]: https://webstandards.org/files/acid2/test.html
