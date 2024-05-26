@@ -55,12 +55,6 @@ impl<T: ?Sized> DerefMut for Shared<T> {
     }
 }
 
-impl<T> From<T> for Shared<T> {
-    fn from(value: T) -> Self {
-        Self(Rc::new(RefCell::new(value)))
-    }
-}
-
 impl<T: ?Sized> PartialEq for Shared<T> {
     fn eq(&self, other: &Self) -> bool {
         Rc::ptr_eq(self, other)

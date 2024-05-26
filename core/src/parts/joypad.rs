@@ -91,7 +91,7 @@ impl Joypad {
     #[must_use]
     pub fn new(int: pic::Line) -> Self {
         Self {
-            con: Control::default().into(),
+            con: Shared::new(Control::default()),
             int,
         }
     }

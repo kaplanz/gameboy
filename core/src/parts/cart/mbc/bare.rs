@@ -22,8 +22,8 @@ impl Bare {
     #[must_use]
     pub fn new(rom: Data, ram: Data) -> Self {
         Self {
-            rom: Rom::from(rom).into(),
-            ram: Ram::from(ram).into(),
+            rom: Shared::new(Rom::from(rom)),
+            ram: Shared::new(Ram::from(ram)),
         }
     }
 }

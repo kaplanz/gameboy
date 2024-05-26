@@ -36,13 +36,13 @@ pub struct Motherboard {
 impl Default for Motherboard {
     fn default() -> Self {
         let noc = Mmap::new();
-        let vram = Shared::from(Ram::from([Byte::default(); 0x2000]));
+        let vram = Shared::new(Ram::from([Byte::default(); 0x2000]));
         Self {
             clk: u128::default(),
             soc: Chip::new(&noc, vram.clone()),
             noc,
             vram,
-            wram: Ram::from([Byte::default(); 0x2000]).into(),
+            wram: Shared::new(Ram::from([Byte::default(); 0x2000])),
         }
         .prep()
     }

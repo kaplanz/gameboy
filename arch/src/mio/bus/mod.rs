@@ -80,12 +80,13 @@ impl Memory for Bus {
 mod tests {
     use super::*;
     use crate::mem::Ram;
+    use crate::Shared;
 
     fn setup() -> Bus {
         Bus::from([
-            (0x000..=0x0ff, Device::dev(Ram::from([0; 0x100]))),
-            (0x100..=0x1ff, Device::dev(Ram::from([1; 0x100]))),
-            (0x200..=0x2ff, Device::dev(Ram::from([2; 0x100]))),
+            (0x000..=0x0ff, Shared::dev(Ram::from([0; 0x100]))),
+            (0x100..=0x1ff, Shared::dev(Ram::from([1; 0x100]))),
+            (0x200..=0x2ff, Shared::dev(Ram::from([2; 0x100]))),
         ])
     }
 
@@ -123,11 +124,11 @@ mod tests {
 
     #[test]
     fn map_overlapping_works() {
-        let a = Bus::from([(0x0000..=0x9fff, Device::dev(Ram::from([0x55; 0xa000])))]);
-        let b = Bus::from([(0x6000..=0xffff, Device::dev(Ram::from([0xaa; 0xa000])))]);
+        let a = Bus::from([(0x0000..=0x9fff, Shared::dev(Ram::from([0x55; 0xa000])))]);
+        let b = Bus::from([(0x6000..=0xffff, Shared::dev(Ram::from([0xaa; 0xa000])))]);
         let c = Bus::from([
-            (0x0000..=0xffff, Device::dev(a)),
-            (0x0000..=0xffff, Device::dev(b)),
+            (0x0000..=0xffff, Shared::dev(a)),
+            (0x0000..=0xffff, Shared::dev(b)),
         ]);
         assert_eq!(
             [
@@ -146,7 +147,7 @@ mod tests {
     fn unmap_works() {
         let mut bus = Bus::new();
         let ram = Ram::from([0; 0x100]);
-        let dev = Device::dev(ram);
+        let dev = Shared::dev(ram);
         bus.map(0x000..=0x0ff, dev.clone());
         assert!(bus.unmap(&dev));
         assert!(bus.read(0).is_err());
@@ -200,32 +201,32 @@ mod tests {
         // Device 0
         const N0: u16 = 1;
         const A0: u16 = 0x1000;
-        let d0 = Device::dev(Ram::from([0xaa; N0 as usize]));
+        let d0 = Shared::dev(Ram::from([0xaa; N0 as usize]));
         bus.map(A0..=A0 + N0 - 1, d0);
         // Device 1
         const N1: u16 = 2;
         const A1: u16 = A0 + N0;
-        let d1 = Device::dev(Ram::from([0xbb; N1 as usize]));
+        let d1 = Shared::dev(Ram::from([0xbb; N1 as usize]));
         bus.map(A1..=A1 + N1 - 1, d1);
         // Device 2
         const N2: u16 = 4;
         const A2: u16 = A1 + N1;
-        let d2 = Device::dev(Ram::from([0xcc; N2 as usize]));
+        let d2 = Shared::dev(Ram::from([0xcc; N2 as usize]));
         bus.map(A2..=A2 + N2 - 1, d2);
         // Device 3
         const N3: u16 = 8;
         const A3: u16 = A2 + N2;
-        let d3 = Device::dev(Ram::from([0xdd; N3 as usize]));
+        let d3 = Shared::dev(Ram::from([0xdd; N3 as usize]));
         bus.map(A3..=A3 + N3 - 1, d3);
         // Device 4
         const N4: u16 = 16;
         const A4: u16 = 0;
-        let d4 = Device::dev(Ram::from([0xee; N4 as usize]));
+        let d4 = Shared::dev(Ram::from([0xee; N4 as usize]));
         bus.map(A4..=A4 + N4 - 1, d4);
         // Device 5
         const N5: u16 = 128;
         const A5: u16 = A4;
-        let d5 = Device::dev(Ram::from([0xff; N5 as usize]));
+        let d5 = Shared::dev(Ram::from([0xff; N5 as usize]));
         bus.map(A5..=A5 + N5 - 1, d5);
 
         // Check if it is accessed properly...

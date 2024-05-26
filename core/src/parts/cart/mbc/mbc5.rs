@@ -24,8 +24,8 @@ impl Mbc5 {
     pub fn new(rom: Data, ram: Data) -> Self {
         let ctl = Control::default();
         Self {
-            rom: Rom::new(ctl.clone(), rom).into(),
-            ram: Ram::new(ctl.clone(), ram).into(),
+            rom: Shared::new(Rom::new(ctl.clone(), rom)),
+            ram: Shared::new(Ram::new(ctl.clone(), ram)),
             ctl,
         }
     }

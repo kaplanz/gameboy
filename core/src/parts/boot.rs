@@ -28,9 +28,9 @@ impl Chip {
             "BOOT:\n{rom}",
             rom = phex::Printer::<Byte>::new(0, rom.inner())
         );
-        let reg = Shared::from(Control::new());
+        let reg = Shared::new(Control::new());
         Self {
-            mem: Bank::new(reg.clone(), rom).into(),
+            mem: Shared::new(Bank::new(reg.clone(), rom)),
             reg,
         }
     }

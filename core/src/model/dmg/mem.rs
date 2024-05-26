@@ -44,9 +44,9 @@ impl Bank {
 impl Default for Bank {
     fn default() -> Self {
         Self {
-            oam: Ram::from([Byte::default(); 0x00a0]).into(),
-            wave: Ram::from([Byte::default(); 0x0010]).into(),
-            hram: Ram::from([Byte::default(); 0x007f]).into(),
+            oam: Shared::new(Ram::from([Byte::default(); 0x00a0])),
+            wave: Shared::new(Ram::from([Byte::default(); 0x0010])),
+            hram: Shared::new(Ram::from([Byte::default(); 0x007f])),
         }
     }
 }
