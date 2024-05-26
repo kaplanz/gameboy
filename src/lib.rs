@@ -6,9 +6,9 @@
 //! # Examples
 //!
 //! ```
+//! use rugby::arch::Block; // for `Block::cycle`
 //! use rugby::core::dmg::{Cartridge, GameBoy};
 //! use rugby::prelude::*;
-//! use rugby_arch::Block; // for `Block::cycle`
 //!
 //! // Instantiate a cartridge from ROM bytes
 //! let rom: &[u8]; // -- snip --
@@ -34,6 +34,8 @@
 pub mod app;
 pub mod pal;
 
+#[doc(inline)]
+pub use rugby_arch as arch;
 #[doc(inline)]
 pub use rugby_core as core;
 

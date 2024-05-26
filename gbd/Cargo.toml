@@ -21,5 +21,4 @@ pest_derive = { version = "2.7.10" }
 phex = { workspace = true }
 png = { workspace = true }
 rugby = { workspace = true }
-rugby-arch = { workspace = true }
 thiserror = { workspace = true }

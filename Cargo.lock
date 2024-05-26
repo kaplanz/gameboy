@@ -257,7 +257,6 @@ dependencies = [
  "log",
  "minifb",
  "rugby",
- "rugby-arch",
  "rustyline",
  "serde",
  "sysexits",
@@ -595,7 +594,6 @@ dependencies = [
  "phex",
  "png",
  "rugby",
- "rugby-arch",
  "thiserror",
 ]
 

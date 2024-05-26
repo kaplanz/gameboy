@@ -6,10 +6,10 @@ use std::ops::Not;
 use std::path::Path;
 
 use derange::Derange;
+use rugby::arch::reg::Port;
+use rugby::arch::Block;
 use rugby::core::dmg::LCD;
 use rugby::prelude::*;
-use rugby_arch::reg::Port;
-use rugby_arch::Block;
 
 use super::lang::{Keyword, Select, Serial, Value};
 use super::{Debugger, Error, GameBoy, Result, Tick};
