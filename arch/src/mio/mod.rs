@@ -1,3 +1,5 @@
+//! Memory-mapped I/O.
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -8,7 +10,7 @@ mod bus;
 
 pub use self::bus::Bus;
 
-/// Memory-mapped I/O device.
+/// I/O device.
 pub type Device = Shared<dyn Memory>;
 
 impl Device {
@@ -23,7 +25,7 @@ impl<M: Memory + 'static> From<Shared<M>> for Device {
     }
 }
 
-/// Memory-mapped I/O interface.
+/// Mappable component.
 pub trait Mmio {
     /// Attaches this module's devices onto a bus.
     fn attach(&self, bus: &mut Bus);

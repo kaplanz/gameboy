@@ -4,7 +4,7 @@ use crate::{Byte, Shared, Word};
 
 /// An access point within a register file.
 pub trait Port<R: Register> {
-    /// Selection name of register.
+    /// Register to select.
     type Select;
 
     /// Loads from the specified register.

@@ -1,16 +1,3 @@
-//! Memory interface.
-//!
-//! # Usage
-//!
-//! The [`Bus`] struct allows the user to mount another [`Device`] to
-//! anywhere within the address space. As it itself implements `Device`, it
-//! may be mapped in a nested fashion.
-//!
-//! Together with the [adapters](self::adapt), `Bus` is the primary method of
-//! emulating [memory-mapped I/O].
-//!
-//! [memory-mapped I/O]: https://en.wikipedia.org/wiki/Memory-mapped_I/O
-
 use std::fmt::Debug;
 use std::ops::RangeInclusive;
 
@@ -24,7 +11,9 @@ mod imp;
 /// Mappable address range.
 type Range = RangeInclusive<Word>;
 
-/// Address [bus].
+/// Databus.
+///
+/// The [bus] is used to model data transfer via memory-mapped I/O requests.
 ///
 /// [bus]: https://en.wikipedia.org/wiki/Bus_(computing)
 #[derive(Debug, Default)]
