@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use clap::{Args, Parser, ValueHint};
 
 use crate::cfg::{self, Config};
-use crate::def::NAME;
+use crate::opt::NAME;
 
 /// Environment variables.
 pub mod env {

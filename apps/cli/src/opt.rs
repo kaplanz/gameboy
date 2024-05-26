@@ -1,4 +1,4 @@
-//! Partial configuration definitions.
+//! Application options.
 
 use std::path::{Path, PathBuf};
 

@@ -9,8 +9,8 @@ use serde::Deserialize;
 use thiserror::Error;
 use toml::from_str as parse;
 
-use crate::def::{Cartridge, Hardware, Interface};
 use crate::dir;
+use crate::opt::{Cartridge, Hardware, Interface};
 
 /// Returns the path to the application's configuration file.
 #[must_use]

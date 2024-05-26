@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use crate::def::NAME;
+use crate::opt::NAME;
 
 /// Convenience macro for creating standard directory definition functions.
 macro_rules! path {

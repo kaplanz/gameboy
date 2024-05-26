@@ -16,9 +16,9 @@ mod cfg;
 mod cli;
 #[cfg(feature = "debug")]
 mod dbg;
-mod def;
 mod dir;
 mod err;
+mod opt;
 
 fn main() -> Exit {
     match run() {
@@ -101,7 +101,7 @@ mod build {
     use crate::dbg::doc::Doctor;
     #[cfg(feature = "gbd")]
     use crate::dbg::gbd::Console;
-    use crate::def::{Tristate, NAME};
+    use crate::opt::{Tristate, NAME};
 
     #[cfg(feature = "gbd")]
     type Log = Portal<String>;

@@ -8,16 +8,16 @@ use clap::{CommandFactory, ValueEnum};
 use clap_complete::Shell;
 use clap_mangen::Man;
 
-use crate::def::NAME;
+use crate::opt::NAME;
 
 #[path = "src/cfg.rs"]
 mod cfg;
 #[path = "src/cli.rs"]
 mod cli;
-#[path = "src/def.rs"]
-mod def;
 #[path = "src/dir.rs"]
 mod dir;
+#[path = "src/opt.rs"]
+mod opt;
 
 /// Manual section.
 ///
