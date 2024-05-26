@@ -1,6 +1,6 @@
 //! Processor API.
 
-use remus::{Byte, Word};
+use rugby_arch::{Byte, Word};
 
 /// Processor support.
 pub trait Support {

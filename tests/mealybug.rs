@@ -1,6 +1,6 @@
-use remus::Block;
 use rugby::core::dmg::{Cartridge, GameBoy};
 use rugby::prelude::*;
+use rugby_arch::Block;
 
 mod common;
 

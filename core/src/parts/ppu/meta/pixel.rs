@@ -1,4 +1,4 @@
-use remus::Byte;
+use rugby_arch::Byte;
 use thiserror::Error;
 
 use crate::api::video;

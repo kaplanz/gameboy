@@ -3,10 +3,10 @@
 use std::fmt::Display;
 
 use log::trace;
-use remus::mem::Memory;
-use remus::mio::{Bus, Mmio};
-use remus::reg::{Port, Register as _};
-use remus::{Block, Byte, Shared, Word};
+use rugby_arch::mem::Memory;
+use rugby_arch::mio::{Bus, Mmio};
+use rugby_arch::reg::{Port, Register as _};
+use rugby_arch::{Block, Byte, Shared, Word};
 use thiserror::Error;
 
 /// Interrupt source.
@@ -247,17 +247,17 @@ impl Register {
 }
 
 impl Memory for Register {
-    fn read(&self, _: Word) -> remus::mem::Result<Byte> {
+    fn read(&self, _: Word) -> rugby_arch::mem::Result<Byte> {
         Ok(self.load())
     }
 
-    fn write(&mut self, _: Word, data: Byte) -> remus::mem::Result<()> {
+    fn write(&mut self, _: Word, data: Byte) -> rugby_arch::mem::Result<()> {
         self.store(data);
         Ok(())
     }
 }
 
-impl remus::reg::Register for Register {
+impl rugby_arch::reg::Register for Register {
     type Value = Byte;
 
     fn load(&self) -> Self::Value {

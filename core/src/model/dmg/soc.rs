@@ -1,7 +1,7 @@
 //! System-on-chip.
 
-use remus::mio::{Bus, Mmio};
-use remus::{Block, Shared};
+use rugby_arch::mio::{Bus, Mmio};
+use rugby_arch::{Block, Shared};
 
 use super::cpu::Cpu;
 use super::joypad::Joypad;

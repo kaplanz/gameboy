@@ -1,6 +1,6 @@
-use remus::mem::Memory;
-use remus::reg::Register;
-use remus::{Byte, Word};
+use rugby_arch::mem::Memory;
+use rugby_arch::reg::Register;
+use rugby_arch::{Byte, Word};
 
 use super::fifo::Fifo;
 use super::pixel::{Meta, Palette};

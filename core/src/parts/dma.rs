@@ -1,10 +1,10 @@
 //! Direct memory access.
 
 use log::{debug, trace, warn};
-use remus::mem::Memory;
-use remus::mio::Bus;
-use remus::reg::Register;
-use remus::{Block, Byte, Shared, Word};
+use rugby_arch::mem::Memory;
+use rugby_arch::mio::Bus;
+use rugby_arch::reg::Register;
+use rugby_arch::{Block, Byte, Shared, Word};
 
 pub use super::ppu::Oam;
 
@@ -94,11 +94,11 @@ impl Block for Control {
 }
 
 impl Memory for Control {
-    fn read(&self, _: Word) -> remus::mem::Result<Byte> {
+    fn read(&self, _: Word) -> rugby_arch::mem::Result<Byte> {
         Ok(self.load())
     }
 
-    fn write(&mut self, _: Word, data: Byte) -> remus::mem::Result<()> {
+    fn write(&mut self, _: Word, data: Byte) -> rugby_arch::mem::Result<()> {
         self.store(data);
         Ok(())
     }

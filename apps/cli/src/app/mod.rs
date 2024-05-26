@@ -11,13 +11,13 @@ use anyhow::Context as _;
 use gbd::Debugger;
 #[allow(unused)]
 use log::{debug, error, trace};
-use remus::{Block, Clock};
 #[cfg(any(feature = "doc", feature = "win"))]
 use rugby::core::dmg;
 #[cfg(feature = "doc")]
 use rugby::core::dmg::cpu::Stage;
 use rugby::core::dmg::{Cartridge, GameBoy};
 use rugby::prelude::*;
+use rugby_arch::{Block, Clock};
 
 use self::ctx::Counter;
 #[cfg(feature = "win")]

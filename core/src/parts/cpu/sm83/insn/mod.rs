@@ -3,7 +3,7 @@
 use std::fmt::{Debug, Display};
 
 use log::trace;
-use remus::Byte;
+use rugby_arch::Byte;
 use thiserror::Error;
 
 use self::exec::Operation;
@@ -95,8 +95,8 @@ impl From<Interrupt> for Instruction {
 
 /// Helper functions.
 mod help {
-    use remus::reg::Register;
-    use remus::Byte;
+    use rugby_arch::reg::Register;
+    use rugby_arch::Byte;
 
     use super::Cpu;
 

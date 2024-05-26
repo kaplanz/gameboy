@@ -1,10 +1,10 @@
 use std::io;
 
 use log::{debug, error, trace};
-use remus::mem::{Error, Memory, Result};
-use remus::mio::Device;
-use remus::reg::Register;
-use remus::{Block, Byte, Shared, Word};
+use rugby_arch::mem::{Error, Memory, Result};
+use rugby_arch::mio::Device;
+use rugby_arch::reg::Register;
+use rugby_arch::{Block, Byte, Shared, Word};
 
 use super::{Data, Mbc};
 

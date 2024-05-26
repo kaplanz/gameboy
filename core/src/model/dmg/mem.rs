@@ -1,8 +1,8 @@
 //! Embedded memory blocks.
 
-use remus::mem::Ram;
-use remus::mio::Mmio;
-use remus::{Byte, Shared};
+use rugby_arch::mem::Ram;
+use rugby_arch::mio::Mmio;
+use rugby_arch::{Byte, Shared};
 
 pub use super::apu::Wave;
 pub use super::ppu::Oam;
@@ -52,7 +52,7 @@ impl Default for Bank {
 }
 
 impl Mmio for Bank {
-    fn attach(&self, bus: &mut remus::mio::Bus) {
+    fn attach(&self, bus: &mut rugby_arch::mio::Bus) {
         bus.map(0xfe00..=0xfe9f, self.oam.clone().into());
         bus.map(0xff30..=0xff3f, self.wave.clone().into());
         bus.map(0xff80..=0xfffe, self.hram.clone().into());

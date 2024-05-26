@@ -1,5 +1,5 @@
-use remus::reg::Register;
-use remus::Byte;
+use rugby_arch::reg::Register;
+use rugby_arch::Byte;
 
 use super::{help, Cpu, Error, Execute, Operation, Return};
 

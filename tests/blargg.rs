@@ -1,8 +1,8 @@
 use std::fmt::{Debug, Display};
 
-use remus::Block;
 use rugby::core::dmg::{Cartridge, GameBoy};
 use rugby::prelude::*;
+use rugby_arch::Block;
 use thiserror::Error;
 
 /// Number of cycles after which the test is considered to have failed due to a

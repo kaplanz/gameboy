@@ -3,9 +3,9 @@
 //! [Game Boy]: https://en.wikipedia.org/wiki/Game_Boy
 
 use log::warn;
-use remus::mio::Mmio;
-use remus::reg::Port;
-use remus::{Block, Word};
+use rugby_arch::mio::Mmio;
+use rugby_arch::reg::Port;
+use rugby_arch::{Block, Word};
 
 use self::apu::Apu;
 use self::cpu::Cpu;

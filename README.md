@@ -63,11 +63,11 @@ crates are used with the structure as follows:
 ├── README.md        # this document
 ├── ...
 ├── apps/            # frontend apps
+├── arch/            # architecture primitives
 ├── core/            # emulation core
 ├── crates/          # support crates
 ├── docs/            # documentation
 ├── gbd/             # game boy debugger
-├── remus/           # architecture primitives
 ├── roms/            # open-source ROMs
 ├── src/             # emulation library
 └── tests/           # integration tests
@@ -84,6 +84,7 @@ crates are used with the structure as follows:
 Main components of `rugby` are outlined below.
 
 - [`rugby`](./): is the high-level library that provides the public API.
+- [`rugby-arch`](./arch): defines the architecture primitives for emulation.
 - [`rugby-core`](./core): contains the implementation of emulator cores.
 - [`rugby-gbd`](./gbd): provides an interactive prompt debugging interface.
 

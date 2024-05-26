@@ -1,6 +1,6 @@
 use std::iter;
 
-use remus::mio::Bus;
+use rugby_arch::mio::Bus;
 
 use super::*;
 use crate::parts::pic::Pic;

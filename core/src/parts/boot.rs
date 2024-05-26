@@ -3,13 +3,13 @@
 use std::fmt::Debug;
 
 use log::{debug, trace};
-use remus::mem::{Error, Memory, Result};
-use remus::mio::{Bus, Mmio};
-use remus::reg::Register;
-use remus::{Block, Byte, Shared, Word};
+use rugby_arch::mem::{Error, Memory, Result};
+use rugby_arch::mio::{Bus, Mmio};
+use rugby_arch::reg::Register;
+use rugby_arch::{Block, Byte, Shared, Word};
 
 /// Boot ROM.
-pub type Boot = remus::mem::Rom<[Byte; 0x100]>;
+pub type Boot = rugby_arch::mem::Rom<[Byte; 0x100]>;
 
 /// Boot mapper chip.
 #[derive(Clone, Debug)]

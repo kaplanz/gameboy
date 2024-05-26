@@ -8,7 +8,7 @@
 //! ```
 //! use rugby::core::dmg::{Cartridge, GameBoy};
 //! use rugby::prelude::*;
-//! use remus::Block; // for `Block::cycle`
+//! use rugby_arch::Block; // for `Block::cycle`
 //!
 //! // Instantiate a cartridge from ROM bytes
 //! let rom: &[u8]; // -- snip --

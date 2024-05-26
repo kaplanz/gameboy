@@ -1,7 +1,7 @@
 //! Network-on-chip.
 
-use remus::mio::Bus;
-use remus::Shared;
+use rugby_arch::mio::Bus;
+use rugby_arch::Shared;
 
 /// Memory-mapped I/O.
 ///

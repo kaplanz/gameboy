@@ -7,10 +7,10 @@ use std::fmt::{Debug, Display, Write};
 
 use indexmap::IndexMap;
 use log::debug;
-use remus::reg::Port;
-use remus::{Block, Clock};
 use rugby::core::dmg::{cpu, ppu, GameBoy};
 use rugby::prelude::*;
+use rugby_arch::reg::Port;
+use rugby_arch::{Block, Clock};
 use thiserror::Error;
 
 use self::lang::Program;

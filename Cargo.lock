@@ -256,8 +256,8 @@ dependencies = [
  "gbd",
  "log",
  "minifb",
- "remus",
  "rugby",
+ "rugby-arch",
  "rustyline",
  "serde",
  "sysexits",
@@ -594,8 +594,8 @@ dependencies = [
  "pest_derive",
  "phex",
  "png",
- "remus",
  "rugby",
+ "rugby-arch",
  "thiserror",
 ]
 
@@ -1252,17 +1252,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adad44e29e4c806119491a7f06f03de4d1af22c3a680dd47f1e6e179439d1f56"
 
 [[package]]
-name = "remus"
-version = "0.1.0"
-dependencies = [
- "indexmap 2.2.6",
- "log",
- "num",
- "rand",
- "thiserror",
-]
-
-[[package]]
 name = "roff"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1274,9 +1263,20 @@ version = "0.1.0"
 dependencies = [
  "chex",
  "png",
- "remus",
+ "rugby-arch",
  "rugby-core",
  "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "rugby-arch"
+version = "0.1.0"
+dependencies = [
+ "indexmap 2.2.6",
+ "log",
+ "num",
+ "rand",
  "thiserror",
 ]
 
@@ -1287,7 +1287,7 @@ dependencies = [
  "itertools",
  "log",
  "phex",
- "remus",
+ "rugby-arch",
  "thiserror",
 ]
 

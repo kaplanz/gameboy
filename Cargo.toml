@@ -10,7 +10,7 @@ license = { workspace = true }
 
 [dependencies]
 chex = { workspace = true }
-remus = { workspace = true }
+rugby-arch = { workspace = true }
 rugby-core = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
@@ -28,10 +28,10 @@ opt-level = 3
 [workspace]
 members = [
     "apps/*",
+    "arch",
     "core",
     "crates/*",
     "gbd",
-    "remus",
 ]
 
 [workspace.package]
@@ -50,8 +50,8 @@ log = "0.4.21"
 num = "0.4.3"
 phex = { version = "0.1.0", path = "crates/phex" }
 png = "0.17.13"
-remus = { version = "0.1.0", path = "remus" }
 rugby = { version = "0.1.0", path = "." }
+rugby-arch = { version = "0.1.0", path = "arch" }
 rugby-core = { version = "0.1.0", path = "core" }
 serde = { version = "1.0.202", features = ["derive"] }
 thiserror = "1.0.61"

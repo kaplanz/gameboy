@@ -1,9 +1,9 @@
 //! Graphics model.
 
-use remus::mem::Ram;
-use remus::mio::{Bus, Mmio};
-use remus::reg::{Port, Register};
-use remus::{Block, Byte, Shared, Word};
+use rugby_arch::mem::Ram;
+use rugby_arch::mio::{Bus, Mmio};
+use rugby_arch::reg::{Port, Register};
+use rugby_arch::{Block, Byte, Shared, Word};
 
 use self::exec::hblank::HBlank;
 use self::exec::vblank::VBlank;

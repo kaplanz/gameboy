@@ -8,8 +8,8 @@ use std::fmt::Debug;
 use std::io;
 
 use log::trace;
-use remus::mio::{Bus, Device, Mmio};
-use remus::{Block, Byte};
+use rugby_arch::mio::{Bus, Device, Mmio};
+use rugby_arch::{Block, Byte};
 
 use super::header::Header;
 use super::{Error, Info, Result};
@@ -98,7 +98,7 @@ mod make {
     use std::iter;
 
     use log::{info, warn};
-    use remus::Byte;
+    use rugby_arch::Byte;
 
     use super::{Data, Header};
 

@@ -17,7 +17,7 @@
 #![allow(clippy::unnecessary_wraps)]
 #![allow(clippy::wildcard_imports)]
 
-use remus::Byte;
+use rugby_arch::Byte;
 
 use super::{help, Cpu, Error, Execute, Flag, Ime, Result, Status};
 

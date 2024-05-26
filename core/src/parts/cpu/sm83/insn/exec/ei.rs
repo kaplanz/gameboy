@@ -1,4 +1,4 @@
-use remus::Byte;
+use rugby_arch::Byte;
 
 use super::{Cpu, Error, Execute, Ime, Operation, Return};
 

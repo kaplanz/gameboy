@@ -1,9 +1,9 @@
 //! Hardware timer.
 
 use log::{debug, trace};
-use remus::mio::{Bus, Mmio};
-use remus::reg::{Port, Register};
-use remus::{Block, Byte, Shared};
+use rugby_arch::mio::{Bus, Mmio};
+use rugby_arch::reg::{Port, Register};
+use rugby_arch::{Block, Byte, Shared};
 
 use super::pic::{self, Interrupt};
 
@@ -190,9 +190,9 @@ impl Mmio for Control {
 /// Timer register models.
 pub mod reg {
     use log::debug;
-    use remus::mem::Memory;
-    use remus::reg::Register;
-    use remus::{Byte, Word};
+    use rugby_arch::mem::Memory;
+    use rugby_arch::reg::Register;
+    use rugby_arch::{Byte, Word};
 
     /// Divider register.
     #[derive(Debug, Default)]
@@ -220,11 +220,11 @@ pub mod reg {
     }
 
     impl Memory for Div {
-        fn read(&self, _: Word) -> remus::mem::Result<Byte> {
+        fn read(&self, _: Word) -> rugby_arch::mem::Result<Byte> {
             Ok(self.load())
         }
 
-        fn write(&mut self, _: Word, data: Byte) -> remus::mem::Result<()> {
+        fn write(&mut self, _: Word, data: Byte) -> rugby_arch::mem::Result<()> {
             self.store(data);
             Ok(())
         }
@@ -301,11 +301,11 @@ pub mod reg {
     }
 
     impl Memory for Tima {
-        fn read(&self, _: Word) -> remus::mem::Result<Byte> {
+        fn read(&self, _: Word) -> rugby_arch::mem::Result<Byte> {
             Ok(self.load())
         }
 
-        fn write(&mut self, _: Word, data: Byte) -> remus::mem::Result<()> {
+        fn write(&mut self, _: Word, data: Byte) -> rugby_arch::mem::Result<()> {
             self.store(data);
             Ok(())
         }
@@ -355,11 +355,11 @@ pub mod reg {
     }
 
     impl Memory for Tac {
-        fn read(&self, _: Word) -> remus::mem::Result<Byte> {
+        fn read(&self, _: Word) -> rugby_arch::mem::Result<Byte> {
             Ok(self.load())
         }
 
-        fn write(&mut self, _: Word, data: Byte) -> remus::mem::Result<()> {
+        fn write(&mut self, _: Word, data: Byte) -> rugby_arch::mem::Result<()> {
             self.store(data);
             Ok(())
         }

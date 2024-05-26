@@ -1,5 +1,5 @@
-use remus::mem::Memory;
-use remus::Byte;
+use rugby_arch::mem::Memory;
+use rugby_arch::Byte;
 
 use self::api::cart::Support as _;
 use self::api::proc::Support as _;

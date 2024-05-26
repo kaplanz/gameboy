@@ -1,4 +1,4 @@
-use remus::{Byte, Word};
+use rugby_arch::{Byte, Word};
 
 use super::pixel::{Meta, Palette};
 

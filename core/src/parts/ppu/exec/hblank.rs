@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use remus::reg::Register;
+use rugby_arch::reg::Register;
 
 use super::draw::Draw;
 use super::{Interrupt, Mode, Ppu, LCD};

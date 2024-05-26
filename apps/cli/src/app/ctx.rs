@@ -3,8 +3,8 @@
 use std::fmt::Display;
 use std::time::{Duration, Instant};
 
-use remus::Clock;
 use rugby::core::dmg::{self, ppu};
+use rugby_arch::Clock;
 
 /// Runtime context.
 #[derive(Debug)]

@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use remus::mem::Memory;
-use remus::reg::Register;
-use remus::Word;
+use rugby_arch::mem::Memory;
+use rugby_arch::reg::Register;
+use rugby_arch::Word;
 
 use super::draw::Draw;
 use super::hblank::HBlank;

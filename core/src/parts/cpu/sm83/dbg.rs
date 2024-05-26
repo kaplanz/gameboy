@@ -2,7 +2,7 @@
 
 use std::fmt::Write;
 
-use remus::reg::Register;
+use rugby_arch::reg::Register;
 
 use super::Cpu;
 

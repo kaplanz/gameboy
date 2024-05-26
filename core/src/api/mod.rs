@@ -1,6 +1,6 @@
 //! Emulator API.
 
-use remus::Block;
+use rugby_arch::Block;
 
 pub mod audio;
 pub mod cart;

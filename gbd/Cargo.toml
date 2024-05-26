@@ -20,6 +20,6 @@ pest = { version = "2.7.10" }
 pest_derive = { version = "2.7.10" }
 phex = { workspace = true }
 png = { workspace = true }
-remus = { workspace = true }
 rugby = { workspace = true }
+rugby-arch = { workspace = true }
 thiserror = { workspace = true }

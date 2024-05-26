@@ -3,10 +3,10 @@
 use std::fmt::{Debug, Display};
 
 use log::{debug, error, trace, warn};
-use remus::mem::Memory;
-use remus::mio::Bus;
-use remus::reg::{Port, Register};
-use remus::{Block, Byte, Word};
+use rugby_arch::mem::Memory;
+use rugby_arch::mio::Bus;
+use rugby_arch::reg::{Port, Register};
+use rugby_arch::{Block, Byte, Word};
 
 use self::insn::Instruction;
 use crate::api::proc::Processor;

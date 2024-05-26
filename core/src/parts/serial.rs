@@ -4,9 +4,9 @@ use std::collections::VecDeque;
 use std::io::{BufRead, Write};
 
 use log::{debug, trace};
-use remus::mio::{Bus, Mmio};
-use remus::reg::{Port, Register};
-use remus::{Block, Byte, Shared};
+use rugby_arch::mio::{Bus, Mmio};
+use rugby_arch::reg::{Port, Register};
+use rugby_arch::{Block, Byte, Shared};
 
 use super::pic::{self, Interrupt};
 use crate::api::serial::Serial as Api;
@@ -220,9 +220,9 @@ impl Mmio for Control {
 /// Serial register models.
 pub mod reg {
     use log::{debug, warn};
-    use remus::mem::Memory;
-    use remus::reg::Register;
-    use remus::{Byte, Word};
+    use rugby_arch::mem::Memory;
+    use rugby_arch::reg::Register;
+    use rugby_arch::{Byte, Word};
 
     /// Serial data.
     pub type Sb = Byte;
@@ -236,11 +236,11 @@ pub mod reg {
     }
 
     impl Memory for Sc {
-        fn read(&self, _: Word) -> remus::mem::Result<Byte> {
+        fn read(&self, _: Word) -> rugby_arch::mem::Result<Byte> {
             Ok(self.load())
         }
 
-        fn write(&mut self, _: Word, data: Byte) -> remus::mem::Result<()> {
+        fn write(&mut self, _: Word, data: Byte) -> rugby_arch::mem::Result<()> {
             self.store(data);
             Ok(())
         }

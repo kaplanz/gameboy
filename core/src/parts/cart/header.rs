@@ -13,7 +13,7 @@ use std::fmt::Display;
 use std::str::Utf8Error;
 
 use log::{error, warn};
-use remus::{Byte, Word};
+use rugby_arch::{Byte, Word};
 use thiserror::Error;
 
 /// Nintendo logo.
@@ -352,7 +352,7 @@ impl Header {
 
 mod make {
     use log::warn;
-    use remus::{Byte, Word};
+    use rugby_arch::{Byte, Word};
 
     use super::{Error, Info, Result, LOGO};
 

@@ -1,9 +1,9 @@
 //! DMG-01 motherboard.
 
 use log::warn;
-use remus::mem::Ram;
-use remus::mio::Mmio;
-use remus::{Block, Byte, Shared};
+use rugby_arch::mem::Ram;
+use rugby_arch::mio::Mmio;
+use rugby_arch::{Block, Byte, Shared};
 
 use super::noc::Mmap;
 use super::ppu::Vram;

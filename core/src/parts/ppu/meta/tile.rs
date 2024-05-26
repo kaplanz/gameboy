@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use remus::Byte;
+use rugby_arch::Byte;
 
 use super::pixel::Color;
 

@@ -10,8 +10,8 @@
 //! [header]: https://gbdev.io/pandocs/The_Cartridge_Header.html
 //! [mbcs]:   https://gbdev.io/pandocs/MBCs.html
 
-use remus::mio::{Bus, Mmio};
-use remus::{Block, Byte};
+use rugby_arch::mio::{Bus, Mmio};
+use rugby_arch::{Block, Byte};
 use thiserror::Error;
 
 use self::header::{Header, Info};

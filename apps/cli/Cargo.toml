@@ -20,8 +20,8 @@ ctrlc = { version = "3.4.4", optional = true }
 gbd = { workspace = true, optional = true }
 log = { workspace = true }
 minifb = "0.27.0"
-remus = { workspace = true }
 rugby = { workspace = true }
+rugby-arch = { workspace = true }
 rustyline = { version = "14.0.0", optional = true }
 serde = { workspace = true }
 sysexits = "0.7.14"

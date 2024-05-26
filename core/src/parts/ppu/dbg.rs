@@ -1,9 +1,9 @@
 //! Debugging the [PPU](super).
 
 use itertools::Itertools;
-use remus::mem::Memory;
-use remus::reg::Register;
-use remus::Word;
+use rugby_arch::mem::Memory;
+use rugby_arch::reg::Register;
+use rugby_arch::Word;
 
 use super::blk::fetch::{Fetch, Location};
 use super::meta::pixel::{Meta, Palette, Pixel};
