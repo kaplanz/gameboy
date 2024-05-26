@@ -10,14 +10,14 @@ main features, including a full interactive debugger.
 
 ## Build
 
-Invoke `cargo build --release -pcli` from anywhere within the repository to
+Invoke `cargo build --release -prugby-cli` from anywhere within the repository to
 build this frontend. The following artifacts of interest will be produced:
 
 ```
 ./target/release/
 ├── rugby          # rugby-cli executable
 ├── ...
-└── build/cli-*/out/
+└── build/rugby-cli-*/out/
    ├── _rugby      # completions for zsh
    ├── _rugby.ps1  # completions for powershell
    ├── rugby.6     # manual documentation page

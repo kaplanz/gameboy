@@ -244,29 +244,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cli"
-version = "0.1.0"
-dependencies = [
- "advise",
- "anyhow",
- "clap",
- "clap_complete",
- "clap_mangen",
- "ctrlc",
- "gbd",
- "log",
- "minifb",
- "rugby",
- "rustyline",
- "serde",
- "sysexits",
- "thiserror",
- "toml",
- "tracing-subscriber",
- "xdir",
-]
-
-[[package]]
 name = "clipboard-win"
 version = "5.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1276,6 +1253,29 @@ dependencies = [
  "num",
  "rand",
  "thiserror",
+]
+
+[[package]]
+name = "rugby-cli"
+version = "0.1.0"
+dependencies = [
+ "advise",
+ "anyhow",
+ "clap",
+ "clap_complete",
+ "clap_mangen",
+ "ctrlc",
+ "gbd",
+ "log",
+ "minifb",
+ "rugby",
+ "rustyline",
+ "serde",
+ "sysexits",
+ "thiserror",
+ "toml",
+ "tracing-subscriber",
+ "xdir",
 ]
 
 [[package]]
