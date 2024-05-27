@@ -84,13 +84,13 @@ mod build {
     use std::path::Path;
 
     use anyhow::{anyhow, ensure, Context, Result};
-    #[cfg(feature = "gbd")]
-    use gbd::{Debugger, Portal};
     use log::{debug, error, info, warn};
     use rugby::core::dmg::cart::mbc::Mbc;
     use rugby::core::dmg::{Boot, Cartridge, GameBoy, LCD};
     use rugby::emu::video;
     use rugby::prelude::*;
+    #[cfg(feature = "gbd")]
+    use rugby_gbd::{Debugger, Portal};
     use tracing_subscriber::filter::LevelFilter;
     use tracing_subscriber::EnvFilter;
 

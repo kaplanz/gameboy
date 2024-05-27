@@ -7,8 +7,6 @@ use std::sync::mpsc;
 use std::time::Instant;
 
 use anyhow::Context as _;
-#[cfg(feature = "gbd")]
-use gbd::Debugger;
 #[allow(unused)]
 use log::{debug, error, trace};
 use rugby::arch::{Block, Clock};
@@ -18,6 +16,8 @@ use rugby::core::dmg;
 use rugby::core::dmg::cpu::Stage;
 use rugby::core::dmg::{Cartridge, GameBoy};
 use rugby::prelude::*;
+#[cfg(feature = "gbd")]
+use rugby_gbd::Debugger;
 
 use self::ctx::Counter;
 #[cfg(feature = "win")]
@@ -143,7 +143,7 @@ impl App {
                 if gbd.ready() {
                     let res = gbd.run(&mut self.emu, &mut clk);
                     // Quit if requested
-                    if matches!(res, Err(gbd::Error::Quit)) {
+                    if matches!(res, Err(rugby_gbd::Error::Quit)) {
                         return Ok(());
                     }
                 }

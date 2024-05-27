@@ -556,25 +556,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gbd"
-version = "0.1.0"
-dependencies = [
- "advise",
- "bytecount",
- "derange",
- "displaydoc",
- "indexmap 2.2.6",
- "log",
- "num",
- "pest",
- "pest_derive",
- "phex",
- "png",
- "rugby",
- "thiserror",
-]
-
-[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1265,10 +1246,10 @@ dependencies = [
  "clap_complete",
  "clap_mangen",
  "ctrlc",
- "gbd",
  "log",
  "minifb",
  "rugby",
+ "rugby-gbd",
  "rustyline",
  "serde",
  "sysexits",
@@ -1286,6 +1267,25 @@ dependencies = [
  "log",
  "phex",
  "rugby-arch",
+ "thiserror",
+]
+
+[[package]]
+name = "rugby-gbd"
+version = "0.1.0"
+dependencies = [
+ "advise",
+ "bytecount",
+ "derange",
+ "displaydoc",
+ "indexmap 2.2.6",
+ "log",
+ "num",
+ "pest",
+ "pest_derive",
+ "phex",
+ "png",
+ "rugby",
  "thiserror",
 ]
 
