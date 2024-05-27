@@ -131,10 +131,10 @@ pub struct Header {
     /// Whether this version of the game is intended to be sold in Japan or
     /// elsewhere.
     ///
-    /// See more details [here][jpn].
+    /// See more details [here][region].
     ///
-    /// [jpn]: https://gbdev.io/pandocs/The_Cartridge_Header.html#014a--destination-code
-    pub jpn: bool,
+    /// [region]: https://gbdev.io/pandocs/The_Cartridge_Header.html#014a--destination-code
+    pub region: Region,
     /// `[$014C]`: Mask ROM version number.
     ///
     /// Version number of the game.
@@ -192,7 +192,7 @@ impl Header {
             // Parse RAM size
             ramsz: make::ramsz(head)?,
             // Parse RAM size
-            jpn: make::jpn(head)?,
+            region: make::region(head)?,
             // Parse version number
             version: make::version(head),
             // Parse header checksum
@@ -252,7 +252,7 @@ impl Header {
             // Parse RAM size
             ramsz: make::ramsz(head)?,
             // Parse RAM size
-            jpn: make::jpn(head)?,
+            region: make::region(head)?,
             // Parse version number
             version: make::version(head),
             // Parse header checksum
@@ -333,8 +333,8 @@ impl Header {
                 default
             }),
             // Parse RAM size
-            jpn: make::jpn(head).unwrap_or_else(|err| {
-                let default = bool::default();
+            region: make::region(head).unwrap_or_else(|err| {
+                let default = Region::Japan;
                 error!("{err} (default: {default:?})");
                 default
             }),
@@ -354,7 +354,7 @@ mod make {
     use log::warn;
     use rugby_arch::{Byte, Word};
 
-    use super::{Error, Info, Result, LOGO};
+    use super::{Error, Info, Region, Result, LOGO};
 
     /// Parse the `logo` field from the header.
     pub fn logo(head: &[Byte; 0x50]) -> bool {
@@ -423,10 +423,11 @@ mod make {
         }
     }
 
-    /// Parse the `jpn` field from the header.
-    pub fn jpn(head: &[Byte; 0x50]) -> Result<bool> {
+    /// Parse the `region` field from the header.
+    pub fn region(head: &[Byte; 0x50]) -> Result<Region> {
         match head[0x4a] {
-            byte @ (0x00 | 0x01) => Ok(byte == 0x00),
+            0x00 => Ok(Region::Japan),
+            0x01 => Ok(Region::World),
             byte => Err(Error::Region(byte)),
         }
     }
@@ -469,11 +470,7 @@ impl Display for Header {
         writeln!(f, "│ ROM: {:>9} B │", self.romsz)?;
         writeln!(f, "│ RAM: {:>9} B │", self.ramsz)?;
         writeln!(f, "├──────────────────┤")?;
-        writeln!(
-            f,
-            "│ Region: {:>8} │",
-            if self.jpn { "Japan" } else { "World" }
-        )?;
+        writeln!(f, "│ Region: {:>8} │", self.region)?;
         writeln!(
             f,
             "│ Version: {:>7} │",
@@ -680,6 +677,19 @@ impl TryFrom<Byte> for Info {
     }
 }
 
+/// Destination code.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Region {
+    World,
+    Japan,
+}
+
+impl Display for Region {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        format!("{self:?}").fmt(f)
+    }
+}
+
 /// A convenient type alias for [`Result`](std::result::Result).
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -707,8 +717,8 @@ pub enum Error {
     /// Invalid RAM size.
     #[error("invalid RAM size: {0:#04x}")]
     Ram(Byte),
-    /// Invalid region.
-    #[error("invalid region: {0:#04x}")]
+    /// Destination code.
+    #[error("destination code: {0:#04x}")]
     Region(Byte),
     /// Bad header checksum.
     #[error("bad header checksum (found {found:#04x}, expected {expected:#04x})")]
