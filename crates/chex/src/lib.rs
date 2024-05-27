@@ -68,7 +68,7 @@ impl Color {
 
 impl Display for Color {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&format!("#{:06x}", self.0), f)
+        format!("#{:06x}", self.0).fmt(f)
     }
 }
 
