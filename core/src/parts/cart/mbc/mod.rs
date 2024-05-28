@@ -16,10 +16,12 @@ use super::{Error, Info, Result};
 
 mod bare;
 mod mbc1;
+mod mbc3;
 mod mbc5;
 
 pub use self::bare::Bare;
 pub use self::mbc1::Mbc1;
+pub use self::mbc3::Mbc3;
 pub use self::mbc5::Mbc5;
 
 /// Memory data.
@@ -62,6 +64,8 @@ pub enum Body {
     /// MBC1 cartridge type.
     Mbc1(Mbc1),
     /// MBC5 cartridge type.
+    Mbc3(Mbc3),
+    /// MBC5 cartridge type.
     Mbc5(Mbc5),
 }
 
@@ -87,6 +91,7 @@ impl Body {
         match &head.info {
             &Info::Bare { .. } => Ok(Body::Bare(Bare::new(rom, ram))),
             &Info::Mbc1 { .. } => Ok(Body::Mbc1(Mbc1::new(rom, ram))),
+            &Info::Mbc3 { .. } => Ok(Body::Mbc3(Mbc3::new(rom, ram))),
             &Info::Mbc5 { .. } => Ok(Body::Mbc5(Mbc5::new(rom, ram))),
             kind => Err(Error::Unsupported(kind.clone())),
         }
@@ -152,6 +157,7 @@ impl Block for Body {
         match self {
             Body::Bare(mbc) => mbc.ready(),
             Body::Mbc1(mbc) => mbc.ready(),
+            Body::Mbc3(mbc) => mbc.ready(),
             Body::Mbc5(mbc) => mbc.ready(),
         }
     }
@@ -160,6 +166,7 @@ impl Block for Body {
         match self {
             Body::Bare(mbc) => mbc.cycle(),
             Body::Mbc1(mbc) => mbc.cycle(),
+            Body::Mbc3(mbc) => mbc.cycle(),
             Body::Mbc5(mbc) => mbc.cycle(),
         }
     }
@@ -168,6 +175,7 @@ impl Block for Body {
         match self {
             Body::Bare(mbc) => mbc.reset(),
             Body::Mbc1(mbc) => mbc.reset(),
+            Body::Mbc3(mbc) => mbc.reset(),
             Body::Mbc5(mbc) => mbc.reset(),
         }
     }
@@ -178,6 +186,7 @@ impl Mbc for Body {
         match self {
             Body::Bare(mbc) => mbc.rom(),
             Body::Mbc1(mbc) => mbc.rom(),
+            Body::Mbc3(mbc) => mbc.rom(),
             Body::Mbc5(mbc) => mbc.rom(),
         }
     }
@@ -186,6 +195,7 @@ impl Mbc for Body {
         match self {
             Body::Bare(mbc) => mbc.ram(),
             Body::Mbc1(mbc) => mbc.ram(),
+            Body::Mbc3(mbc) => mbc.ram(),
             Body::Mbc5(mbc) => mbc.ram(),
         }
     }
@@ -195,6 +205,7 @@ impl Mbc for Body {
         match self {
             Body::Bare(mbc) => mbc.flash(buf),
             Body::Mbc1(mbc) => mbc.flash(buf),
+            Body::Mbc3(mbc) => mbc.flash(buf),
             Body::Mbc5(mbc) => mbc.flash(buf),
         }
     }
@@ -204,6 +215,7 @@ impl Mbc for Body {
         match self {
             Body::Bare(mbc) => mbc.dump(buf),
             Body::Mbc1(mbc) => mbc.dump(buf),
+            Body::Mbc3(mbc) => mbc.dump(buf),
             Body::Mbc5(mbc) => mbc.dump(buf),
         }
     }
