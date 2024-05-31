@@ -572,7 +572,7 @@ pub enum Stage {
 impl Stage {
     #[allow(clippy::match_same_arms)]
     fn exec(mut self, cpu: &mut Cpu) -> Self {
-        // If we're `Stage::Done`, proceed to `Stage::Fetch` this cycle
+        // If done, proceed to fetch this cycle
         if let Stage::Done = self {
             // Log previous register stage
             trace!("registers:\n{}", cpu.reg);
@@ -598,7 +598,7 @@ impl Stage {
             }
         }
 
-        // If we're `Stage::Fetch,` proceed to `Stage::Execute(_)` this cycle
+        // If fetch, proceed to execute this cycle
         if let Stage::Fetch = self {
             // Read the next instruction
             let pc = cpu.reg.pc.load();
@@ -642,7 +642,7 @@ impl Stage {
             self = Stage::Execute(insn);
         }
 
-        // Run the current `Stage::Execute(_)`
+        // Execute the current stage
         if let Stage::Execute(insn) = self {
             // Execute a cycle of the instruction
             let insn = insn.exec(cpu);

@@ -1,3 +1,4 @@
+use log::trace;
 use rugby_arch::mem::Memory;
 use rugby_arch::reg::Register;
 use rugby_arch::{Byte, Word};
@@ -8,48 +9,32 @@ use super::sprite::Sprite;
 use super::tile::Row;
 use super::{Lcdc, Ppu};
 
-/// PPU's pixel fetcher.
+/// Pixel fetcher.
 #[derive(Clone, Debug, Default)]
 pub struct Fetch {
-    busy: bool,
-    xidx: Byte,
-    stage: Stage,
+    /// LCD X-coordinate.
+    pub lx: Byte,
+    /// Fetch step.
+    pub step: Step,
 }
 
 impl Fetch {
-    /// Gets the fetcher's stage.
-    #[must_use]
-    pub fn stage(&self) -> &Stage {
-        &self.stage
-    }
-
-    /// Executes a stage of the fetcher.
-    pub fn exec(&mut self, fifo: &mut Fifo, ppu: &mut Ppu, loc: Location, sprite: Option<Sprite>) {
-        // NOTE: Some stages of the fetch take 2 dots to complete, so only
-        //       execute when we're not already busy from the current stage.
-        if self.busy {
-            self.busy = false;
-        } else {
-            self.stage = std::mem::take(&mut self.stage).exec(self, fifo, ppu, loc, sprite);
-        }
+    /// Executes a step of the fetcher.
+    pub fn exec(&mut self, fifo: &mut Fifo, ppu: &mut Ppu, loc: Layer, sprite: Option<Sprite>) {
+        self.step = std::mem::take(&mut self.step).exec(self, fifo, ppu, loc, sprite);
     }
 
     /// Calculates the tile number for this fetcher.
-    pub fn cpos(&self, ppu: &Ppu, loc: Location) -> Word {
-        use Location::{Background, Sprite, Window};
+    pub fn cpos(&self, ppu: &Ppu, loc: Layer) -> Word {
+        use Layer::{Background, Sprite, Window};
 
         // For sprites, we don't need this
         if loc == Sprite {
             unreachable!("Sprites have no tile number")
         }
 
-        // Extract scanline info
-        let lcdc = ppu.reg.lcdc.load();
-        let scy = ppu.reg.scy.load();
-        let scx = ppu.reg.scx.load();
-        let ly = ppu.reg.ly.load();
-
         // Determine the tile base
+        let lcdc = ppu.reg.lcdc.load();
         let base = match loc {
             Background => {
                 let bgmap = Lcdc::BgMap.get(&lcdc);
@@ -67,12 +52,12 @@ impl Fetch {
         let col: Byte;
         match loc {
             Background => {
-                row = ly.wrapping_add(scy) / 8;
-                col = (self.xidx + (scx / 8)) & 0x1f;
+                row = ppu.reg.ly.load().wrapping_add(ppu.reg.scy.load()) / 8;
+                col = 0x1f & (self.lx + (ppu.reg.scx.load() / 8));
             }
             Window => {
                 row = ppu.etc.win / 8;
-                col = self.xidx;
+                col = self.lx;
             }
             Sprite => unreachable!(),
         }
@@ -83,21 +68,17 @@ impl Fetch {
     }
 
     /// Calculates the address for a given tile number and location.
-    pub fn addr(ppu: &Ppu, loc: Location, tnum: Byte) -> Word {
-        use Location::{Background, Sprite, Window};
-
-        // Extract scanline info
-        let lcdc = ppu.reg.lcdc.load();
-        let scy = ppu.reg.scy.load();
-        let ly = ppu.reg.ly.load();
+    pub fn addr(ppu: &Ppu, loc: Layer, tnum: Byte) -> Word {
+        use Layer::{Background, Sprite, Window};
 
         // Calculate the y-offset within the tile
         let yoff = match loc {
-            Background | Sprite => ly.wrapping_add(scy),
+            Background | Sprite => ppu.reg.ly.load().wrapping_add(ppu.reg.scy.load()),
             Window => ppu.etc.win,
         } % 8;
 
         // Calculate the tile data address
+        let lcdc = ppu.reg.lcdc.load();
         let bgwin = Lcdc::BgWinData.get(&lcdc);
         let tidx = Self::tidx(loc, bgwin, tnum);
         let toff = (2 * yoff) as Word;
@@ -106,8 +87,8 @@ impl Fetch {
 
     /// Calculates a tile number into a tile map index according to the selected
     /// addressing mode.
-    pub fn tidx(loc: Location, bgwin: bool, tnum: Byte) -> Word {
-        use Location::{Background, Sprite, Window};
+    pub fn tidx(loc: Layer, bgwin: bool, tnum: Byte) -> Word {
+        use Layer::{Background, Sprite, Window};
         let (base, tnum): (Word, Word) = match (loc, bgwin) {
             (Background | Window, true) | (Sprite, _) => (0x0000, Word::from(tnum)),
             (Background | Window, false) => (0x1000, tnum as i8 as Word),
@@ -116,16 +97,18 @@ impl Fetch {
     }
 }
 
+/// Fetch layer.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub enum Location {
+pub enum Layer {
     #[default]
     Background,
     Window,
     Sprite,
 }
 
+/// Fetch step.
 #[derive(Clone, Debug, Default)]
-pub enum Stage {
+pub enum Step {
     #[default]
     ReadTile,
     ReadData0 {
@@ -138,17 +121,17 @@ pub enum Stage {
     Push(Row, Meta),
 }
 
-impl Stage {
+impl Step {
     fn exec(
         self,
         fetch: &mut Fetch,
         fifo: &mut Fifo,
         ppu: &mut Ppu,
-        loc: Location,
+        loc: Layer,
         sprite: Option<Sprite>,
     ) -> Self {
         match self {
-            Stage::ReadTile => {
+            Step::ReadTile => {
                 // Fetch the tile number's index
                 let tnum = if let Some(obj) = sprite {
                     // Check if the sprite is tall (8x16)
@@ -179,11 +162,12 @@ impl Stage {
                 // NOTE: We can calculate the tile data address in advance. This
                 //       is more efficient than doing so once each data read.
                 let addr = Fetch::addr(ppu, loc, tnum);
+                trace!("fetched from address {addr:#06x} (tile #{tnum})");
 
-                // Progress to next stage
-                Stage::ReadData0 { addr }
+                // Progress to next step
+                Step::ReadData0 { addr }
             }
-            Stage::ReadData0 { mut addr } => {
+            Step::ReadData0 { mut addr } => {
                 // Perform y-flip on sprites
                 if let Some(obj) = sprite {
                     if obj.yflip {
@@ -193,14 +177,16 @@ impl Stage {
 
                 // Fetch the first byte of the tile
                 let data0 = ppu.mem.vram.read(addr).unwrap();
+                trace!("read lower byte of data: {data0:#04x}");
 
-                // Progress to next stage
+                // Progress to next step
                 let addr = addr + 1;
-                Stage::ReadData1 { addr, data0 }
+                Step::ReadData1 { addr, data0 }
             }
-            Stage::ReadData1 { addr, data0 } => {
+            Step::ReadData1 { addr, data0 } => {
                 // Fetch the seocnd byte of the tile
                 let data1 = ppu.mem.vram.read(addr).unwrap();
+                trace!("read upper byte of data: {data1:#04x}");
 
                 // Decode pixels from data
                 let row = Row::from([data0, data1]);
@@ -212,10 +198,10 @@ impl Stage {
                     }, // Background/Window
                 };
 
-                // Progress to next stage
-                Stage::Push(row, meta)
+                // Progress to next step
+                Step::Push(row, meta)
             }
-            Stage::Push(mut row, meta) => {
+            Step::Push(mut row, meta) => {
                 // Perform x-flip on sprites
                 if let Some(obj) = sprite {
                     if obj.xflip {
@@ -224,17 +210,16 @@ impl Stage {
                 }
 
                 // Attempt to push row to FIFO
-                match fifo.try_append(row, meta) {
-                    Ok(()) => {
-                        // Move fetch to next x-position
-                        fetch.xidx += 1;
-                        // Restart fetch
-                        Stage::ReadTile
-                    }
-                    Err((row, meta)) => {
-                        // Try again next cycle
-                        Stage::Push(row, meta)
-                    }
+                if fifo.push(&row, meta) {
+                    trace!("pushed row of pixels: {row:?}");
+                    // Move fetch to next x-coordinate
+                    fetch.lx += 1;
+                    // Restart fetch
+                    Step::ReadTile
+                } else {
+                    trace!("cannot push to non-empty FIFO; will retry");
+                    // Try again next cycle
+                    Step::Push(row, meta)
                 }
             }
         }

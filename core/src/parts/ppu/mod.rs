@@ -3,11 +3,10 @@
 use rugby_arch::mem::Ram;
 use rugby_arch::mio::{Bus, Mmio};
 use rugby_arch::reg::{Port, Register};
-use rugby_arch::{Block, Byte, Shared, Word};
+use rugby_arch::{Block, Byte, Shared};
 
 use self::exec::hblank::HBlank;
 use self::exec::vblank::VBlank;
-use self::meta::pixel::{Palette, Pixel};
 use super::dma::Control as Dma;
 use super::pic::{self, Interrupt};
 use crate::api::video::{self, Aspect, Video as Api};
@@ -163,7 +162,7 @@ impl Default for Internal {
     fn default() -> Self {
         Self {
             buf: [Color::default(); LCD.depth()],
-            dot: Word::default(),
+            dot: u16::default(),
             win: Byte::default(),
             mode: Mode::default(),
         }
@@ -199,16 +198,6 @@ impl Ppu {
     pub fn screen(&self) -> &Frame {
         &self.etc.buf
     }
-
-    /// Color a pixel using the current palette.
-    fn color(&self, pixel: &Pixel) -> Color {
-        let pal = match pixel.meta.pal {
-            Palette::BgWin => self.reg.bgp.load(),
-            Palette::Obp0 => self.reg.obp0.load(),
-            Palette::Obp1 => self.reg.obp1.load(),
-        };
-        pixel.col.recolor(pal)
-    }
 }
 
 impl Api for Ppu {
@@ -221,15 +210,13 @@ impl Api for Ppu {
         // conditions must be met:
         //
         // 1. PPU is enabled
-        let enable = Block::ready(self);
+        let enable = self.ready();
         // 2. Mode is vertical blank
         let vblank = matches!(self.etc.mode, Mode::VBlank(_));
-        // 3. Scanline is last of virtual frame
+        // 3. Last scanline of frame
         let bottom = (VBlank::LAST - 1) == self.reg.ly.load().into();
-        // 4. Dot is final of virtual frame
+        // 4. Last dot of scanline
         let finish = (HBlank::DOTS - 1) == self.etc.dot;
-        //
-        // In brief, this will cause
         //
         // Return if all conditions are met
         enable && vblank && bottom && finish

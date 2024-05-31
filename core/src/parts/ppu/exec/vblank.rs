@@ -1,11 +1,12 @@
 use std::fmt::Display;
 
+use log::debug;
 use rugby_arch::reg::Register;
 
 use super::hblank::HBlank;
 use super::{Mode, Ppu, LCD};
 
-/// Vertical blanking interval.
+/// Mode 1: Vertical blank.
 #[derive(Clone, Debug, Default)]
 pub struct VBlank;
 
@@ -14,19 +15,14 @@ impl VBlank {
     pub const LAST: u16 = LCD.ht + 10;
 
     pub fn exec(self, ppu: &mut Ppu) -> Mode {
-        // Move to next dot
-        ppu.etc.dot += 1;
-
         // Determine next mode
-        if ppu.etc.dot < HBlank::DOTS {
+        if ppu.etc.dot + 1 < HBlank::DOTS {
             // Continue vblank
             Mode::VBlank(self)
         } else {
             // Increment scanline
             let ly = ppu.reg.ly.load() + 1;
             ppu.reg.ly.store(ly);
-            // Reset dot-clock
-            ppu.etc.dot = 0;
 
             // Determine next mode
             if u16::from(ly) < Self::LAST {
@@ -35,7 +31,8 @@ impl VBlank {
             } else {
                 // Reset scanline
                 ppu.reg.ly.store(0);
-                // Enter scan (next frame)
+                // Enter scan
+                debug!("entered mode 2: scan OAM");
                 Mode::Scan(self.into())
             }
         }

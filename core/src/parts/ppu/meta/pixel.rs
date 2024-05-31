@@ -20,18 +20,19 @@ impl Pixel {
     #[allow(clippy::if_same_then_else)]
     pub fn blend(winbg: Self, sprite: Self) -> Self {
         // Pixels are blended as follows:
-        // - If the color number of the Sprite Pixel is 0, the Background Pixel
+        //
+        // 1. If the color number of the Sprite Pixel is 0, the Background Pixel
         //   is pushed to the LCD.
         if sprite.col == Color::C0 {
             winbg
         }
-        // - If the BG-to-OBJ-Priority bit is 1 and the color number of the
+        // 2. If the BG-to-OBJ-Priority bit is 1 and the color number of the
         //   Background Pixel is anything other than 0, the Background Pixel is
         //   pushed to the LCD.
         else if sprite.meta.bgp && winbg.col != Color::C0 {
             winbg
         }
-        // - If none of the above conditions apply, the Sprite Pixel is pushed
+        // 3. If none of the above conditions apply, the Sprite Pixel is pushed
         //   to the LCD.
         else {
             sprite
@@ -52,12 +53,6 @@ pub enum Color {
     C2 = 0b10,
     /// Darkest
     C3 = 0b11,
-}
-
-impl Color {
-    pub(crate) fn recolor(self, pal: Byte) -> Self {
-        Self::try_from((pal >> (2 * (self as Byte))) & 0b11).unwrap()
-    }
 }
 
 impl video::Pixel for Color {}

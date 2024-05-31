@@ -5,7 +5,7 @@ use rugby_arch::mem::Memory;
 use rugby_arch::reg::Register;
 use rugby_arch::Word;
 
-use super::blk::fetch::{Fetch, Location};
+use super::blk::fetch::{Fetch, Layer};
 use super::meta::pixel::{Meta, Palette, Pixel};
 use super::meta::tile::Tile;
 use super::{Color, Lcdc, Ppu};
@@ -37,7 +37,7 @@ impl Debug {
     /// Constructs a new `Debug`.
     fn new(ppu: &Ppu) -> Self {
         // Extract scanline info
-        let loc = Location::default();
+        let loc = Layer::default();
         let bgw = Lcdc::BgMap.get(&ppu.reg.lcdc.load());
         let tidx = |tnum| usize::from(Fetch::tidx(loc, bgw, tnum) >> 4);
 

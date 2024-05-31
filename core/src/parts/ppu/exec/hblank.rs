@@ -1,11 +1,12 @@
 use std::fmt::Display;
 
+use log::debug;
 use rugby_arch::reg::Register;
 
 use super::draw::Draw;
 use super::{Interrupt, Mode, Ppu, LCD};
 
-/// Horizontal blanking interval.
+/// Mode 0: Horizontal blank.
 #[derive(Clone, Debug, Default)]
 pub struct HBlank;
 
@@ -14,19 +15,14 @@ impl HBlank {
     pub const DOTS: u16 = 456;
 
     pub fn exec(self, ppu: &mut Ppu) -> Mode {
-        // Move to next dot
-        ppu.etc.dot += 1;
-
         // Determine next mode
-        if ppu.etc.dot < Self::DOTS {
+        if ppu.etc.dot + 1 < Self::DOTS {
             // Continue vblank
             Mode::HBlank(self)
         } else {
             // Increment scanline
             let ly = ppu.reg.ly.load() + 1;
             ppu.reg.ly.store(ly);
-            // Reset dot-clock
-            ppu.etc.dot = 0;
 
             // Determine next scanline type
             if u16::from(ly) < LCD.ht {
@@ -38,6 +34,7 @@ impl HBlank {
                 // Request an interrupt
                 ppu.int.raise(Interrupt::VBlank);
                 // Enter vblank
+                debug!("entered mode 1: vblank");
                 Mode::VBlank(self.into())
             }
         }
