@@ -25,14 +25,16 @@ impl Pipeline {
     /// Performs a fetch for the next pixels to the appropriate FIFO.
     pub fn fetch(&mut self, ppu: &mut Ppu, objs: &[Sprite]) {
         // Check if we're at an object
-        if self.sprite.fifo.len() < 8 {
-            if let Some(obj) = objs.iter().find(|obj| obj.xpos == self.lx + 8) {
-                trace!("found sprite: {obj:?}");
+        if let Some(obj) = objs.iter().find(|obj| obj.xpos == self.lx + 8) {
+            trace!("found sprite: {obj:?}");
+            // Ensure the sprite is not overridden
+            if self.sprite.fifo.is_empty() {
                 // Fetch the sprite
                 self.sprite.exec(ppu, Some(obj.clone()));
                 // Stall the background fetcher
                 return;
             }
+            trace!("ignored; sprite already being drawn");
         }
 
         // Execute the background fetcher
@@ -85,6 +87,11 @@ impl Pipeline {
 
     /// Shift out a blended pixel from the FIFOs.
     pub fn shift(&mut self, ppu: &Ppu) -> Option<Pixel> {
+        // Check the sprite FIFO isn't in progress
+        if !matches!(self.sprite.fetch.step, Step::ReadTile) {
+            return None;
+        }
+
         // Pop from the background/window FIFO
         let Some(mut bgwin) = self.bgwin.fifo.pop() else {
             return None; // FIFO is empty

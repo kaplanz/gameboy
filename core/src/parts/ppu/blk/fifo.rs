@@ -33,6 +33,7 @@ impl Fifo {
     }
 
     /// Returns the number of pixels in the FIFO.
+    #[allow(unused)]
     pub fn len(&self) -> usize {
         self.0.len()
     }
