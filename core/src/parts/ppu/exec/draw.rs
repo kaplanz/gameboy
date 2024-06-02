@@ -22,6 +22,11 @@ pub struct Draw {
 
 impl Draw {
     pub fn exec(mut self, ppu: &mut Ppu) -> Mode {
+        // Initialize discarded scroll pixels
+        if !self.pipe.ready {
+            self.pipe.scroll = ppu.reg.scx.load() % 8;
+        }
+
         // Execute the next fetch cycle
         self.pipe.fetch(ppu, &self.objs);
 

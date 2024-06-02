@@ -13,6 +13,8 @@ use super::{Lcdc, Ppu};
 pub struct Pipeline {
     /// Warm-up completed.
     pub ready: bool,
+    /// Scroll offset.
+    pub scroll: u8,
     /// LCD X-coordinate.
     pub lx: Byte,
     /// Background/Window channel.
@@ -110,7 +112,16 @@ impl Pipeline {
             bgwin // no sprite; use background/window pixel
         };
 
-        Some(pixel)
+        // Discard pixels from initial scroll offset
+        if self.scroll > 0 {
+            // One fewer pixel to discard
+            self.scroll -= 1;
+            // Discard this pixel
+            None
+        } else {
+            // Return this pixel
+            Some(pixel)
+        }
     }
 }
 
