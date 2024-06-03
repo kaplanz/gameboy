@@ -3,12 +3,10 @@ use std::fmt::Display;
 use log::{debug, trace};
 use rugby_arch::reg::Register;
 
-use super::blk::fetch::Layer;
-use super::blk::Pipeline;
-use super::ppu::meta::pixel::{Palette, Pixel};
+use super::ppu::blk::pipe::Pipeline;
+use super::ppu::meta::{Layer, Palette, Pixel, Sprite};
 use super::ppu::Color;
 use super::scan::Scan;
-use super::sprite::Sprite;
 use super::{Mode, Ppu, LCD};
 
 /// Mode 3: Draw pixels.
@@ -52,8 +50,8 @@ impl Draw {
             Mode::Draw(self)
         } else {
             // Increment window internal line counter
-            if self.pipe.bgwin.loc == Layer::Window {
-                ppu.etc.win += 1;
+            if self.pipe.bgw.layer == Layer::Window {
+                ppu.etc.ywin += 1;
             }
             // Enter hblank
             debug!("entered mode 0: hblank");
@@ -93,13 +91,12 @@ impl Ppu {
         };
         // Assign colors using palette
         #[allow(clippy::identity_op, unused_parens)]
-        let col = Color::try_from(match pixel.col {
+        let col = Color::from(match pixel.col {
             Color::C0 => (0b0000_0011 & pal) >> 0,
             Color::C1 => (0b0000_1100 & pal) >> 2,
             Color::C2 => (0b0011_0000 & pal) >> 4,
             Color::C3 => (0b1100_0000 & pal) >> 6,
-        })
-        .unwrap();
+        });
         trace!(
             "transformed: {old:?} -> {col:?}, using: {reg:?} = {pal:#010b}",
             old = pixel.col,

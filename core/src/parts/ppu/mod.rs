@@ -14,13 +14,13 @@ use crate::dmg::pcb::Sram;
 
 mod blk;
 mod exec;
-mod meta;
 
 #[cfg(feature = "debug")]
 pub mod dbg;
+pub mod meta;
 
 pub use self::exec::Mode;
-pub use self::meta::pixel::Color;
+pub use self::meta::Color;
 
 /// Frame rate.
 ///
@@ -102,19 +102,19 @@ pub enum Select {
     ///
     /// [dma]: https://gbdev.io/pandocs/OAM_DMA_Transfer.html
     Dma,
-    /// `[$FF47]`: BG palette data.
+    /// `[$FF47]`: BG palette.
     ///
     /// See more about palettes [here][palette].
     ///
     /// [palette]: https://gbdev.io/pandocs/Palettes.html
     Bgp,
-    /// `[$FF48]`: OBJ palette 0 data
+    /// `[$FF48]`: OBJ palette 0.
     ///
     /// See more about palettes [here][palette].
     ///
     /// [palette]: https://gbdev.io/pandocs/Palettes.html#ff48ff49--obp0-obp1-non-cgb-mode-only-obj-palette-0-1-data
     Obp0,
-    /// `[$FF49]`: OBJ palette 1 data
+    /// `[$FF49]`: OBJ palette 1.
     ///
     /// See more about palettes [here][palette].
     ///
@@ -147,7 +147,7 @@ struct Internal {
     /// Cycle count.
     dot: u16,
     /// Window line.
-    win: Byte,
+    ywin: Byte,
     /// Graphics mode.
     mode: Mode,
 }
@@ -163,7 +163,7 @@ impl Default for Internal {
         Self {
             buf: [Color::default(); LCD.depth()],
             dot: u16::default(),
-            win: Byte::default(),
+            ywin: Byte::default(),
             mode: Mode::default(),
         }
     }
@@ -191,6 +191,12 @@ impl Ppu {
     #[must_use]
     pub fn mode(&self) -> &Mode {
         &self.etc.mode
+    }
+
+    /// Retrieves LCD control options.
+    #[must_use]
+    pub fn lcdc(&self, opt: Lcdc) -> bool {
+        opt.get(self.reg.lcdc.load())
     }
 
     /// Get a reference to the PPU's screen.
@@ -229,7 +235,7 @@ impl Api for Ppu {
 
 impl Block for Ppu {
     fn ready(&self) -> bool {
-        Lcdc::Enable.get(&self.reg.lcdc.load())
+        self.lcdc(Lcdc::Enable)
     }
 
     fn cycle(&mut self) {
@@ -389,16 +395,66 @@ pub struct Bank {
 }
 
 /// Graphics control register.
+///
+/// See more details [here][lcdc].
+///
+/// [lcdc]: https://gbdev.io/pandocs/LCDC.html
 #[rustfmt::skip]
 #[derive(Clone, Copy, Debug)]
-enum Lcdc {
+pub enum Lcdc {
+    /// `LCDC[7]`: LCD enable.
+    ///
+    /// Controls whether the LCD is on and the PPU is active. Setting it turns
+    /// both off, which grants immediate and full access to VRAM, OAM, etc.
     Enable      = 0b1000_0000,
+    /// `LCDC[6]`: Window tile map area.
+    ///
+    /// Controls which background map the [window] uses for rendering. When
+    /// clear the `$9800` tilemap is used, otherwise the `$9C00` one is used.
+    ///
+    /// See also `LCDC[3]`.
+    ///
+    /// [window]: meta::Layer::Window
     WinMap      = 0b0100_0000,
+    /// `LCDC[5]`: Window enable.
+    ///
+    /// Controls whether the [window] shall be displayed or not. This bit is
+    /// overridden on DMG when `LCDC[0]` is clear.
+    ///
+    /// [window]: meta::Layer::Window
     WinEnable   = 0b0010_0000,
+    /// `LCDC[4]`: Background/Window tile data area.
+    ///
+    /// Controls which [addressing mode] the [background]/[window] use to pick
+    /// tiles.
+    ///
+    /// [addressing mode]: https://gbdev.io/pandocs/Tile_Data.html#vram-tile-data
+    /// [background]:      meta::Layer::Background
+    /// [window]:          meta::Layer::Window
     BgWinData   = 0b0001_0000,
+    /// `LCDC[3]`: Background tile map area.
+    ///
+    /// Controls which background map the [background] uses for rendering. When
+    /// clear the `$9800` tilemap is used, otherwise the `$9C00` one is used.
+    ///
+    /// See also `LCDC[6]`.
+    ///
+    /// [background]: meta::Layer::Background
     BgMap       = 0b0000_1000,
+    /// `LCDC[2]`: Object size.
+    ///
+    /// Controls the size of all objects (either 1x1 or 1x2 tiles stacked
+    /// vertically).
     ObjSize     = 0b0000_0100,
+    /// `LCDC[1]`: Object enable.
+    ///
+    /// Controls whether objects are displayed or not.
     ObjEnable   = 0b0000_0010,
+    /// `LCDC[0]`: Background/Window enable.
+    ///
+    /// When cleared, both background and window become blank (white), and
+    /// `LCDC[5]` (window enable) is ignored. Only objects may still be
+    /// displayed if enabled with `LCDC[1]` (object enable).
     BgWinEnable = 0b0000_0001,
 }
 
@@ -406,7 +462,7 @@ impl Lcdc {
     /// Gets the value of the corresponding bit to the flag.
     #[allow(clippy::trivially_copy_pass_by_ref)]
     #[must_use]
-    fn get(self, value: &Byte) -> bool {
-        *value & self as Byte != 0
+    fn get(self, value: Byte) -> bool {
+        value & self as Byte != 0
     }
 }

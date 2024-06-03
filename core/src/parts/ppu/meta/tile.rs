@@ -1,29 +1,22 @@
-use std::ops::{Deref, DerefMut};
+use std::ops::{Index, IndexMut};
 
 use rugby_arch::Byte;
 
-use super::pixel::Color;
+use super::Color;
 
+/// 8x8 pixel tile.
 #[derive(Clone, Debug)]
 pub struct Tile([Row; 8]);
 
 impl Tile {
-    #[allow(unused)]
+    /// Horizontally flip a tile.
     pub fn xflip(&mut self) {
         self.0.iter_mut().for_each(Row::xflip);
     }
 
-    #[allow(unused)]
+    /// Vertically flip a tile.
     pub fn yflip(&mut self) {
         self.0.reverse();
-    }
-}
-
-impl Deref for Tile {
-    type Target = [Row; 8];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }
 
@@ -35,65 +28,101 @@ impl From<[Row; 8]> for Tile {
 
 impl From<[Byte; 16]> for Tile {
     fn from(bytes: [Byte; 16]) -> Self {
-        let rows: [Row; 8] = bytes
-            .chunks_exact(2)
-            .map(|row| <[_; 2]>::try_from(row).unwrap())
-            .map(Row::from)
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-        rows.into()
+        Self(
+            bytes
+                .chunks_exact(2)
+                .map(|row| <[_; 2]>::try_from(row).unwrap())
+                .map(Row::from)
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap(),
+        )
     }
 }
 
+impl Index<usize> for Tile {
+    type Output = Row;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl IndexMut<usize> for Tile {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        self.0.index_mut(index)
+    }
+}
+
+impl IntoIterator for Tile {
+    type Item = Row;
+
+    type IntoIter = <[Row; 8] as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+/// 8-pixel row.
+///
+/// This represents a single horizontal row of a [`Tile`].
 #[derive(Clone, Debug)]
 pub struct Row([Color; 8]);
 
 impl Row {
+    /// Horizontally flip a row.
     pub fn xflip(&mut self) {
-        self.reverse();
-    }
-}
-
-impl Deref for Row {
-    type Target = [Color; 8];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Row {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        self.0.reverse();
     }
 }
 
 impl From<[Byte; 2]> for Row {
-    fn from(bytes: [Byte; 2]) -> Self {
-        // Iterate through each bit of both bytes
-        let pixels = (0..Byte::BITS)
-            // Combine upper and lower bytes into colors for each bit
-            .map(|bit| {
-                // Extract color bits
-                let mask = 0b1 << bit;
-                let bit0 = bytes[0] & mask != 0;
-                let bit1 = bytes[1] & mask != 0;
-                // Combine into color value
-                (Byte::from(bit1) << 1) | Byte::from(bit0)
-            })
-            // Reverse, since bit 7 represents the leftmost pixel, and bit 0 the
-            // rightmost.
-            .rev()
-            // Convert into pixels
-            .map(|col| col.try_into().unwrap()) // succeeds since values are 2-bit
-            // Collect into an array of [Pixel; 8]
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap(); // this will succeed on any sane platform where there are
-                       // 8 bits in a byte. We won't support whatever archaic
-                       // (or futuristic) platform does otherwise. Sorry :P
+    fn from(data: [Byte; 2]) -> Self {
+        // this will necessarily succeed
+        Self(
+            (0..Byte::BITS)
+                // combine upper and lower bytes into colors for each bit
+                .map(|bit| {
+                    // Extract color bits
+                    let mask = 1 << bit;
+                    let bit0 = data[0] & mask != 0;
+                    let bit1 = data[1] & mask != 0;
+                    // Combine into color value
+                    (Byte::from(bit1) << 1) | Byte::from(bit0)
+                })
+                // reverse the bits, since bit 7 represents the leftmost pixel,
+                // and bit 0 the rightmost
+                .rev()
+                // convert each 2-bit value into color values
+                .map(Color::from)
+                // collect all row of 8 color values
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap(),
+        )
+    }
+}
 
-        Self(pixels)
+impl Index<usize> for Row {
+    type Output = Color;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        self.0.index(index)
+    }
+}
+
+impl IndexMut<usize> for Row {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        self.0.index_mut(index)
+    }
+}
+
+impl IntoIterator for Row {
+    type Item = Color;
+    type IntoIter = <[Color; 8] as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }

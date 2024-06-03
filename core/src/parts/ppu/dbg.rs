@@ -2,13 +2,9 @@
 
 use itertools::Itertools;
 use rugby_arch::mem::Memory;
-use rugby_arch::reg::Register;
-use rugby_arch::Word;
 
-use super::blk::fetch::{Fetch, Layer};
-use super::meta::pixel::{Meta, Palette, Pixel};
-use super::meta::tile::Tile;
-use super::{Color, Lcdc, Ppu};
+use super::meta::{Layer, Meta, Pixel, Tile};
+use super::{Color, Ppu};
 
 /// Collects debug information.
 #[must_use]
@@ -37,13 +33,11 @@ impl Debug {
     /// Constructs a new `Debug`.
     fn new(ppu: &Ppu) -> Self {
         // Extract scanline info
-        let loc = Layer::default();
-        let bgw = Lcdc::BgMap.get(&ppu.reg.lcdc.load());
-        let tidx = |tnum| usize::from(Fetch::tidx(loc, bgw, tnum) >> 4);
+        let layer = Layer::Background;
 
         // Extract tile data, maps
         let tdat: [_; 0x180] = (0..0x1800)
-            .map(|addr: Word| ppu.mem.vram.read(addr).unwrap())
+            .map(|addr| ppu.mem.vram.read(addr).unwrap())
             .collect_vec()
             .chunks_exact(16) // 16-bytes per tile
             .map(|tile| Tile::from(<[_; 16]>::try_from(tile).unwrap()))
@@ -51,26 +45,23 @@ impl Debug {
             .try_into()
             .unwrap();
         let map1: [_; 0x400] = (0x1800..0x1c00)
-            .map(|addr: Word| ppu.mem.vram.read(addr).unwrap())
-            .map(|tnum| tdat[tidx(tnum)].clone())
+            .map(|addr| ppu.mem.vram.read(addr).unwrap())
+            .map(|tnum| tdat[usize::from(Ppu::tidx(ppu, layer, tnum) >> 4)].clone())
             .collect_vec()
             .try_into()
             .unwrap();
         let map2: [_; 0x400] = (0x1c00..0x2000)
-            .map(|addr: Word| ppu.mem.vram.read(addr).unwrap())
-            .map(|tnum| tdat[tidx(tnum)].clone())
+            .map(|addr| ppu.mem.vram.read(addr).unwrap())
+            .map(|tnum| tdat[usize::from(Ppu::tidx(ppu, layer, tnum) >> 4)].clone())
             .collect_vec()
             .try_into()
             .unwrap();
 
         // Render tile data, maps
-        let meta = Meta {
-            pal: Palette::BgWin,
-            bgp: false,
-        }; // prepare metadata
-        let tdat = Self::render(&tdat, ppu, meta, 16); // 16x24 tiles
-        let map1 = Self::render(&map1, ppu, meta, 32); // 32x32 tiles
-        let map2 = Self::render(&map2, ppu, meta, 32); // 32x32 tiles
+        let meta = Meta::bgwin();
+        let tdat = Self::render(&tdat, ppu, &meta, 16); // 16x24 tiles
+        let map1 = Self::render(&map1, ppu, &meta, 32); // 32x32 tiles
+        let map2 = Self::render(&map2, ppu, &meta, 32); // 32x32 tiles
 
         // Return debug info
         Self { tdat, map1, map2 }
@@ -81,19 +72,22 @@ impl Debug {
     fn render<const N: usize>(
         tdat: &[Tile],
         ppu: &Ppu,
-        meta: Meta,
+        meta: &Meta,
         width: usize,
     ) -> Box<[Color; N]> {
         tdat.chunks_exact(width) // tiles per row
             .flat_map(|row| {
                 row.iter()
-                    .flat_map(|tile| tile.iter().enumerate())
+                    .flat_map(|tile| tile.clone().into_iter().enumerate())
                     .sorted_by_key(|row| row.0)
                     .map(|(_, row)| row)
                     .collect_vec()
             })
-            .flat_map(|row| row.into_iter().map(|col| ppu.color(&Pixel::new(col, meta))))
-            .collect::<Vec<_>>()
+            .flat_map(|row| {
+                row.into_iter()
+                    .map(|col| ppu.color(&Pixel::new(col, meta.clone())))
+            })
+            .collect_vec()
             .try_into()
             .unwrap()
     }

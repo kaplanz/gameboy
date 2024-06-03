@@ -6,7 +6,7 @@ use rugby_arch::reg::Register;
 use rugby_arch::Word;
 
 use super::hblank::HBlank;
-use super::sprite::Sprite;
+use super::ppu::meta::Sprite;
 use super::vblank::VBlank;
 use super::{Lcdc, Mode, Ppu};
 
@@ -21,18 +21,12 @@ pub struct Scan {
 
 impl Scan {
     pub fn exec(mut self, ppu: &mut Ppu) -> Mode {
-        // Extract the sprite and scanline info
-        let lcdc = ppu.reg.lcdc.load();
-        let size = Lcdc::ObjSize.get(&lcdc);
-        let ht = [8, 16][usize::from(size)];
-        let ly = ppu.reg.ly.load();
-
         // Scanning a single entry takes 2 dots
         if ppu.etc.dot % 2 == 0 {
             // Sprites should only be scanned when:
             //
-            // 1. Objects are are enabled
-            let objs_enabled = Lcdc::ObjEnable.get(&lcdc);
+            // 1. Objects are are enabled (TODO: verify this)
+            let objs_enabled = ppu.lcdc(Lcdc::ObjEnable);
             // 2. Fewer than 10 sprites have been found
             let not_at_limit = self.objs.len() < 10;
             //
@@ -55,10 +49,10 @@ impl Scan {
                 let not_hidden = obj.xpos != 0;
                 // 2. Are visible this scanline
                 let is_visible = {
-                    let top = obj.ypos;
-                    let btm = obj.ypos.saturating_add(ht);
-                    let cur = ly.saturating_add(16);
-                    (top..btm).contains(&cur)
+                    let ypos = obj.ypos;
+                    let size = [8, 16][usize::from(ppu.lcdc(Lcdc::ObjSize))];
+                    let line = ppu.reg.ly.load().saturating_add(16);
+                    (ypos..ypos.saturating_add(size)).contains(&line)
                 };
                 //
                 // When all conditions are met, push scanned sprite

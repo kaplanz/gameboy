@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
-use ppu::meta::sprite;
-use ppu::{blk, Interrupt, Lcdc, Ppu, LCD};
+use ppu::{Interrupt, Lcdc, Ppu, LCD};
 use rugby_arch::reg::Register;
 use rugby_arch::Byte;
 

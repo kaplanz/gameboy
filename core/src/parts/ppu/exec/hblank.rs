@@ -30,7 +30,7 @@ impl HBlank {
                 Mode::Scan(self.into())
             } else {
                 // Reset internal window line counter
-                ppu.etc.win = 0;
+                ppu.etc.ywin = 0;
                 // Request an interrupt
                 ppu.int.raise(Interrupt::VBlank);
                 // Enter vblank
