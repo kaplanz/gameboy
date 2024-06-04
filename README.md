@@ -97,7 +97,7 @@ Several additional frontends are planned for the future:
 
 - `rugby-ios`: a native iOS/macOS application, most likely using SwiftUI.
 - `rugby-sdl`: a cross-platform application based upon the [SDL] framework.
-- `rugby-web`: an online hosted frontend powered by [Wasm].
+- [`rugby-web`](./apps/web): an online hosted frontend powered by [Wasm].
 
 ## [Testing](./tests/README.md)
 
