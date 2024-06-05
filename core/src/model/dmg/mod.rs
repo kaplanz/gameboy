@@ -58,39 +58,40 @@ impl GameBoy {
     ///
     /// # Note
     ///
-    /// In order to insert a [`Cartridge`], it must be separately
-    /// [loaded][`api::cart::Support::load`].
+    /// In order to play a [`Cartridge`], it must be [loaded][load] separately.
+    ///
+    /// [load]: api::cart::Support::load
     #[must_use]
     pub fn new() -> Self {
-        Self::default().prep().boot()
+        let mut this = Self::default();
+
+        // Simulate bootup sequence
+        this.boot();
+
+        this
     }
 
     /// Constructs a new `GameBoy`, initialized with the provided boot ROM.
     ///
     /// # Note
     ///
-    /// In order to insert a [`Cartridge`], it must be separately
-    /// [loaded][`api::cart::Support::load`].
+    /// In order to play a [`Cartridge`], it must be [loaded][load] separately.
+    ///
+    /// [load]: api::cart::Support::load
     #[must_use]
     pub fn with(boot: Boot) -> Self {
-        Self {
-            boot: Some(boot::Chip::new(boot)),
-            ..Default::default()
-        }
-        .prep()
+        let mut this = Self::default();
+
+        // Initialize boot ROM
+        let boot = boot::Chip::new(boot);
+        boot.attach(&mut this.pcb.noc.ibus.borrow_mut());
+        this.boot = Some(boot);
+
+        this
     }
 
-    /// Prepares a `GameBoy` such that it can readily be used.
-    #[must_use]
-    fn prep(mut self) -> Self {
-        self.attach();
-        self
-    }
-
-    /// Simulate booting for `GameBoy`s with no [`Cartridge`].
-    #[must_use]
-    #[rustfmt::skip]
-    fn boot(mut self) -> Self {
+    /// Simulate the bootup sequence when no [boot ROM](Boot) was provided.
+    pub fn boot(&mut self) {
         // Initialize registers
         type Select = <Cpu as Port<Word>>::Select;
         self.pcb.soc.cpu.store(Select::AF, 0x01b0_u16);
@@ -100,26 +101,12 @@ impl GameBoy {
         self.pcb.soc.cpu.store(Select::SP, 0xfffe_u16);
         self.pcb.soc.cpu.write(0xff40, 0x91); // enable LCD
         self.pcb.soc.cpu.write(0xff50, 0x01); // disable boot
-        // Execute necessary setup
-        self.pcb.soc.cpu.exec(0xfb); // EI ; enable interrupts
-        // Hand-off program control
-        self.pcb.soc.cpu.goto(0x0100);
-        self
-    }
 
-    /// Connect memory-mapped I/O to the network-on-chip.
-    fn attach(&mut self) {
-        // Borrow network
-        let Mmap { ibus, ebus, .. } = &self.pcb.noc;
-        let ibus = &mut *ibus.borrow_mut();
-        let ebus = &mut *ebus.borrow_mut();
-        // Attach modules
-        if let Some(boot) = self.boot.as_mut() {
-            boot.attach(ibus);
-        }
-        if let Some(cart) = self.cart.as_mut() {
-            cart.attach(ebus);
-        }
+        // Execute bootup sequence
+        self.pcb.soc.cpu.exec(0xfb); // EI ; enable interrupts
+
+        // Hand off program control
+        self.pcb.soc.cpu.goto(0x0100);
     }
 }
 
@@ -157,7 +144,7 @@ impl api::cart::Support for GameBoy {
     /// Game ROM cartridge.
     type Cartridge = Cartridge;
 
-    fn cart(&mut self) -> Option<&Self::Cartridge> {
+    fn cart(&self) -> Option<&Self::Cartridge> {
         self.cart.as_ref()
     }
 
@@ -167,8 +154,8 @@ impl api::cart::Support for GameBoy {
 
     /// Loads a game [`Cartridge`] into the [`GameBoy`].
     ///
-    /// If a cartridge has already been loaded, it will be disconnected and
-    /// replaced.
+    /// If a cartridge has already been loaded, it will first be
+    /// [ejected](Self::eject).
     fn load(&mut self, cart: Self::Cartridge) {
         // Disconnect previous cartridge
         if let Some(cart) = self.eject() {

@@ -6,12 +6,12 @@ pub trait Support {
     type Cartridge: Cartridge;
 
     /// Gets the inserted cartridge.
-    fn cart(&mut self) -> Option<&Self::Cartridge>;
+    fn cart(&self) -> Option<&Self::Cartridge>;
 
     /// Mutably gets the inserted cartridge.
     fn cart_mut(&mut self) -> Option<&mut Self::Cartridge>;
 
-    /// Inserts and loads a cartridge.
+    /// Inserts a cartridge.
     fn load(&mut self, cart: Self::Cartridge);
 
     /// Ejects the inserted cartridge.
