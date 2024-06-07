@@ -2,11 +2,56 @@
 <html lang="en-CA">
 
 <head>
+  <!-- Meta -->
   <meta charset="utf-8">
+
+  <!-- Site -->
   <title>rugby-web</title>
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Style -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/open-color/1.9.1/open-color.min.css">
+  <link rel="stylesheet" href="style.css" type="text/css" media="all">
 </head>
 
 <body>
+  <main role="main">
+    <!-- Title -->
+    <h1>rugby</h1>
+    <!-- Emulator -->
+    <div class="gameboy">
+      <!-- Screen -->
+      <div class="screen">
+        <canvas id="screen" width="160" height="144"></canvas>
+      </div>
+      <!-- Joypad -->
+      <div class="joypad">
+        <div class="dpad">
+          <input type="button" id="up">
+          <input type="button" id="down">
+          <input type="button" id="left">
+          <input type="button" id="right">
+        </div>
+        <div class="game">
+          <label for="a">A</label>
+          <input type="button" id="a">
+          <label for="b">B</label>
+          <input type="button" id="b">
+        </div>
+        <div class="keys">
+          <label for="start">Start</label>
+          <input type="button" id="start">
+          <label for="select">Select</label>
+          <input type="button" id="select">
+        </div>
+      </div>
+    </div>
+  </main>
   <script type="module" src="main.js"></script>
 </body>
 

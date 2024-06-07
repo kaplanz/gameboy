@@ -1,0 +1,50 @@
+body {
+  background-color: var(--oc-yellow-0);
+}
+
+main {
+  margin: 1em;
+}
+
+.gameboy {
+  .screen {
+    canvas {
+      background-color: #7f860f;
+    }
+  }
+
+  .joypad {
+    color: var(--oc-cyan-8);
+
+    .dpad {
+      display: grid;
+
+      input {
+        background-color: var(--oc-gray-7);
+        border: none;
+        width: 1em;
+        height: 1em;
+      }
+    }
+
+    .game {
+      input {
+        background-color: var(--oc-pink-7);
+        border: none;
+        border-radius: 50%;
+        width: 2em;
+        height: 2em;
+      }
+    }
+
+    .keys {
+      input {
+        background-color: var(--oc-gray-5);
+        border: none;
+        border-radius: 16px;
+        width: 4em;
+        height: 1em;
+      }
+    }
+  }
+}
