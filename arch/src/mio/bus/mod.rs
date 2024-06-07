@@ -187,16 +187,15 @@ mod tests {
     #[test]
     fn memory_read_write_overlapping_mapped_works() {
         // Let's create a relatively complicated overlapping bus:
-        //     ┌─────────────────────────────────────────────────┐
-        // D0: │                 a                               │
-        // D1: │                  bb                             │
-        // D2: │                    cccc                         │
-        // D3: │                        ddddddddd                │
-        // D4: │ eeeeeeeeeeeeeeee                                │
-        // D5: │ ffffffffffffffffffffffffffffffffffffffffffff... │
-        //     ├─────────────────────────────────────────────────┤
-        //     │ eeeeeeeeeeeeeeeeabbccccdddddddddffffffffffff... │
-        //     └─────────────────────────────────────────────────┘
+        //
+        // D0: [                 a                               ]
+        // D1: [                  bb                             ]
+        // D2: [                    cccc                         ]
+        // D3: [                        ddddddddd                ]
+        // D4: [ eeeeeeeeeeeeeeee                                ]
+        // D5: [ ffffffffffffffffffffffffffffffffffffffffffff... ]
+        //      -------------------------------------------------
+        // [=] [ eeeeeeeeeeeeeeeeabbccccdddddddddffffffffffff... ]
         let mut bus = Bus::new();
         // Device 0
         const N0: u16 = 1;
