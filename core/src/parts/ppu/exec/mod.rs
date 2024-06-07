@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use ppu::{Interrupt, Lcdc, Ppu, LCD};
 use rugby_arch::reg::Register;
 use rugby_arch::Byte;
@@ -80,17 +78,6 @@ impl Mode {
 impl Default for Mode {
     fn default() -> Self {
         Self::Scan(Scan::default())
-    }
-}
-
-impl Display for Mode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Scan(scan) => scan.fmt(f),
-            Self::Draw(draw) => draw.fmt(f),
-            Self::HBlank(hblank) => hblank.fmt(f),
-            Self::VBlank(vblank) => vblank.fmt(f),
-        }
     }
 }
 

@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use log::{debug, trace};
 use rugby_arch::mem::Memory;
 use rugby_arch::reg::Register;
@@ -78,17 +76,6 @@ impl Scan {
             debug!("entered mode 3: draw pixels");
             Mode::Draw(self.into())
         }
-    }
-}
-
-impl Display for Scan {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "┌─────────────┐")?;
-        writeln!(f, "│ {:^11} │", "Scan")?;
-        writeln!(f, "├─────────────┤")?;
-        writeln!(f, "│ Sprite: {:>3} │", self.addr)?;
-        writeln!(f, "│ Found: {:>4} │", self.objs.len())?;
-        write!(f, "└─────────────┘")
     }
 }
 

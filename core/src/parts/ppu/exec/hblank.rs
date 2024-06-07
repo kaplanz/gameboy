@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use log::debug;
 use rugby_arch::reg::Register;
 
@@ -38,14 +36,6 @@ impl HBlank {
                 Mode::VBlank(self.into())
             }
         }
-    }
-}
-
-impl Display for HBlank {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "┌─────────────┐")?;
-        writeln!(f, "│ {:^11} │", "HBlank")?;
-        write!(f, "└─────────────┘")
     }
 }
 

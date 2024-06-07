@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use log::debug;
 use rugby_arch::reg::Register;
 
@@ -36,14 +34,6 @@ impl VBlank {
                 Mode::Scan(self.into())
             }
         }
-    }
-}
-
-impl Display for VBlank {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "┌─────────────┐")?;
-        writeln!(f, "│ {:^11} │", "VBlank")?;
-        write!(f, "└─────────────┘")
     }
 }
 

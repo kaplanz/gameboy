@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use log::{debug, trace};
 use rugby_arch::reg::Register;
 
@@ -57,17 +55,6 @@ impl Draw {
             debug!("entered mode 0: hblank");
             Mode::HBlank(self.into())
         }
-    }
-}
-
-impl Display for Draw {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "┌─────────────┐")?;
-        writeln!(f, "│ {:^11} │", "Draw")?;
-        writeln!(f, "├─────────────┤")?;
-        writeln!(f, "│ Column: {:>3} │", self.pipe.lx)?;
-        writeln!(f, "│ Objects: {:>2} │", self.objs.len())?;
-        write!(f, "└─────────────┘")
     }
 }
 
