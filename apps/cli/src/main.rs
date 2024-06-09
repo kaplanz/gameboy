@@ -41,7 +41,7 @@ fn run() -> Result<()> {
     });
     // Initialize logger
     #[cfg_attr(not(feature = "gbd"), allow(unused, clippy::let_unit_value))]
-    let log = build::log(args.log.as_deref().unwrap_or_default())
+    let log = build::log(args.cfg.app.log.as_deref().unwrap_or_default())
         .context("could not initialize logger")?;
     // Log previous steps
     trace!("{args:#?}");

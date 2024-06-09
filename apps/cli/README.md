@@ -42,12 +42,12 @@ Arguments:
   [ROM]  Cartridge ROM image file
 
 Options:
-      --conf <PATH>   Configuration file [env: RUGBY_CONF=]
-  -l, --log <FILTER>  Logging level [env: RUGBY_LOG=]
-  -h, --help          Print help (see more with '--help')
-  -V, --version       Print version
+      --conf <PATH>  Configuration file [env: RUGBY_CONF=]
+  -h, --help         Print help (see more with '--help')
+  -V, --version      Print version
 
 General:
+  -l, --log <FILTER>     Logging level [env: RUGBY_LOG=]
   -p, --palette <COLOR>  DMG color palette [possible values: autumn-chill,
                          blk-aqu, blue-dream, coldfire, coral, demichrome,
                          earth, ice-cream, legacy, mist, mono, morris,
@@ -96,6 +96,8 @@ The default configuration is as follows:
 
 ```toml
 [general]
+# Logging level
+# log     = "info,rugby_core=error"
 # DMG color palette
 #
 # Value must be a named preset or customized as follows:

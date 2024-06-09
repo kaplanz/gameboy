@@ -20,6 +20,8 @@
 # location for this file.
 
 [general]
+# Logging level
+log     = "info,rugby_core=error"
 # DMG color palette
 #
 # Value must be a named preset or customized as follows:

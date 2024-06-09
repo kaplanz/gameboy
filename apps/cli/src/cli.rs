@@ -42,14 +42,6 @@ pub struct Cli {
     #[clap(next_help_heading = None)]
     pub cfg: Config,
 
-    /// Logging level.
-    ///
-    /// A comma-separated list of logging directives.
-    #[clap(short, long, env = env::LOG)]
-    #[clap(value_name = "FILTER")]
-    #[clap(help_heading = None)]
-    pub log: Option<String>,
-
     /// Exit after loading cartridge.
     ///
     /// Instead of entering the main emulation loop, return immediately after

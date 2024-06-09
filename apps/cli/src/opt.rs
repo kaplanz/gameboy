@@ -8,6 +8,8 @@ use rugby::core::dmg::FREQ;
 use rugby::pal;
 use serde::Deserialize;
 
+use crate::cli::env;
+
 /// Name of this application.
 ///
 /// This may be used for base subdirectories.
@@ -30,6 +32,13 @@ pub enum Tristate {
 #[derive(Args, Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct General {
+    /// Logging level.
+    ///
+    /// A comma-separated list of logging directives.
+    #[clap(short, long, env = env::LOG)]
+    #[clap(value_name = "FILTER")]
+    pub log: Option<String>,
+
     /// DMG color palette.
     ///
     /// Select from a list of preset 2-bit color palettes for the DMG model.
@@ -66,6 +75,7 @@ impl General {
     /// from the cli to those saved on-disk. To do so, prefer keeping data
     /// fields from `self` when conflicting with `other`.
     pub fn merge(&mut self, other: Self) {
+        self.log = self.log.take().or(other.log);
         self.pal = self.pal.take().or(other.pal);
         self.spd = self.spd.take().or(other.spd);
     }
