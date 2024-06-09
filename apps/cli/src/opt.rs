@@ -26,6 +26,51 @@ pub enum Tristate {
     Always,
 }
 
+/// Application options.
+#[derive(Args, Debug, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct General {
+    /// DMG color palette.
+    ///
+    /// Select from a list of preset 2-bit color palettes for the DMG model.
+    /// Custom values can be defined in the configuration file.
+    #[clap(short, long = "palette")]
+    #[clap(value_name = "COLOR")]
+    #[clap(value_enum)]
+    #[serde(rename = "palette")]
+    pub pal: Option<Palette>,
+
+    /// Simulated clock speed.
+    ///
+    /// Select from a list of possible speeds to simulate the emulator's clock.
+    /// Custom values can be defined in the configuration file.
+    #[clap(short, long = "speed")]
+    #[clap(value_name = "FREQ")]
+    #[clap(value_enum)]
+    #[serde(rename = "speed")]
+    pub spd: Option<Speed>,
+}
+
+impl General {
+    /// Rebase relative paths to the provided root.
+    ///
+    /// Any relative paths will have be rebased such that they are not relative
+    /// to the provided root.
+    #[allow(unused, clippy::unused_self)]
+    pub fn rebase(&mut self, root: &Path) {}
+
+    /// Combines two configuration instances.
+    ///
+    /// This is useful when some configurations may also be supplied on the
+    /// command-line. When merging, it is best practice to prioritize options
+    /// from the cli to those saved on-disk. To do so, prefer keeping data
+    /// fields from `self` when conflicting with `other`.
+    pub fn merge(&mut self, other: Self) {
+        self.pal = self.pal.take().or(other.pal);
+        self.spd = self.spd.take().or(other.spd);
+    }
+}
+
 /// Cartridge options.
 #[derive(Args, Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -177,51 +222,6 @@ impl BootRom {
     /// fields from `self` when conflicting with `other`.
     pub fn merge(&mut self, other: Self) {
         self.image = self.image.take().or(other.image);
-    }
-}
-
-/// Interface options.
-#[derive(Args, Debug, Default, Deserialize)]
-#[serde(default, deny_unknown_fields)]
-pub struct Interface {
-    /// DMG color palette.
-    ///
-    /// Select from a list of preset 2-bit color palettes for the DMG model.
-    /// Custom values can be defined in the configuration file.
-    #[clap(short, long = "palette")]
-    #[clap(value_name = "COLOR")]
-    #[clap(value_enum)]
-    #[serde(rename = "palette")]
-    pub pal: Option<Palette>,
-
-    /// Simulated clock speed.
-    ///
-    /// Select from a list of possible speeds to simulate the emulator's clock.
-    /// Custom values can be defined in the configuration file.
-    #[clap(short, long = "speed")]
-    #[clap(value_name = "FREQ")]
-    #[clap(value_enum)]
-    #[serde(rename = "speed")]
-    pub spd: Option<Speed>,
-}
-
-impl Interface {
-    /// Rebase relative paths to the provided root.
-    ///
-    /// Any relative paths will have be rebased such that they are not relative
-    /// to the provided root.
-    #[allow(unused, clippy::unused_self)]
-    pub fn rebase(&mut self, root: &Path) {}
-
-    /// Combines two configuration instances.
-    ///
-    /// This is useful when some configurations may also be supplied on the
-    /// command-line. When merging, it is best practice to prioritize options
-    /// from the cli to those saved on-disk. To do so, prefer keeping data
-    /// fields from `self` when conflicting with `other`.
-    pub fn merge(&mut self, other: Self) {
-        self.pal = self.pal.take().or(other.pal);
-        self.spd = self.spd.take().or(other.spd);
     }
 }
 

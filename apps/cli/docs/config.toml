@@ -19,15 +19,7 @@
 # parent directory. Use `--conf` on the command-line to provide an alternate
 # location for this file.
 
-[cartridge]
-# Check cartridge integrity
-check = true
-# Force cartridge construction
-force = false
-# Cartridge RAM persistence
-save = "always"
-
-[interface]
+[general]
 # DMG color palette
 #
 # Value must be a named preset or customized as follows:
@@ -39,6 +31,14 @@ palette = "morris"
 # speed   = { fps = 90 }      # runs at 1.50x
 # speed   = { hz  = 3145728 } # runs at 0.75x
 speed   = "actual"
+
+[cartridge]
+# Check cartridge integrity
+check = true
+# Force cartridge construction
+force = false
+# Cartridge RAM persistence
+save = "always"
 
 [hardware]
 # Boot ROM image file

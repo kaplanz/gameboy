@@ -47,6 +47,16 @@ Options:
   -h, --help          Print help (see more with '--help')
   -V, --version       Print version
 
+General:
+  -p, --palette <COLOR>  DMG color palette [possible values: autumn-chill,
+                         blk-aqu, blue-dream, coldfire, coral, demichrome,
+                         earth, ice-cream, legacy, mist, mono, morris,
+                         purple-dawn, rustic, velvet-cherry]
+  -s, --speed <FREQ>     Simulated clock speed [possible values: half, actual,
+                         double, max]
+  -x, --exit             Exit after loading cartridge
+  -H, --headless         Run in headless mode
+
 Cartridge:
   -c, --check        Check cartridge integrity
   -f, --force        Force cartridge construction
@@ -56,17 +66,9 @@ Cartridge:
 Hardware:
   -b, --boot [<PATH>]  Boot ROM image file
 
-Interface:
-  -p, --palette <COLOR>  DMG color palette [possible values: autumn-chill,
-                         blk-aqu, blue-dream, coldfire, coral, demichrome,
-                         earth, ice-cream, legacy, mist, mono, morris,
-                         purple-dawn, rustic, velvet-cherry]
-  -s, --speed <FREQ>     Simulated clock speed [possible values: half, actual,
-                         double, max]
-  -x, --exit             Exit after loading cartridge
-  -H, --headless         Run in headless mode
-      --host <ADDR>      Link cable local address
-      --peer <ADDR>      Link cable peer address
+Serial:
+      --host <ADDR>  Link cable local address
+      --peer <ADDR>  Link cable peer address
 
 Debug:
       --doc <PATH>  Doctor logfile path
@@ -93,15 +95,7 @@ location for this file.
 The default configuration is as follows:
 
 ```toml
-[cartridge]
-# Check cartridge integrity
-check = false
-# Force cartridge construction
-force = false
-# Cartridge RAM persistence
-save = "auto"
-
-[interface]
+[general]
 # DMG color palette
 #
 # Value must be a named preset or customized as follows:
@@ -113,6 +107,14 @@ palette = "mono"
 # speed   = { fps = 90 }      # runs at 1.50x
 # speed   = { hz  = 3145728 } # runs at 0.75x
 speed   = "actual"
+
+[cartridge]
+# Check cartridge integrity
+check = false
+# Force cartridge construction
+force = false
+# Cartridge RAM persistence
+save = "auto"
 
 [hardware]
 # Boot ROM image file

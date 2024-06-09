@@ -294,7 +294,7 @@ mod build {
         // Construct application
         let app = App {
             cfg: app::Options {
-                spd: args.cfg.ui.spd.clone().unwrap_or_default().freq(),
+                spd: args.cfg.app.spd.clone().unwrap_or_default().freq(),
             },
             ctx: None,
             #[cfg(feature = "debug")]
@@ -309,7 +309,7 @@ mod build {
             emu,
             gui: app::Frontend {
                 cfg: app::gui::Options {
-                    pal: args.cfg.ui.pal.clone().unwrap_or_default().into(),
+                    pal: args.cfg.app.pal.clone().unwrap_or_default().into(),
                 },
                 win: gui,
                 lnk,

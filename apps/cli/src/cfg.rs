@@ -10,7 +10,7 @@ use thiserror::Error;
 use toml::from_str as parse;
 
 use crate::dir;
-use crate::opt::{Cartridge, Hardware, Interface};
+use crate::opt::{Cartridge, General, Hardware};
 
 /// Returns the path to the application's configuration file.
 #[must_use]
@@ -22,6 +22,12 @@ pub fn path() -> PathBuf {
 #[derive(Args, Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Config {
+    /// Application options.
+    #[clap(flatten)]
+    #[clap(next_help_heading = "General")]
+    #[serde(rename = "general")]
+    pub app: General,
+
     /// Cartridge options.
     #[clap(flatten)]
     #[clap(next_help_heading = "Cartridge")]
@@ -33,12 +39,6 @@ pub struct Config {
     #[clap(next_help_heading = "Hardware")]
     #[serde(rename = "hardware")]
     pub hw: Hardware,
-
-    /// Interface options.
-    #[clap(flatten)]
-    #[clap(next_help_heading = "Interface")]
-    #[serde(rename = "interface")]
-    pub ui: Interface,
 }
 
 impl Config {
@@ -73,7 +73,7 @@ impl Config {
     pub fn rebase(&mut self, root: &Path) {
         self.hw.rebase(root);
         self.sw.rebase(root);
-        self.ui.rebase(root);
+        self.app.rebase(root);
     }
 
     /// Combines two configuration instances.
@@ -85,7 +85,7 @@ impl Config {
     pub fn merge(&mut self, other: Self) {
         self.hw.merge(other.hw);
         self.sw.merge(other.sw);
-        self.ui.merge(other.ui);
+        self.app.merge(other.app);
     }
 }
 

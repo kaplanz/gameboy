@@ -57,19 +57,19 @@ pub struct Cli {
     /// `--check` to validate a ROM, or, if logging is enabled, to print the
     /// cartridge header without emulating.
     #[clap(short = 'x', long)]
-    #[clap(help_heading = "Interface")]
+    #[clap(help_heading = "General")]
     pub exit: bool,
 
     /// Run in headless mode.
     ///
     /// Starts without initializing or opening the UI.
     #[clap(short = 'H', long)]
-    #[clap(help_heading = "Interface")]
+    #[clap(help_heading = "General")]
     pub headless: bool,
 
     /// Serial connection.
     #[clap(flatten)]
-    #[clap(next_help_heading = "Interface")]
+    #[clap(next_help_heading = "Serial")]
     pub link: Option<Link>,
 
     /// Debugging options.
