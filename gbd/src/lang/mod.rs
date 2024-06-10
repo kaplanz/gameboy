@@ -363,9 +363,11 @@ pub enum Keyword {
      *
      * Receive or transmit data with the serial port.
      *
-     * To read and drain the send data buffer, pass the `!` argument.
+     * Serial data is received or transmitted depending on if the `DATA`
+     * argument is present. To drain the received data buffer, pass the `!`
+     * argument.
      *
-     * Data to be transmitted must be in one of the following forms:
+     * Transmitted data must be provided in one of the following forms:
      * * Buffer: A byte array, e.g. `[0x44, 0x61, 0x74, 0x61]`
      * * String: ASCII string, e.g. `"Hello, world!"`
      *
