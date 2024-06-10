@@ -46,13 +46,13 @@ pub struct App {
     pub cfg: Options,
     /// Runtime context.
     pub ctx: Option<Context>,
-    /// Debug features.
-    #[cfg(feature = "debug")]
-    pub dbg: Debug,
     /// Emulator instance.
     pub emu: GameBoy,
     /// Graphical frontend.
     pub gui: Frontend,
+    /// Debug features.
+    #[cfg(feature = "debug")]
+    pub dbg: Debug,
 }
 
 /// Configuration data.
