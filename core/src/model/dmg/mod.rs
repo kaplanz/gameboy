@@ -119,10 +119,11 @@ impl Block for GameBoy {
         self.main.cycle();
     }
 
+    #[rustfmt::skip]
     fn reset(&mut self) {
-        self.boot.as_mut().map(Block::reset);
-        self.cart.as_mut().map(Block::reset);
         self.main.reset();
+        self.boot.as_mut().map(Block::reset).unwrap_or_else(|| self.boot());
+        self.cart.as_mut().map(Block::reset);
     }
 }
 
