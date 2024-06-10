@@ -16,6 +16,7 @@ pub use self::parse::Error;
 pub struct Program(VecDeque<Command>);
 
 impl Program {
+    /// Constructs a new `Program`.
     #[allow(unused)]
     pub fn new(prog: impl Iterator<Item = Command>) -> Self {
         Self(prog.collect())
