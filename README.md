@@ -64,6 +64,7 @@ crates are used with the structure as follows:
 ├── ...
 ├── apps/            # frontend apps
 ├── arch/            # architecture primitives
+├── cfg/             # app configuration
 ├── core/            # emulation core
 ├── crates/          # support crates
 ├── docs/            # documentation
@@ -86,6 +87,10 @@ Main components of `rugby` are outlined below.
 - [`rugby`](./): is the high-level library that provides the public API.
 - [`rugby-arch`](./arch): defines the architecture primitives for emulation.
 - [`rugby-core`](./core): contains the implementation of emulator cores.
+
+#### Interfaces
+
+- [`rugby-cfg`](./cfg): definition of application configuration options.
 - [`rugby-gbd`](./gbd): provides an interactive prompt debugging interface.
 
 #### Frontends
