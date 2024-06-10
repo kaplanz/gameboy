@@ -6,8 +6,8 @@ use anyhow::Context;
 use clap::Parser;
 use log::{trace, warn};
 use rugby::prelude::*;
+use rugby_cfg::Conf;
 
-use crate::cfg::Config;
 use crate::cli::Cli;
 use crate::err::{Exit, Result};
 
@@ -18,7 +18,11 @@ mod cli;
 mod dbg;
 mod dir;
 mod err;
-mod opt;
+
+/// Name of this application.
+///
+/// This may be used for base subdirectories.
+pub const NAME: &str = env!("CARGO_CRATE_NAME");
 
 fn main() -> Exit {
     match run() {
@@ -33,7 +37,7 @@ fn run() -> Result<()> {
     // Load config
     args.cfg.merge({
         // Parse config from file
-        let mut cfg = Config::load(&args.conf).context("could not load configuration")?;
+        let mut cfg = cfg::load(&args.conf).context("could not load configuration")?;
         // Rebase paths to parent
         cfg.rebase(args.conf.parent().unwrap_or(Path::new("")));
         // Merge with args
@@ -49,16 +53,16 @@ fn run() -> Result<()> {
     // Prepare emulator
     let emu = build::emu(&args)?;
     // Perform early exit
-    if args.exit {
+    if args.run.exit {
         return Ok(());
     }
     // Prepare application
     let mut app = build::app(&args, emu, log)?;
     // Flash cartridge RAM
     build::flash(
-        args.cfg.sw.ram().as_deref(),
+        args.cfg.emu.cart.ram().as_deref(),
         app.emu.cart_mut(),
-        args.cfg.sw.save.unwrap_or_default(),
+        args.cfg.emu.cart.save.unwrap_or_default(),
     )
     .context("could not flash RAM")?;
     // Run application
@@ -66,8 +70,8 @@ fn run() -> Result<()> {
     // Dump cartridge RAM
     build::dump(
         app.emu.cart(),
-        args.cfg.sw.ram().as_deref(),
-        args.cfg.sw.save.unwrap_or_default(),
+        args.cfg.emu.cart.ram().as_deref(),
+        args.cfg.emu.cart.save.unwrap_or_default(),
     )
     .context("could not dump RAM")?;
 
@@ -89,6 +93,7 @@ mod build {
     use rugby::core::dmg::{Boot, Cartridge, GameBoy, LCD};
     use rugby::emu::video;
     use rugby::prelude::*;
+    use rugby_cfg::opt::emu::Tristate;
     #[cfg(feature = "gbd")]
     use rugby_gbd::{Debugger, Portal};
     use tracing_subscriber::filter::LevelFilter;
@@ -101,7 +106,7 @@ mod build {
     use crate::dbg::doc::Doctor;
     #[cfg(feature = "gbd")]
     use crate::dbg::gbd::Console;
-    use crate::opt::{Tristate, NAME};
+    use crate::NAME;
 
     #[cfg(feature = "gbd")]
     type Log = Portal<String>;
@@ -145,7 +150,7 @@ mod build {
     pub fn emu(args: &Cli) -> Result<GameBoy> {
         // Load cartridge
         let cart = {
-            let cart = &args.cfg.sw;
+            let cart = &args.cfg.emu.cart;
             cart.rom
                 .as_deref()
                 .map(|path| self::cart(path, cart.check, cart.force))
@@ -154,7 +159,7 @@ mod build {
         .context("could not load cartridge")?;
         // Load boot ROM
         let boot = (|| {
-            let boot = &args.cfg.hw.boot;
+            let boot = &args.cfg.emu.boot;
             boot.skip
                 .not()
                 .then(|| boot.image.as_deref().map(self::boot))
@@ -172,7 +177,7 @@ mod build {
         } else {
             // Handle missing cartridge
             ensure!(
-                args.cfg.sw.force,
+                args.cfg.emu.cart.force,
                 "missing cartridge; did not specify `--force`"
             );
             warn!("missing cartridge");
@@ -253,6 +258,7 @@ mod build {
     pub fn app(args: &Cli, emu: GameBoy, log: Log) -> Result<App> {
         // Initialize graphics
         let gui = args
+            .run
             .headless
             .not()
             .then(|| {

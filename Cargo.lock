@@ -1249,6 +1249,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rugby-cfg"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "rugby",
+ "serde",
+]
+
+[[package]]
 name = "rugby-cli"
 version = "0.1.0"
 dependencies = [
@@ -1261,6 +1270,7 @@ dependencies = [
  "log",
  "minifb",
  "rugby",
+ "rugby-cfg",
  "rugby-gbd",
  "rustyline",
  "serde",

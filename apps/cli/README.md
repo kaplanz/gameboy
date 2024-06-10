@@ -46,25 +46,25 @@ Options:
   -h, --help         Print help (see more with '--help')
   -V, --version      Print version
 
-General:
+Runtime:
+  -x, --exit      Exit without running
+  -H, --headless  Run in headless mode
+
+Startup:
   -l, --log <FILTER>     Logging level [env: RUGBY_LOG=]
-  -p, --palette <COLOR>  DMG color palette [possible values: autumn-chill,
+  -p, --palette <COLOR>  2-bit color palette [possible values: autumn-chill,
                          blk-aqu, blue-dream, coldfire, coral, demichrome,
                          earth, ice-cream, legacy, mist, mono, morris,
                          purple-dawn, rustic, velvet-cherry]
   -s, --speed <FREQ>     Simulated clock speed [possible values: half, actual,
                          double, max]
-  -x, --exit             Exit after loading cartridge
-  -H, --headless         Run in headless mode
 
-Cartridge:
-  -c, --check        Check cartridge integrity
-  -f, --force        Force cartridge construction
-      --save <WHEN>  Cartridge RAM persistence [possible values: never, auto,
-                     always]
-
-Hardware:
+Console:
   -b, --boot [<PATH>]  Boot ROM image file
+  -c, --check          Check cartridge integrity
+  -f, --force          Force cartridge construction
+      --save <WHEN>    Cartridge RAM persistence [possible values: never, auto,
+                       always]
 
 Serial:
       --host <ADDR>  Link cable local address
@@ -95,10 +95,10 @@ location for this file.
 The default configuration is as follows:
 
 ```toml
-[general]
+[app]
 # Logging level
-# log     = "info,rugby_core=error"
-# DMG color palette
+log = "warn"
+# 2-bit color palette
 #
 # Value must be a named preset or customized as follows:
 # palette = { custom = ["#222", "#666", "#aaa", "#ddd"] }
@@ -108,9 +108,9 @@ palette = "mono"
 # Value must be a named preset or customized as follows:
 # speed   = { fps = 90 }      # runs at 1.50x
 # speed   = { hz  = 3145728 } # runs at 0.75x
-speed   = "actual"
+speed = "actual"
 
-[cartridge]
+[emu.cart]
 # Check cartridge integrity
 check = false
 # Force cartridge construction
@@ -118,9 +118,9 @@ force = false
 # Cartridge RAM persistence
 save = "auto"
 
-[hardware]
+[emu.boot]
 # Boot ROM image file
-# boot = "path/to/dmg_boot.bin"
+# image = "path/to/dmg_boot.bin"
 ```
 
 A customized example could be found [here][config].

@@ -19,10 +19,10 @@
 # parent directory. Use `--conf` on the command-line to provide an alternate
 # location for this file.
 
-[general]
+[app]
 # Logging level
-log     = "info,rugby_core=error"
-# DMG color palette
+log = "info,rugby_core=error"
+# 2-bit color palette
 #
 # Value must be a named preset or customized as follows:
 # palette = { custom = ["#222", "#666", "#aaa", "#ddd"] }
@@ -32,9 +32,9 @@ palette = "morris"
 # Value must be a named preset or customized as follows:
 # speed   = { fps = 90 }      # runs at 1.50x
 # speed   = { hz  = 3145728 } # runs at 0.75x
-speed   = "actual"
+speed = "actual"
 
-[cartridge]
+[emu.cart]
 # Check cartridge integrity
 check = true
 # Force cartridge construction
@@ -42,6 +42,6 @@ force = false
 # Cartridge RAM persistence
 save = "always"
 
-[hardware]
+[emu.boot]
 # Boot ROM image file
-boot = "../../../roms/boot/sameboy/dmg_boot.bin"
+image = "../../../roms/boot/sameboy/dmg_boot.bin"

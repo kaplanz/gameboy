@@ -29,6 +29,7 @@ opt-level = 3
 members = [
     "apps/*",
     "arch",
+    "cfg",
     "core",
     "crates/*",
     "gbd",
@@ -51,6 +52,7 @@ phex = { version = "0.1.0", path = "crates/phex" }
 png = "0.17.13"
 rugby = { version = "0.1.0", path = "." }
 rugby-arch = { version = "0.1.0", path = "arch" }
+rugby-cfg = { version = "0.1.0", path = "cfg" }
 rugby-core = { version = "0.1.0", path = "core" }
 rugby-gbd = { version = "0.1.0", path = "gbd" }
 serde = { version = "1.0.202", features = ["derive"] }

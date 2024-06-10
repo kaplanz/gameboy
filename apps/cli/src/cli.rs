@@ -4,18 +4,9 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use clap::{Args, Parser, ValueHint};
+use rugby_cfg::Config;
 
-use crate::cfg::{self, Config};
-use crate::opt::NAME;
-
-/// Environment variables.
-pub mod env {
-    /// Configuration file.
-    pub const CFG: &str = "RUGBY_CONF";
-
-    /// Logging level.
-    pub const LOG: &str = "RUGBY_LOG";
-}
+use crate::NAME;
 
 /// Emulate the Nintendo Game Boy.
 ///
@@ -29,35 +20,23 @@ pub struct Cli {
     ///
     /// When options are specified in multiple locations, they will be applied
     /// with the following precedence: cli > env > file.
-    #[clap(long, env = env::CFG)]
+    #[clap(long, env = rugby_cfg::env::CFG)]
     #[clap(value_name = "PATH")]
-    #[clap(default_value_os_t = cfg::path())]
-    #[clap(hide_default_value = std::env::var(env::CFG).is_ok())]
-    #[clap(hide_env_values    = std::env::var(env::CFG).is_err())]
+    #[clap(default_value_os_t = crate::cfg::path())]
+    #[clap(hide_default_value = std::env::var(rugby_cfg::env::CFG).is_ok())]
+    #[clap(hide_env_values    = std::env::var(rugby_cfg::env::CFG).is_err())]
     #[clap(value_hint = ValueHint::FilePath)]
     pub conf: PathBuf,
+
+    /// Runtime options.
+    #[clap(flatten)]
+    #[clap(next_help_heading = "Runtime")]
+    pub run: Runtime,
 
     /// Configuration data.
     #[clap(flatten)]
     #[clap(next_help_heading = None)]
     pub cfg: Config,
-
-    /// Exit after loading cartridge.
-    ///
-    /// Instead of entering the main emulation loop, return immediately after
-    /// loading the cartridge ROM. This option could be used along with
-    /// `--check` to validate a ROM, or, if logging is enabled, to print the
-    /// cartridge header without emulating.
-    #[clap(short = 'x', long)]
-    #[clap(help_heading = "General")]
-    pub exit: bool,
-
-    /// Run in headless mode.
-    ///
-    /// Starts without initializing or opening the UI.
-    #[clap(short = 'H', long)]
-    #[clap(help_heading = "General")]
-    pub headless: bool,
 
     /// Serial connection.
     #[clap(flatten)]
@@ -68,6 +47,25 @@ pub struct Cli {
     #[clap(flatten)]
     #[clap(next_help_heading = "Debug")]
     pub dbg: Debug,
+}
+
+/// Runtime options.
+#[derive(Args, Debug)]
+pub struct Runtime {
+    /// Exit without running.
+    ///
+    /// Instead of entering the main emulation loop, return immediately after
+    /// loading the cartridge ROM. This option could be used along with
+    /// `--check` to validate a ROM, or, if logging is enabled, to print the
+    /// cartridge header without emulating.
+    #[clap(short = 'x', long)]
+    pub exit: bool,
+
+    /// Run in headless mode.
+    ///
+    /// Starts without initializing or opening the UI.
+    #[clap(short = 'H', long)]
+    pub headless: bool,
 }
 
 /// Serial connection.

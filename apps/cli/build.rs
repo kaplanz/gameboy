@@ -8,16 +8,17 @@ use clap::{CommandFactory, ValueEnum};
 use clap_complete::Shell;
 use clap_mangen::Man;
 
-use crate::opt::NAME;
-
-#[path = "src/cfg.rs"]
-mod cfg;
 #[path = "src/cli.rs"]
 mod cli;
-#[path = "src/dir.rs"]
-mod dir;
-#[path = "src/opt.rs"]
-mod opt;
+
+mod cfg {
+    pub fn path() -> std::path::PathBuf {
+        Default::default()
+    }
+}
+
+/// Application name.
+const NAME: &str = "rugby";
 
 /// Manual section.
 ///
@@ -38,7 +39,7 @@ fn main() -> Result<()> {
     let out = env::var_os("OUT_DIR")
         .map(PathBuf::from)
         .ok_or(io::ErrorKind::NotFound)?;
-    env::set_var(cli::env::CFG, "");
+    env::set_var(rugby_cfg::env::CFG, "");
 
     // Build clap command
     let cmd = cli::Cli::command();
