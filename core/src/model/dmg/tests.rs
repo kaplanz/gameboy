@@ -51,7 +51,7 @@ fn boot_disable_works() {
 #[test]
 fn bus_all_works() {
     let mut emu = setup();
-    let bus = &mut emu.pcb.soc.cpu;
+    let bus = &mut emu.main.soc.cpu;
 
     // Boot ROM
     if let Some(boot) = &emu.boot {
@@ -70,7 +70,7 @@ fn bus_all_works() {
     // Video RAM
     (0x8000..=0x9fff).for_each(|addr| bus.write(addr, 0x03));
     (0x0000..=0x1fff)
-        .map(|addr: Word| emu.pcb.vram.read(addr).unwrap())
+        .map(|addr: Word| emu.main.vram.read(addr).unwrap())
         .for_each(|byte| assert_eq!(byte, 0x03));
     // External RAM
     if let Some(cart) = &emu.cart {
@@ -90,12 +90,12 @@ fn bus_all_works() {
     // Object memory
     (0xfe00..=0xfe9f).for_each(|addr| bus.write(addr, 0x05));
     (0x0000..=0x009f)
-        .map(|addr: Word| emu.pcb.soc.mem.oam.read(addr).unwrap())
+        .map(|addr: Word| emu.main.soc.mem.oam.read(addr).unwrap())
         .for_each(|byte| assert_eq!(byte, 0x05));
     // Controller
     (0xff00..=0xff00).for_each(|addr| bus.write(addr, 0x60));
     (0x0000..=0x0000) // NOTE: Only bits 0x30 are writable
-        .map(|addr| emu.pcb.soc.joy.con.read(addr).unwrap())
+        .map(|addr| emu.main.soc.joy.con.read(addr).unwrap())
         .for_each(|byte| assert_eq!(byte, 0xef));
     // Serial
     (0xff01..=0xff03).for_each(|addr| bus.write(addr, 0x07));
@@ -111,13 +111,13 @@ fn bus_all_works() {
             <Timer as Port<Byte>>::Select::Tma,
             <Timer as Port<Byte>>::Select::Tac,
         ])
-        .map(|(_, reg)| emu.pcb.soc.tma.load(reg))
+        .map(|(_, reg)| emu.main.soc.tma.load(reg))
         .zip([0x00, 0x08, 0x08, 0xf8])
         .for_each(|(found, expected)| assert_eq!(found, expected));
     // Interrupt flag
     (0xff0f..=0xff0f).for_each(|addr| bus.write(addr, 0x09));
     (0x0000..=0x0000)
-        .map(|_| emu.pcb.soc.pic.load(<Pic as Port<Byte>>::Select::If))
+        .map(|_| emu.main.soc.pic.load(<Pic as Port<Byte>>::Select::If))
         .for_each(|byte| assert_eq!(byte, 0xe9));
     // Audio
     (0xff10..=0xff27).for_each(|addr| bus.write(addr, 0x0a));
@@ -146,7 +146,7 @@ fn bus_all_works() {
             <Ppu as Port<Byte>>::Select::Wy,
             <Ppu as Port<Byte>>::Select::Wx,
         ])
-        .map(|(_, reg)| emu.pcb.soc.ppu.load(reg))
+        .map(|(_, reg)| emu.main.soc.ppu.load(reg))
         .for_each(|byte| assert_eq!(byte, 0x0c));
     // Boot ROM disable
     (0xff50..=0xff50).for_each(|addr| bus.write(addr, 0x0d));
@@ -158,18 +158,18 @@ fn bus_all_works() {
     // High RAM
     (0xff80..=0xfffe).for_each(|addr| bus.write(addr, 0x0e));
     (0x0000..=0x007e)
-        .map(|addr: Word| emu.pcb.soc.mem.hram.read(addr).unwrap())
+        .map(|addr: Word| emu.main.soc.mem.hram.read(addr).unwrap())
         .for_each(|byte| assert_eq!(byte, 0x0e));
     // Interrupt enable
     (0xffff..=0xffff).for_each(|addr| bus.write(addr, 0x0f));
     (0x0000..=0x0000)
-        .map(|_| emu.pcb.soc.pic.load(<Pic as Port<Byte>>::Select::Ie))
+        .map(|_| emu.main.soc.pic.load(<Pic as Port<Byte>>::Select::Ie))
         .for_each(|byte| assert_eq!(byte, 0xef));
 }
 
 #[test]
 fn bus_unmapped_works() {
-    let bus = &mut setup().pcb.noc.ibus;
+    let bus = &mut setup().main.noc.ibus;
 
     // Test unmapped addresses
     for range in [0xfea0..=0xfeff, 0xff03..=0xff03, 0xff27..=0xff2f] {

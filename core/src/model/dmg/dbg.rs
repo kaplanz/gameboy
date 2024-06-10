@@ -4,12 +4,12 @@ use super::{cpu, ppu, GameBoy};
 
 /// Gather debug into from the CPU.
 pub fn cpu(emu: &mut GameBoy) -> cpu::dbg::Debug {
-    cpu::dbg::info(&emu.pcb.soc.cpu)
+    cpu::dbg::info(&emu.main.soc.cpu)
 }
 
 /// Collect debug information from the PPU.
 pub fn ppu(emu: &mut GameBoy) -> ppu::dbg::Debug {
-    ppu::dbg::info(&emu.pcb.soc.ppu)
+    ppu::dbg::info(&emu.main.soc.ppu)
 }
 
 /// Debug information.

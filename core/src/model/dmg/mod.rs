@@ -50,7 +50,7 @@ pub struct GameBoy {
     /// Game cartridge.
     cart: Option<Cartridge>,
     /// DMG-01 Motherboard.
-    pcb: Motherboard,
+    main: Motherboard,
 }
 
 impl GameBoy {
@@ -84,7 +84,7 @@ impl GameBoy {
 
         // Initialize boot ROM
         let boot = boot::Chip::new(boot);
-        boot.attach(&mut this.pcb.noc.ibus.borrow_mut());
+        boot.attach(&mut this.main.noc.ibus.borrow_mut());
         this.boot = Some(boot);
 
         this
@@ -94,35 +94,35 @@ impl GameBoy {
     pub fn boot(&mut self) {
         // Initialize registers
         type Select = <Cpu as Port<Word>>::Select;
-        self.pcb.soc.cpu.store(Select::AF, 0x01b0_u16);
-        self.pcb.soc.cpu.store(Select::BC, 0x0013_u16);
-        self.pcb.soc.cpu.store(Select::DE, 0x00d8_u16);
-        self.pcb.soc.cpu.store(Select::HL, 0x014d_u16);
-        self.pcb.soc.cpu.store(Select::SP, 0xfffe_u16);
-        self.pcb.soc.cpu.write(0xff40, 0x91); // enable LCD
-        self.pcb.soc.cpu.write(0xff50, 0x01); // disable boot
+        self.main.soc.cpu.store(Select::AF, 0x01b0_u16);
+        self.main.soc.cpu.store(Select::BC, 0x0013_u16);
+        self.main.soc.cpu.store(Select::DE, 0x00d8_u16);
+        self.main.soc.cpu.store(Select::HL, 0x014d_u16);
+        self.main.soc.cpu.store(Select::SP, 0xfffe_u16);
+        self.main.soc.cpu.write(0xff40, 0x91); // enable LCD
+        self.main.soc.cpu.write(0xff50, 0x01); // disable boot
 
         // Execute bootup sequence
-        self.pcb.soc.cpu.exec(0xfb); // EI ; enable interrupts
+        self.main.soc.cpu.exec(0xfb); // EI ; enable interrupts
 
         // Hand off program control
-        self.pcb.soc.cpu.goto(0x0100);
+        self.main.soc.cpu.goto(0x0100);
     }
 }
 
 impl Block for GameBoy {
     fn ready(&self) -> bool {
-        self.pcb.ready()
+        self.main.ready()
     }
 
     fn cycle(&mut self) {
-        self.pcb.cycle();
+        self.main.cycle();
     }
 
     fn reset(&mut self) {
         self.boot.as_mut().map(Block::reset);
         self.cart.as_mut().map(Block::reset);
-        self.pcb.reset();
+        self.main.reset();
     }
 }
 
@@ -132,11 +132,11 @@ impl api::audio::Support for GameBoy {
     type Audio = Apu;
 
     fn audio(&self) -> &Self::Audio {
-        &self.pcb.soc.apu
+        &self.main.soc.apu
     }
 
     fn audio_mut(&mut self) -> &mut Self::Audio {
-        &mut self.pcb.soc.apu
+        &mut self.main.soc.apu
     }
 }
 
@@ -162,14 +162,14 @@ impl api::cart::Support for GameBoy {
             warn!("ejected previous cartridge: {}", cart.header());
         };
         // Insert supplied cartridge
-        let ebus = &mut *self.pcb.noc.ebus.borrow_mut();
+        let ebus = &mut *self.main.noc.ebus.borrow_mut();
         cart.attach(ebus);
         self.cart = Some(cart);
     }
 
     fn eject(&mut self) -> Option<Self::Cartridge> {
         // Disconnect from bus
-        let ebus = &mut *self.pcb.noc.ebus.borrow_mut();
+        let ebus = &mut *self.main.noc.ebus.borrow_mut();
         if let Some(cart) = &self.cart {
             cart.detach(ebus);
         }
@@ -182,11 +182,11 @@ impl api::proc::Support for GameBoy {
     type Proc = Cpu;
 
     fn cpu(&self) -> &Self::Proc {
-        &self.pcb.soc.cpu
+        &self.main.soc.cpu
     }
 
     fn cpu_mut(&mut self) -> &mut Self::Proc {
-        &mut self.pcb.soc.cpu
+        &mut self.main.soc.cpu
     }
 }
 
@@ -194,11 +194,11 @@ impl api::joypad::Support for GameBoy {
     type Joypad = Joypad;
 
     fn joypad(&self) -> &Self::Joypad {
-        &self.pcb.soc.joy
+        &self.main.soc.joy
     }
 
     fn joypad_mut(&mut self) -> &mut Self::Joypad {
-        &mut self.pcb.soc.joy
+        &mut self.main.soc.joy
     }
 }
 
@@ -206,11 +206,11 @@ impl api::serial::Support for GameBoy {
     type Serial = Serial;
 
     fn serial(&self) -> &Self::Serial {
-        &self.pcb.soc.ser
+        &self.main.soc.ser
     }
 
     fn serial_mut(&mut self) -> &mut Self::Serial {
-        &mut self.pcb.soc.ser
+        &mut self.main.soc.ser
     }
 }
 
@@ -218,11 +218,11 @@ impl api::video::Support for GameBoy {
     type Video = Ppu;
 
     fn video(&self) -> &Self::Video {
-        &self.pcb.soc.ppu
+        &self.main.soc.ppu
     }
 
     fn video_mut(&mut self) -> &mut Self::Video {
-        &mut self.pcb.soc.ppu
+        &mut self.main.soc.ppu
     }
 }
 
@@ -230,23 +230,23 @@ impl GameBoy {
     /// Gets the core's interrupt controller.
     #[must_use]
     pub fn pic(&self) -> &Pic {
-        &self.pcb.soc.pic
+        &self.main.soc.pic
     }
 
     /// Mutably gets the core's interrupt controller.
     pub fn pic_mut(&mut self) -> &mut Pic {
-        &mut self.pcb.soc.pic
+        &mut self.main.soc.pic
     }
 
     /// Gets the core's timer.
     #[must_use]
     pub fn timer(&self) -> &Timer {
-        &self.pcb.soc.tma
+        &self.main.soc.tma
     }
 
     /// Mutably gets the core's timer.
     pub fn timer_mut(&mut self) -> &mut Timer {
-        &mut self.pcb.soc.tma
+        &mut self.main.soc.tma
     }
 }
 
