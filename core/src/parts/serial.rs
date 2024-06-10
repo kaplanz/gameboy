@@ -138,11 +138,7 @@ impl Block for Serial {
         let tx = self.tex(rx);
 
         // Store transferred bit
-        #[allow(clippy::match_bool)]
-        let tx = match tx {
-            true => 0xff,
-            false => 0x00,
-        };
+        let tx = if tx { 0xff } else { 0x00 };
         self.etc.ip |= tx & bit;
 
         // Clean-up after transfer is complete
