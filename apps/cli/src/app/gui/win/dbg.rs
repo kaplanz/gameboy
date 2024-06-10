@@ -49,9 +49,9 @@ pub struct Debug {
     map2: Option<Window>,
 }
 
+#[allow(unused)]
 impl Debug {
     /// Constructs a new `Debug`.
-    #[allow(unused)]
     pub fn new() -> Result<Self> {
         let mut this = Self::default();
         this.all()?;
@@ -87,7 +87,6 @@ impl Debug {
     }
 
     /// Gets the selected window.
-    #[allow(unused)]
     pub fn get(&self, sel: Region) -> Option<&Window> {
         match sel {
             Region::Tile => self.tile.as_ref(),
@@ -97,7 +96,6 @@ impl Debug {
     }
 
     /// Mutably gets the selected window.
-    #[allow(unused)]
     pub fn get_mut(&mut self, sel: Region) -> Option<&mut Window> {
         match sel {
             Region::Tile => self.tile.as_mut(),

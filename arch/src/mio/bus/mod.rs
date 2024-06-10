@@ -75,7 +75,7 @@ impl Memory for Bus {
 }
 
 #[allow(clippy::items_after_statements)]
-#[allow(clippy::range_plus_one)]
+#[allow(clippy::range_plus_one, clippy::range_minus_one)]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -182,7 +182,6 @@ mod tests {
         bus.write(0x301, 4).expect("address is unmapped");
     }
 
-    #[allow(clippy::range_minus_one)]
     #[allow(clippy::reversed_empty_ranges)]
     #[test]
     fn memory_read_write_overlapping_mapped_works() {

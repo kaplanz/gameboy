@@ -12,9 +12,9 @@ use crate::Word;
 #[derive(Debug, Default)]
 pub(super) struct Map(BTreeMap<Word, IndexSet<Entry>>);
 
+#[allow(unused)]
 impl Map {
     /// Constructs a new `Map`.
-    #[allow(unused)]
     pub fn new() -> Self {
         Self::default()
     }
@@ -53,7 +53,6 @@ impl Map {
     }
 
     /// Find the entry for a given device.
-    #[allow(unused)]
     pub fn find(&self, entry: &Device) -> Option<&Entry> {
         self.0
             .iter()
@@ -62,7 +61,6 @@ impl Map {
     }
 
     /// Gets an iterator over the entries of the map.
-    #[allow(unused)]
     pub fn iter(&self) -> impl Iterator + '_ {
         self.0.iter().flat_map(|(_, set)| set.iter())
     }

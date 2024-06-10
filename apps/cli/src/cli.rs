@@ -12,7 +12,6 @@ use crate::NAME;
 ///
 /// Cycle-accurate emulation with support for custom palettes, configurable
 /// speed, interactive debugging, and more!
-#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Parser)]
 #[clap(name = NAME, author, version, about, long_about)]
 pub struct Cli {

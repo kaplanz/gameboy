@@ -26,6 +26,7 @@ pub struct Counter {
     pub delta: u32,
 }
 
+#[allow(unused)]
 impl Counter {
     /// Constructs a new `Counter`.
     pub fn new() -> Self {
@@ -39,7 +40,6 @@ impl Counter {
     }
 
     /// Gets the relative cycle delta.
-    #[allow(unused)]
     pub fn delta(&self) -> u32 {
         self.delta
     }

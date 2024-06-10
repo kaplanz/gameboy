@@ -570,7 +570,6 @@ pub enum Stage {
 }
 
 impl Stage {
-    #[allow(clippy::match_same_arms)]
     fn exec(mut self, cpu: &mut Cpu) -> Self {
         // If done, proceed to fetch this cycle
         if let Stage::Done = self {

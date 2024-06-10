@@ -254,7 +254,7 @@ mod build {
     }
 
     /// Builds an application instance.
-    #[allow(unused, clippy::needless_pass_by_value)]
+    #[allow(unused_variables)]
     pub fn app(args: &Cli, emu: GameBoy, log: Log) -> Result<App> {
         // Initialize graphics
         let gui = args
@@ -332,7 +332,7 @@ mod build {
         let video::Aspect { wd, ht } = LCD;
         let size = (wd.into(), ht.into()).into();
         // Construct GUI
-        #[allow(unused)]
+        #[cfg_attr(not(feature = "win"), allow(unused_mut))]
         let mut gui = Graphics::new(NAME, size).context("failed to open main window")?;
         // Open debug windows
         #[cfg(feature = "win")]

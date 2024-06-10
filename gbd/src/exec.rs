@@ -205,7 +205,6 @@ pub fn list(gbd: &Debugger, emu: &GameBoy) -> Result<()> {
     Ok(())
 }
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn log(gbd: &mut Debugger, filter: Option<String>) -> Result<()> {
     // Extract the logger handle
     let log = gbd.log.as_mut().ok_or(Error::CfgLogger)?;
@@ -221,7 +220,6 @@ pub fn log(gbd: &mut Debugger, filter: Option<String>) -> Result<()> {
     Ok(())
 }
 
-#[allow(clippy::needless_pass_by_value)]
 pub fn loads(emu: &GameBoy, locs: Vec<Select>) -> Result<()> {
     locs.into_iter().try_for_each(|loc| load(emu, loc))
 }

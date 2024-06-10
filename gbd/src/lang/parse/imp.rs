@@ -14,7 +14,6 @@ use thiserror::Error;
 use super::{Command, Keyword, Result, Rule, Select, Serial, Tick, Value};
 
 #[allow(clippy::cast_sign_loss)]
-#[allow(clippy::similar_names)]
 #[allow(clippy::too_many_lines)]
 pub fn command(input: Pair<Rule>) -> Result<Command> {
     // Extract keyword and args
@@ -335,7 +334,6 @@ where
 
 #[rustfmt::skip]
 #[allow(clippy::needless_pass_by_value)]
-#[allow(clippy::unnecessary_wraps)]
 pub fn keyword(pair: Pair<Rule>) -> Result<Keyword> {
     // Extract the keyword rule
     Ok(match pair.as_rule() {
@@ -366,8 +364,6 @@ pub fn keyword(pair: Pair<Rule>) -> Result<Keyword> {
 }
 
 #[rustfmt::skip]
-#[allow(clippy::needless_pass_by_value)]
-#[allow(clippy::unnecessary_wraps)]
 pub fn location(pair: Pair<Rule>) -> Result<Select> {
     // Extract the register rule
     Ok(match pair.as_rule() {

@@ -76,7 +76,6 @@ impl Serial {
     }
 
     /// Perform a tick of the external clock.
-    #[allow(unused)]
     pub fn tick(&mut self) {
         // Only tick if transferring on external clock
         let sc = self.reg.sc.borrow();

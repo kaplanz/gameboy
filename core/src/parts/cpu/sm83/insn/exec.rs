@@ -13,9 +13,7 @@
 //!
 //! [optable]: https://gbdev.io/gb-opcodes/optables/
 
-#![allow(clippy::needless_pass_by_value)]
 #![allow(clippy::unnecessary_wraps)]
-#![allow(clippy::wildcard_imports)]
 
 use rugby_arch::Byte;
 

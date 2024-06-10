@@ -35,6 +35,6 @@ pub trait Mmio {
     /// # Note
     ///
     /// The default implementation does nothing.
-    #[allow(unused)]
+    #[allow(unused_variables)]
     fn detach(&self, bus: &mut Bus) {}
 }

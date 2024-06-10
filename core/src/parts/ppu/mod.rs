@@ -460,7 +460,6 @@ pub enum Lcdc {
 
 impl Lcdc {
     /// Gets the value of the corresponding bit to the flag.
-    #[allow(clippy::trivially_copy_pass_by_ref)]
     #[must_use]
     fn get(self, value: Byte) -> bool {
         value & self as Byte != 0

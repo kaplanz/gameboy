@@ -7,8 +7,7 @@ use std::sync::mpsc;
 use std::time::Instant;
 
 use anyhow::Context as _;
-#[allow(unused)]
-use log::{debug, error, trace};
+use log::debug;
 use rugby::arch::{Block, Clock};
 #[cfg(any(feature = "doc", feature = "win"))]
 use rugby::core::dmg;
@@ -97,9 +96,9 @@ impl App {
         let sigint = {
             let (tx, rx) = mpsc::channel();
             ctrlc::set_handler(move || {
-                trace!("triggered interrupt");
+                log::trace!("triggered interrupt");
                 if let Err(err) = tx.send(()) {
-                    error!("could not send interrupt: {err}");
+                    log::error!("could not send interrupt: {err}");
                 }
             })
             .context("failed to set interrupt handler")?;
