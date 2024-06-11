@@ -56,4 +56,4 @@ run *opts:
 
 # perform tests
 test *opts:
-    @cargo test {{workspace}} {{opts}}
+    @cargo nextest run {{workspace}} {{opts}}
