@@ -26,7 +26,7 @@ impl Chip {
     pub fn new(rom: Boot) -> Self {
         trace!(
             "BOOT:\n{rom}",
-            rom = phex::Printer::<Byte>::new(0, rom.inner())
+            rom = hexd::Printer::<Byte>::new(0, rom.inner())
         );
         let reg = Shared::new(Control::new());
         Self {

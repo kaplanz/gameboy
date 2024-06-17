@@ -9,9 +9,9 @@ license = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+hexd = { workspace = true }
 itertools = { version = "0.13.0", optional = true }
 log = { workspace = true }
-phex = { workspace = true }
 rugby-arch = { workspace = true }
 thiserror = { workspace = true }
 

@@ -606,6 +606,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
+name = "hexd"
+version = "0.1.0"
+dependencies = [
+ "num",
+]
+
+[[package]]
 name = "home"
 version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1004,13 +1011,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "phex"
-version = "0.1.0"
-dependencies = [
- "num",
-]
-
-[[package]]
 name = "phf"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1278,9 +1278,9 @@ dependencies = [
 name = "rugby-core"
 version = "0.1.0"
 dependencies = [
+ "hexd",
  "itertools",
  "log",
- "phex",
  "rugby-arch",
  "thiserror",
 ]
@@ -1292,12 +1292,12 @@ dependencies = [
  "advise",
  "bytecount",
  "displaydoc",
+ "hexd",
  "indexmap 2.2.6",
  "log",
  "num",
  "pest",
  "pest_derive",
- "phex",
  "png",
  "rugby",
  "thiserror",

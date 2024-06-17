@@ -80,12 +80,12 @@ impl Body {
         // Initialize ROM
         let rom = make::rom(head, rom);
         if !rom.is_empty() {
-            trace!("ROM:\n{rom}", rom = phex::Printer::<Byte>::new(0, &rom));
+            trace!("ROM:\n{rom}", rom = hexd::Printer::<Byte>::new(0, &rom));
         }
         // Initialize RAM
         let ram = make::ram(head);
         if !ram.is_empty() {
-            trace!("RAM:\n{ram}", ram = phex::Printer::<Byte>::new(0, &ram));
+            trace!("RAM:\n{ram}", ram = hexd::Printer::<Byte>::new(0, &ram));
         }
         // Construct body
         match &head.info {

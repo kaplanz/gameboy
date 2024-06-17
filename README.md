@@ -72,7 +72,7 @@ crates are used with the structure as follows:
 ├── core/            # emulation core
 ├── crates/          # support crates
 │  ├── chex/         # color hex parser
-│  ├── phex/         # hex dump printer
+│  ├── hexd/         # hex dump printer
 │  └── wrange/       # wrapping ranges
 ├── docs/            # documentation
 ├── roms/            # open-source ROMs

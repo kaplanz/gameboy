@@ -277,7 +277,7 @@ pub fn read_range(emu: &mut GameBoy, range: Wrange<u16>) -> Result<()> {
     let data: Vec<_> = iter.map(|addr| emu.cpu().read(addr)).collect();
     // Display results
     advise::info!("read {nbytes} bytes:", nbytes = data.len(),);
-    let data = format!("{}", phex::Printer::<u8>::new(start.into(), &data));
+    let data = format!("{}", hexd::Printer::<u8>::new(start.into(), &data));
     for line in data.split('\n') {
         advise::info!("{line}");
     }
@@ -441,7 +441,7 @@ pub fn write_range(emu: &mut GameBoy, range: Wrange<u16>, byte: u8) -> Result<()
     }
     // Display results
     advise::info!("write {nbytes} bytes:", nbytes = data.len(),);
-    let data = format!("{}", phex::Printer::<u8>::new(start.into(), &data));
+    let data = format!("{}", hexd::Printer::<u8>::new(start.into(), &data));
     for line in data.split('\n') {
         advise::info!("{line}");
     }

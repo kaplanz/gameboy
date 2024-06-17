@@ -44,9 +44,9 @@ advise = "0.1.0"
 anyhow = "1.0.86"
 chex = { version = "0.1.0", path = "crates/chex" }
 clap = { version = "4.5.4", features = ["derive"] }
+hexd = { version = "0.1.0", path = "crates/hexd" }
 log = "0.4.21"
 num = "0.4.3"
-phex = { version = "0.1.0", path = "crates/phex" }
 png = "0.17.13"
 rugby = { version = "0.1.0", path = "." }
 rugby-arch = { version = "0.1.0", path = "arch" }
