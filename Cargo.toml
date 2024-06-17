@@ -44,7 +44,6 @@ advise = "0.1.0"
 anyhow = "1.0.86"
 chex = { version = "0.1.0", path = "crates/chex" }
 clap = { version = "4.5.4", features = ["derive"] }
-derange = { version = "0.1.0", path = "crates/derange" }
 log = "0.4.21"
 num = "0.4.3"
 phex = { version = "0.1.0", path = "crates/phex" }
@@ -57,4 +56,5 @@ rugby-gbd = { version = "0.1.0", path = "apis/gbd" }
 serde = { version = "1.0.202", features = ["derive"] }
 thiserror = "1.0.61"
 toml = "0.8.13"
+wrange = { version = "0.1.0", path = "crates/wrange" }
 xdir = "0.1.0"

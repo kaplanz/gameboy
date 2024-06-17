@@ -1,5 +1,5 @@
 [package]
-name = "derange"
+name = "wrange"
 version = "0.1.0"
 authors = { workspace = true }
 edition = "2021"

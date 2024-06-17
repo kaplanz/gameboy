@@ -3,10 +3,10 @@
 //! # Examples
 //!
 //! ```
-//! use derange::Derange;
+//! use wrange::Wrange;
 //!
 //! // Create a wrapping range
-//! let range = Derange::<u8>::from(250..5);
+//! let range = Wrange::<u8>::from(250..5);
 //!
 //! // Perform iteration
 //! for i in range {
@@ -24,10 +24,10 @@ use num::{Bounded, Integer};
 
 /// A wrapping range bounded (inclusively) below and above.
 ///
-/// `Derange` can be used to create iterators from ranges that wrap, or
+/// `Wrange` can be used to create iterators from ranges that wrap, or
 /// overflow, about the type's maximum and minimum bounds.
 #[derive(Clone, Debug)]
-pub struct Derange<I>
+pub struct Wrange<I>
 where
     I: Bounded + Clone + Copy + Integer,
     RangeInclusive<I>: Iterator<Item = I>,
@@ -38,7 +38,7 @@ where
     pub end: I,
 }
 
-impl<I> From<Range<I>> for Derange<I>
+impl<I> From<Range<I>> for Wrange<I>
 where
     I: Bounded + Clone + Copy + Integer + WrappingSub + 'static,
     RangeInclusive<I>: Iterator<Item = I>,
@@ -49,7 +49,7 @@ where
     }
 }
 
-impl<I> From<RangeFrom<I>> for Derange<I>
+impl<I> From<RangeFrom<I>> for Wrange<I>
 where
     I: Bounded + Clone + Copy + Integer + 'static,
     RangeInclusive<I>: Iterator<Item = I>,
@@ -60,7 +60,7 @@ where
     }
 }
 
-impl<I> From<RangeFull> for Derange<I>
+impl<I> From<RangeFull> for Wrange<I>
 where
     I: Bounded + Clone + Copy + Integer + 'static,
     RangeInclusive<I>: Iterator<Item = I>,
@@ -72,7 +72,7 @@ where
     }
 }
 
-impl<I> From<RangeInclusive<I>> for Derange<I>
+impl<I> From<RangeInclusive<I>> for Wrange<I>
 where
     I: Bounded + Clone + Copy + Integer + 'static,
     RangeInclusive<I>: Iterator<Item = I>,
@@ -83,7 +83,7 @@ where
     }
 }
 
-impl<I> From<RangeTo<I>> for Derange<I>
+impl<I> From<RangeTo<I>> for Wrange<I>
 where
     I: Bounded + Clone + Copy + Integer + WrappingSub + 'static,
     RangeInclusive<I>: Iterator<Item = I>,
@@ -95,7 +95,7 @@ where
     }
 }
 
-impl<I> From<RangeToInclusive<I>> for Derange<I>
+impl<I> From<RangeToInclusive<I>> for Wrange<I>
 where
     I: Bounded + Clone + Copy + Integer + 'static,
     RangeInclusive<I>: Iterator<Item = I>,
@@ -106,7 +106,7 @@ where
     }
 }
 
-impl<I> IntoIterator for Derange<I>
+impl<I> IntoIterator for Wrange<I>
 where
     I: Bounded + Clone + Copy + Integer + 'static,
     RangeInclusive<I>: Iterator<Item = I>,
@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn from_range_works() {
-        let range = Derange::from(126..-126);
+        let range = Wrange::from(126..-126);
         let found = range.into_iter().collect::<Vec<i8>>();
         let truth = [126, 127, -128, -127];
         assert_eq!(found, truth);
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn from_range_from_works() {
-        let range = Derange::from(..4);
+        let range = Wrange::from(..4);
         let found = range.into_iter().collect::<Vec<u8>>();
         let truth = [0, 1, 2, 3];
         assert_eq!(found, truth);
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn from_range_full_works() {
-        let range = Derange::from(..);
+        let range = Wrange::from(..);
         let found = range.into_iter().collect::<Vec<i8>>();
         #[allow(clippy::cast_possible_truncation)]
         let truth: [_; 256] = std::array::from_fn(|i| (i as i8).wrapping_add(-128));
@@ -158,7 +158,7 @@ mod tests {
 
     #[test]
     fn from_range_inclusive_works() {
-        let range = Derange::from(254..=2);
+        let range = Wrange::from(254..=2);
         let found = range.into_iter().collect::<Vec<u8>>();
         let truth = [254, 255, 0, 1, 2];
         assert_eq!(found, truth);
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn from_range_to_works() {
-        let range = Derange::from(..4);
+        let range = Wrange::from(..4);
         let found = range.into_iter().collect::<Vec<u8>>();
         let truth = [0, 1, 2, 3];
         assert_eq!(found, truth);
@@ -174,7 +174,7 @@ mod tests {
 
     #[test]
     fn from_range_to_inclusive_works() {
-        let range = Derange::from(..=4);
+        let range = Wrange::from(..=4);
         let found = range.into_iter().collect::<Vec<u8>>();
         let truth = [0, 1, 2, 3, 4];
         assert_eq!(found, truth);
@@ -182,21 +182,21 @@ mod tests {
 
     #[test]
     fn iter_count_works() {
-        assert_eq!(Derange::<u8>::from(0..4).into_iter().count(), 4);
-        assert_eq!(Derange::<u8>::from(..).into_iter().count(), 256);
-        assert_eq!(Derange::<u8>::from(252..).into_iter().count(), 4);
-        assert_eq!(Derange::<u8>::from(0..=4).into_iter().count(), 5);
-        assert_eq!(Derange::<u8>::from(..4).into_iter().count(), 4);
-        assert_eq!(Derange::<u8>::from(..=4).into_iter().count(), 5);
+        assert_eq!(Wrange::<u8>::from(0..4).into_iter().count(), 4);
+        assert_eq!(Wrange::<u8>::from(..).into_iter().count(), 256);
+        assert_eq!(Wrange::<u8>::from(252..).into_iter().count(), 4);
+        assert_eq!(Wrange::<u8>::from(0..=4).into_iter().count(), 5);
+        assert_eq!(Wrange::<u8>::from(..4).into_iter().count(), 4);
+        assert_eq!(Wrange::<u8>::from(..=4).into_iter().count(), 5);
     }
 
     #[test]
     fn iter_edge_works() {
         // One item
-        assert_eq!(Derange::<u8>::from(0..1).into_iter().count(), 1);
-        assert_eq!(Derange::<u8>::from(255..).into_iter().count(), 1);
-        assert_eq!(Derange::<u8>::from(0..=0).into_iter().count(), 1);
-        assert_eq!(Derange::<u8>::from(..1).into_iter().count(), 1);
-        assert_eq!(Derange::<u8>::from(..=0).into_iter().count(), 1);
+        assert_eq!(Wrange::<u8>::from(0..1).into_iter().count(), 1);
+        assert_eq!(Wrange::<u8>::from(255..).into_iter().count(), 1);
+        assert_eq!(Wrange::<u8>::from(0..=0).into_iter().count(), 1);
+        assert_eq!(Wrange::<u8>::from(..1).into_iter().count(), 1);
+        assert_eq!(Wrange::<u8>::from(..=0).into_iter().count(), 1);
     }
 }

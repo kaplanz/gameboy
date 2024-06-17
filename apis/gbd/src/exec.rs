@@ -5,11 +5,11 @@ use std::io::{BufRead, Read, Write};
 use std::ops::Not;
 use std::path::Path;
 
-use derange::Derange;
 use rugby::arch::reg::Port;
 use rugby::arch::Block;
 use rugby::core::dmg::LCD;
 use rugby::prelude::*;
+use wrange::Wrange;
 
 use super::lang::{Keyword, Select, Serial, Value};
 use super::{Debugger, Error, GameBoy, Result, Tick};
@@ -269,9 +269,9 @@ pub fn read(emu: &mut GameBoy, addr: u16) -> Result<()> {
     Ok(())
 }
 
-pub fn read_range(emu: &mut GameBoy, range: Derange<u16>) -> Result<()> {
+pub fn read_range(emu: &mut GameBoy, range: Wrange<u16>) -> Result<()> {
     // Create iterator from range
-    let Derange { start, .. } = range.clone();
+    let Wrange { start, .. } = range.clone();
     let iter = range.into_iter();
     // Load all reads
     let data: Vec<_> = iter.map(|addr| emu.cpu().read(addr)).collect();
@@ -421,9 +421,9 @@ pub fn write(emu: &mut GameBoy, addr: u16, byte: u8) -> Result<()> {
     Ok(())
 }
 
-pub fn write_range(emu: &mut GameBoy, range: Derange<u16>, byte: u8) -> Result<()> {
+pub fn write_range(emu: &mut GameBoy, range: Wrange<u16>, byte: u8) -> Result<()> {
     // Create iterator from range
-    let Derange { start, end } = range.clone();
+    let Wrange { start, end } = range.clone();
     let iter = range.into_iter();
     // Store all writes
     let data: Vec<_> = iter

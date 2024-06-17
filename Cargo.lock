@@ -348,13 +348,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "derange"
-version = "0.1.0"
-dependencies = [
- "num",
-]
-
-[[package]]
 name = "deranged"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1298,7 +1291,6 @@ version = "0.1.0"
 dependencies = [
  "advise",
  "bytecount",
- "derange",
  "displaydoc",
  "indexmap 2.2.6",
  "log",
@@ -1309,6 +1301,7 @@ dependencies = [
  "png",
  "rugby",
  "thiserror",
+ "wrange",
 ]
 
 [[package]]
@@ -2108,6 +2101,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3c52e9c97a68071b23e836c9380edae937f17b9c4667bd021973efc689f618d"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "wrange"
+version = "0.1.0"
+dependencies = [
+ "num",
 ]
 
 [[package]]

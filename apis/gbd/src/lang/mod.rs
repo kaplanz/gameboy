@@ -2,9 +2,9 @@ use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut};
 use std::path::PathBuf;
 
-use derange::Derange;
 use displaydoc::Display;
 use rugby::core::dmg::{cpu, pic, ppu, serial, timer};
+use wrange::Wrange;
 
 use super::Tick;
 
@@ -85,7 +85,7 @@ pub enum Command {
     /// [Read][`Keyword::Read`] from an address.
     Read(u16),
     /// [Read][`Keyword::Read`] from an address range.
-    ReadRange(Derange<u16>),
+    ReadRange(Wrange<u16>),
     /// [Reset][`Keyword::Reset`] the console.
     Reset,
     /// Perform [serial][`Keyword::Serial`] I/O.
@@ -97,7 +97,7 @@ pub enum Command {
     /// [Write][`Keyword::Write`] to an address.
     Write(u16, u8),
     /// [Write][`Keyword::Write`] to an address range.
-    WriteRange(Derange<u16>, u8),
+    WriteRange(Wrange<u16>, u8),
 }
 
 /// Debugger keywords.

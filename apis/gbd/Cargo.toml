@@ -11,7 +11,6 @@ license.workspace = true
 [dependencies]
 advise = { workspace = true }
 bytecount = { version = "0.6.8" }
-derange = { workspace = true }
 displaydoc = { version = "0.2.4" }
 indexmap = { version = "2.2.6" }
 log = { workspace = true }
@@ -22,3 +21,4 @@ phex = { workspace = true }
 png = { workspace = true }
 rugby = { workspace = true }
 thiserror = { workspace = true }
+wrange = { workspace = true }

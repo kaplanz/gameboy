@@ -3,13 +3,13 @@ use std::ops::RangeInclusive;
 use std::panic;
 use std::path::PathBuf;
 
-use derange::Derange;
 use log::trace;
 use num::traits::{WrappingAdd, WrappingSub};
 use num::{Bounded, Integer};
 use pest::iterators::Pair;
 use rugby::core::dmg::{cpu, pic, ppu, serial, timer};
 use thiserror::Error;
+use wrange::Wrange;
 
 use super::{Command, Keyword, Result, Rule, Select, Serial, Tick, Value};
 
@@ -240,7 +240,7 @@ where
     .map_err(super::Error::ParseInt)
 }
 
-pub fn range<I>(pair: Pair<Rule>) -> Result<Derange<I>>
+pub fn range<I>(pair: Pair<Rule>) -> Result<Wrange<I>>
 where
     I: Bounded
         + Clone
@@ -266,7 +266,7 @@ where
                 rule => return Err(Error::from(ErrorKind::Invalid(rule)).into()),
             };
             // Define
-            let range = Derange::from(stx..end);
+            let range = Wrange::from(stx..end);
             Ok(range)
         }
         Rule::RangeFrom => {
@@ -276,12 +276,12 @@ where
             // Parse
             let stx = self::integer(stx)?;
             // Define
-            let range = Derange::from(stx..);
+            let range = Wrange::from(stx..);
             Ok(range)
         }
         Rule::RangeFull => {
             // Define
-            let range = Derange::from(..);
+            let range = Wrange::from(..);
             Ok(range)
         }
         Rule::RangeInc => {
@@ -297,7 +297,7 @@ where
                 rule => return Err(Error::from(ErrorKind::Invalid(rule)).into()),
             };
             // Define
-            let range = Derange::from(stx..=end);
+            let range = Wrange::from(stx..=end);
             Ok(range)
         }
         Rule::RangeTo => {
@@ -311,7 +311,7 @@ where
                 rule => return Err(Error::from(ErrorKind::Invalid(rule)).into()),
             };
             // Define
-            let range = Derange::from(..end);
+            let range = Wrange::from(..end);
             Ok(range)
         }
         Rule::RangeToInc => {
@@ -325,7 +325,7 @@ where
                 rule => return Err(Error::from(ErrorKind::Invalid(rule)).into()),
             };
             // Define
-            let range = Derange::from(..=end);
+            let range = Wrange::from(..=end);
             Ok(range)
         }
         rule => rule.exception(),

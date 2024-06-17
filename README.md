@@ -72,8 +72,8 @@ crates are used with the structure as follows:
 ├── core/            # emulation core
 ├── crates/          # support crates
 │  ├── chex/         # color hex parser
-│  ├── derange/      # wrapping ranges
-│  └── phex/         # hex dump printer
+│  ├── phex/         # hex dump printer
+│  └── wrange/       # wrapping ranges
 ├── docs/            # documentation
 ├── roms/            # open-source ROMs
 │  ├── boot/         # boot ROM images
