@@ -135,7 +135,7 @@ impl Debugger {
                             // No input; repeat previous program
                             Err(Error::Empty) => {
                                 // Re-use previous program
-                                self.prog = self.prev.clone();
+                                self.prog.clone_from(&self.prev);
                                 debug!("repeat program: `{:?}`", self.prog);
                                 // Fetch command from repeated program
                                 self.fetch()
@@ -203,7 +203,7 @@ impl Debugger {
         } else {
             // Store program; update previous
             self.prog = Some(prog);
-            self.prev = self.prog.clone();
+            self.prev.clone_from(&self.prog);
             // Return successfully
             Ok(())
         }
