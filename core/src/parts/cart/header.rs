@@ -699,7 +699,7 @@ pub enum Error {
     /// Missing header data.
     #[error("missing header data")]
     Missing,
-    /// SLice to array conversion failed.
+    /// Slice conversion failed.
     #[error(transparent)]
     Slice(#[from] TryFromSliceError),
     /// Invalid bytes in title.
