@@ -302,7 +302,6 @@ mod build {
             cfg: app::Options {
                 spd: args.cfg.app.spd.clone().unwrap_or_default().freq(),
             },
-            ctx: None,
             #[cfg(feature = "debug")]
             dbg: app::Debug {
                 #[cfg(feature = "doc")]

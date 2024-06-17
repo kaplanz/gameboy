@@ -29,7 +29,6 @@ mod ctx;
 
 pub mod gui;
 
-pub use self::ctx::Context;
 pub use self::gui::{Frontend, Graphics};
 
 /// Clock divider.
@@ -43,8 +42,6 @@ const DIVIDER: u32 = 0x100;
 pub struct App {
     /// Configuration data.
     pub cfg: Options,
-    /// Runtime context.
-    pub ctx: Option<Context>,
     /// Emulator instance.
     pub emu: GameBoy,
     /// Graphical frontend.

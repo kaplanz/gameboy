@@ -1,21 +1,9 @@
 //! Runtime context.
 
 use std::fmt::Display;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use rugby::arch::Clock;
 use rugby::core::dmg::{self, ppu};
-
-/// Runtime context.
-#[derive(Debug)]
-pub struct Context {
-    /// Synchronizer.
-    pub clock: Clock,
-    /// Cycle counter.
-    pub count: Counter,
-    /// Elapsed timer.
-    pub timer: Instant,
-}
 
 /// Counter for emulated cycles.
 #[derive(Clone, Debug, Default)]
