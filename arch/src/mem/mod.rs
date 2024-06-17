@@ -111,7 +111,7 @@ impl Memory for Vec<Byte> {
     }
 }
 
-/// An error caused by an [`Address`] operation.
+/// An error caused by a [memory](Memory) operation.
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Error {
     /// Device is unavailable.

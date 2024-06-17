@@ -43,7 +43,7 @@ pub fn load(path: &Path) -> Result<Config> {
 /// A convenient type alias for [`Result`](std::result::Result).
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// An error caused by [loading][`Config::load`] the configuration.
+/// An error caused by [loading](load) the configuration.
 #[derive(Debug, Error)]
 pub enum Error {
     /// Failed to read config.

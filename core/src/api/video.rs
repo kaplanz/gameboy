@@ -22,7 +22,7 @@ pub trait Video {
     /// Pixel data.
     type Pixel: Pixel;
 
-    /// Checks for the vertical sync.
+    /// Checks for the start of vertical sync.
     ///
     /// Signals that the frame is ready to be rendered.
     #[must_use]
@@ -30,10 +30,12 @@ pub trait Video {
 
     /// Gets the current video framebuffer.
     ///
-    /// # Note
+    /// If the frame is still being drawn, incomplete data may be yielded.
     ///
-    /// If the frame is still being drawn, incomplete data may be yielded. This
-    /// should always be checked first with [`Video::ready`].
+    /// # Warning
+    ///
+    /// Wait for [vsync](Video::vsync) before using the framebuffer to ensure it
+    /// contains valid data.
     #[must_use]
     fn frame(&self) -> &[Self::Pixel];
 }

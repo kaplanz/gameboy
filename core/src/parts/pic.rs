@@ -26,7 +26,7 @@ use thiserror::Error;
 pub enum Interrupt {
     /// Vertical blank.
     ///
-    /// Requested by the [PPU] upon entry to [`VBlank`].
+    /// Requested by the [PPU] upon entry to the vertical blank.
     ///
     /// [ppu]:    super::ppu
     /// [vblank]: super::ppu::Mode::VBlank

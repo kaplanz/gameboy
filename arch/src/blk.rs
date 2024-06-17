@@ -7,7 +7,7 @@ pub trait Block {
     /// # Note
     ///
     /// When disabled, this indicates that the block has no work to perform. If
-    /// the result is not checked before calling [`tick`](Block::tick), the
+    /// the result is not checked before calling [`tick`](Block::cycle), the
     /// block may behave incorrectly and end up in an undefined state. (This can
     /// always be fixed with a [`reset`](Block::reset)).
     fn ready(&self) -> bool {

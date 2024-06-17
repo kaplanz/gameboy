@@ -156,7 +156,7 @@ impl api::cart::Support for GameBoy {
     /// Loads a game [`Cartridge`] into the [`GameBoy`].
     ///
     /// If a cartridge has already been loaded, it will first be
-    /// [ejected](Self::eject).
+    /// [ejected](api::cart::Support::eject).
     fn load(&mut self, cart: Self::Cartridge) {
         // Disconnect previous cartridge
         if let Some(cart) = self.eject() {

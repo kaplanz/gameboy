@@ -59,8 +59,8 @@ pub enum Exit {
     Success,
     /// Exit failure.
     ///
-    /// Advises the user about the [error][`enum@Error`], returning a non-zero
-    /// [exit code][`ExitCode`].
+    /// Advises the user about the [error](enum@Error), returning a non-zero
+    /// [exit code](ExitCode).
     Failure(Error),
 }
 

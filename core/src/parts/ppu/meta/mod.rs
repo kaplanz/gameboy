@@ -32,9 +32,9 @@ pub enum Layer {
 /// This register reassigns color values to pixels according to how palette
 /// registers are configured using the following layout:
 ///
-/// | [7:6] | [5:4] | [3:2] | [1:0] |
-/// |-------|-------|-------|-------|
-/// | `C3`  | `C2`  | `C1`  | `C0`  |
+/// | \[7:6\] | \[5:4\] | \[3:2\] | \[1:0\] |
+/// |---------|---------|---------|---------|
+/// |  `C3`   |  `C2`   |  `C1`   |  `C0`   |
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Palette {
     /// Background/Window palette.
