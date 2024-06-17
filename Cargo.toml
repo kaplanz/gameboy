@@ -27,12 +27,11 @@ opt-level = 3
 
 [workspace]
 members = [
+    "apis/*",
     "apps/*",
     "arch",
-    "cfg",
     "core",
     "crates/*",
-    "gbd",
 ]
 
 [workspace.package]
@@ -52,9 +51,9 @@ phex = { version = "0.1.0", path = "crates/phex" }
 png = "0.17.13"
 rugby = { version = "0.1.0", path = "." }
 rugby-arch = { version = "0.1.0", path = "arch" }
-rugby-cfg = { version = "0.1.0", path = "cfg" }
+rugby-cfg = { version = "0.1.0", path = "apis/cfg" }
 rugby-core = { version = "0.1.0", path = "core" }
-rugby-gbd = { version = "0.1.0", path = "gbd" }
+rugby-gbd = { version = "0.1.0", path = "apis/gbd" }
 serde = { version = "1.0.202", features = ["derive"] }
 thiserror = "1.0.61"
 toml = "0.8.13"

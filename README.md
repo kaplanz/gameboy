@@ -43,11 +43,11 @@ different accuracy/performance margins.
 ## Organization
 
 In accordance with the preference for modularity outlined above, the project is
-partitioned into the [core](./core), the [debugger](./gbd), and various emulator
-[frontends](./apps). Useful supporting [crates](./crates) are independently
-available as well. Also packaged in this repository are several open-source
-[ROMs](./roms). These are used internally for testing and to demo project
-functionality.
+partitioned into the [core](./core), the [debugger](./apis/gbd), and various
+emulator [frontends](./apps). Useful supporting [crates](./crates) are
+independently available as well. Also packaged in this repository are several
+open-source [ROMs](./roms). These are used internally for testing and to demo
+project functionality.
 
 ### Workspace
 
@@ -59,18 +59,27 @@ crates are used with the structure as follows:
 ./
 ├── Cargo.lock       # cargo lockfile
 ├── Cargo.toml       # cargo manifest
-├── Justfile         # useful development commands
+├── Justfile         # useful dev commands
 ├── README.md        # this document
 ├── ...
+├── apis/            # app interfaces
+│  ├── cfg/          # app configuration
+│  └── gbd/          # game boy debugger
 ├── apps/            # frontend apps
-├── arch/            # architecture primitives
-├── cfg/             # app configuration
+│  ├── cli/          # command-line app
+│  └── web/          # web assembly app
+├── arch/            # arch primitives
 ├── core/            # emulation core
 ├── crates/          # support crates
+│  ├── chex/         # color hex parser
+│  ├── derange/      # wrapping ranges
+│  └── phex/         # hex dump printer
 ├── docs/            # documentation
-├── gbd/             # game boy debugger
 ├── roms/            # open-source ROMs
-├── src/             # emulation library
+│  ├── boot/         # boot ROM images
+│  ├── games/        # playable demos
+│  └── test/         # test ROM images
+├── src/             # top-level library
 └── tests/           # integration tests
 ```
 
@@ -90,8 +99,8 @@ Main components of `rugby` are outlined below.
 
 #### Interfaces
 
-- [`rugby-cfg`](./cfg): definition of application configuration options.
-- [`rugby-gbd`](./gbd): provides an interactive prompt debugging interface.
+- [`rugby-cfg`](./apis/cfg): definition of application configuration options.
+- [`rugby-gbd`](./apis/gbd): provides an interactive prompt debugging interface.
 
 #### Frontends
 
