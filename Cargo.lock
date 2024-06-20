@@ -1305,6 +1305,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "rugby-ios"
+version = "0.1.0"
+
+[[package]]
 name = "rugby-web"
 version = "0.1.0"
 dependencies = [
