@@ -7,18 +7,40 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		961689832C29BD2700E28B7D /* LICENSE-MIT in Resources */ = {isa = PBXBuildFile; fileRef = 9616897F2C29BD2700E28B7D /* LICENSE-MIT */; };
+		961689842C29BD2700E28B7D /* LICENSE-APACHE in Resources */ = {isa = PBXBuildFile; fileRef = 961689802C29BD2700E28B7D /* LICENSE-APACHE */; };
+		961689852C29BD2700E28B7D /* roms in Resources */ = {isa = PBXBuildFile; fileRef = 961689812C29BD2700E28B7D /* roms */; };
+		9645B6912C287472003DD6D5 /* LibraryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9645B6902C287472003DD6D5 /* LibraryItem.swift */; };
 		965FE8722C24C66400768828 /* RugbyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965FE8712C24C66400768828 /* RugbyApp.swift */; };
-		965FE8742C24C66400768828 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965FE8732C24C66400768828 /* ContentView.swift */; };
+		965FE8742C24C66400768828 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965FE8732C24C66400768828 /* MainView.swift */; };
 		965FE8762C24C66500768828 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 965FE8752C24C66500768828 /* Assets.xcassets */; };
 		965FE8792C24C66500768828 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 965FE8782C24C66500768828 /* Preview Assets.xcassets */; };
+		96AFA7122C24CF5800FB2A25 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96AFA7112C24CF5800FB2A25 /* SettingsView.swift */; };
+		96AFA7162C24D20C00FB2A25 /* EmulatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96AFA7152C24D20C00FB2A25 /* EmulatorView.swift */; };
+		96AFA7182C24D24600FB2A25 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96AFA7172C24D24600FB2A25 /* LibraryView.swift */; };
+		96AFA71C2C25C73300FB2A25 /* LicenseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96AFA71B2C25C73300FB2A25 /* LicenseView.swift */; };
+		96AFA7292C2614F300FB2A25 /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96AFA7282C2614F300FB2A25 /* Library.swift */; };
+		96B3C3402C28E7F60048C11B /* Joypad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B3C33F2C28E7F60048C11B /* Joypad.swift */; };
+		96B3C3422C2913B70048C11B /* Display.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B3C3412C2913B70048C11B /* Display.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		9616897F2C29BD2700E28B7D /* LICENSE-MIT */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "LICENSE-MIT"; path = "../../../../LICENSE-MIT"; sourceTree = "<group>"; };
+		961689802C29BD2700E28B7D /* LICENSE-APACHE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "LICENSE-APACHE"; path = "../../../../LICENSE-APACHE"; sourceTree = "<group>"; };
+		961689812C29BD2700E28B7D /* roms */ = {isa = PBXFileReference; lastKnownFileType = folder; name = roms; path = ../../../../roms; sourceTree = "<group>"; };
+		9645B6902C287472003DD6D5 /* LibraryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryItem.swift; sourceTree = "<group>"; };
 		965FE86E2C24C66400768828 /* Rugby.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Rugby.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		965FE8712C24C66400768828 /* RugbyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RugbyApp.swift; sourceTree = "<group>"; };
-		965FE8732C24C66400768828 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		965FE8732C24C66400768828 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		965FE8752C24C66500768828 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		965FE8782C24C66500768828 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		96AFA7112C24CF5800FB2A25 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		96AFA7152C24D20C00FB2A25 /* EmulatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulatorView.swift; sourceTree = "<group>"; };
+		96AFA7172C24D24600FB2A25 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		96AFA71B2C25C73300FB2A25 /* LicenseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseView.swift; sourceTree = "<group>"; };
+		96AFA7282C2614F300FB2A25 /* Library.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Library.swift; sourceTree = "<group>"; };
+		96B3C33F2C28E7F60048C11B /* Joypad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Joypad.swift; sourceTree = "<group>"; };
+		96B3C3412C2913B70048C11B /* Display.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Display.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +54,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9645B6892C287348003DD6D5 /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				961689802C29BD2700E28B7D /* LICENSE-APACHE */,
+				9616897F2C29BD2700E28B7D /* LICENSE-MIT */,
+				961689812C29BD2700E28B7D /* roms */,
+			);
+			path = Assets;
+			sourceTree = "<group>";
+		};
 		965FE8652C24C66400768828 = {
 			isa = PBXGroup;
 			children = (
@@ -52,8 +84,9 @@
 			isa = PBXGroup;
 			children = (
 				965FE8712C24C66400768828 /* RugbyApp.swift */,
-				965FE8732C24C66400768828 /* ContentView.swift */,
+				96AFA70F2C24CF2B00FB2A25 /* Views */,
 				965FE8752C24C66500768828 /* Assets.xcassets */,
+				9645B6892C287348003DD6D5 /* Assets */,
 				965FE8772C24C66500768828 /* Preview Content */,
 			);
 			path = Rugby;
@@ -65,6 +98,46 @@
 				965FE8782C24C66500768828 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		96AFA70F2C24CF2B00FB2A25 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				965FE8732C24C66400768828 /* MainView.swift */,
+				96AFA7132C24D1CD00FB2A25 /* Emulator */,
+				96AFA7142C24D1E200FB2A25 /* Library */,
+				96AFA7102C24CF4300FB2A25 /* Settings */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		96AFA7102C24CF4300FB2A25 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				96AFA7112C24CF5800FB2A25 /* SettingsView.swift */,
+				96AFA71B2C25C73300FB2A25 /* LicenseView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		96AFA7132C24D1CD00FB2A25 /* Emulator */ = {
+			isa = PBXGroup;
+			children = (
+				96AFA7152C24D20C00FB2A25 /* EmulatorView.swift */,
+				96B3C3412C2913B70048C11B /* Display.swift */,
+				96B3C33F2C28E7F60048C11B /* Joypad.swift */,
+			);
+			path = Emulator;
+			sourceTree = "<group>";
+		};
+		96AFA7142C24D1E200FB2A25 /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				96AFA7282C2614F300FB2A25 /* Library.swift */,
+				96AFA7172C24D24600FB2A25 /* LibraryView.swift */,
+				9645B6902C287472003DD6D5 /* LibraryItem.swift */,
+			);
+			path = Library;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -125,6 +198,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				961689842C29BD2700E28B7D /* LICENSE-APACHE in Resources */,
+				961689832C29BD2700E28B7D /* LICENSE-MIT in Resources */,
+				961689852C29BD2700E28B7D /* roms in Resources */,
 				965FE8792C24C66500768828 /* Preview Assets.xcassets in Resources */,
 				965FE8762C24C66500768828 /* Assets.xcassets in Resources */,
 			);
@@ -137,7 +213,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				965FE8742C24C66400768828 /* ContentView.swift in Sources */,
+				96B3C3422C2913B70048C11B /* Display.swift in Sources */,
+				9645B6912C287472003DD6D5 /* LibraryItem.swift in Sources */,
+				96AFA7122C24CF5800FB2A25 /* SettingsView.swift in Sources */,
+				96AFA7292C2614F300FB2A25 /* Library.swift in Sources */,
+				96B3C3402C28E7F60048C11B /* Joypad.swift in Sources */,
+				96AFA7162C24D20C00FB2A25 /* EmulatorView.swift in Sources */,
+				965FE8742C24C66400768828 /* MainView.swift in Sources */,
+				96AFA71C2C25C73300FB2A25 /* LicenseView.swift in Sources */,
+				96AFA7182C24D24600FB2A25 /* LibraryView.swift in Sources */,
 				965FE8722C24C66400768828 /* RugbyApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -274,6 +358,8 @@
 				DEVELOPMENT_ASSET_PATHS = "\"Rugby/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Rugby/Info.plist;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -302,6 +388,8 @@
 				DEVELOPMENT_ASSET_PATHS = "\"Rugby/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Rugby/Info.plist;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

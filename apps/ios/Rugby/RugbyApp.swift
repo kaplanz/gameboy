@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct RugbyApp: App {
+    @State private var lib = Library()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
+                .environment(self.lib)
         }
     }
 }
