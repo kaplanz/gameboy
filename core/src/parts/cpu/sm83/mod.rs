@@ -9,7 +9,7 @@ use rugby_arch::reg::{Port, Register};
 use rugby_arch::{Block, Byte, Word};
 
 use self::insn::Instruction;
-use crate::api::proc::Processor;
+use crate::api::part::proc::Processor;
 use crate::parts::pic;
 
 #[cfg(feature = "debug")]

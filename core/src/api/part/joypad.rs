@@ -2,20 +2,6 @@
 
 use std::hash::Hash;
 
-/// Joypad support.
-pub trait Support {
-    /// Joypad interface.
-    type Joypad: Joypad;
-
-    /// Gets the core's joypad.
-    #[must_use]
-    fn joypad(&self) -> &Self::Joypad;
-
-    /// Mutably gets the core's joypad.
-    #[must_use]
-    fn joypad_mut(&mut self) -> &mut Self::Joypad;
-}
-
 /// Joypad interface.
 pub trait Joypad {
     /// User input.

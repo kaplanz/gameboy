@@ -162,11 +162,11 @@ impl App {
                 // Fetch keys
                 let keys = self.gui.input();
                 // Update emulator
-                self.emu.joypad_mut().recv(keys);
+                self.emu.inside_mut().joypad().recv(keys);
             }
 
             // Sync serial data
-            let serial = self.emu.serial_mut();
+            let serial = self.emu.inside_mut().serial();
             if count.cycle() % 0x10000 == 0 {
                 // Receive data from emulator
                 let rx = serial.rx();
@@ -177,7 +177,7 @@ impl App {
             }
 
             // Draw next frame
-            let video = self.emu.video();
+            let video = self.emu.inside().video();
             if video.vsync() {
                 // Borrow frame
                 let frame = video.frame();
@@ -215,7 +215,7 @@ impl App {
             // Log doctor entries
             #[cfg(feature = "doc")]
             if let Some(out) = &mut self.dbg.doc {
-                if matches!(self.emu.cpu().stage(), Stage::Done) && count.delta % 4 == 0 {
+                if matches!(self.emu.inside().proc().stage(), Stage::Done) && count.delta % 4 == 0 {
                     // Gather debug info
                     let info = dmg::dbg::cpu(&mut self.emu);
                     // Format, writing if non-empty

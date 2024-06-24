@@ -5,7 +5,6 @@ use std::path::Path;
 use anyhow::Context;
 use clap::Parser;
 use log::{trace, warn};
-use rugby::prelude::*;
 use rugby_cfg::Conf;
 
 use crate::cli::Cli;
@@ -58,18 +57,11 @@ fn run() -> Result<()> {
     }
     // Prepare application
     let mut app = build::app(&args, emu, log)?;
-    // Flash cartridge RAM
-    build::flash(
-        args.cfg.emu.cart.ram().as_deref(),
-        app.emu.cart_mut(),
-        args.cfg.emu.cart.save.unwrap_or_default(),
-    )
-    .context("could not flash RAM")?;
     // Run application
     app.run()?;
     // Dump cartridge RAM
     build::dump(
-        app.emu.cart(),
+        app.emu.eject().as_ref(),
         args.cfg.emu.cart.ram().as_deref(),
         args.cfg.emu.cart.save.unwrap_or_default(),
     )
@@ -91,8 +83,7 @@ mod build {
     use log::{debug, error, info, warn};
     use rugby::core::dmg::cart::mbc::Mbc;
     use rugby::core::dmg::{Boot, Cartridge, GameBoy, LCD};
-    use rugby::emu::video;
-    use rugby::prelude::*;
+    use rugby::emu::part::video;
     use rugby_cfg::opt::emu::Tristate;
     #[cfg(feature = "gbd")]
     use rugby_gbd::{Debugger, Portal};
@@ -149,7 +140,7 @@ mod build {
     /// Builds an emulator instance.
     pub fn emu(args: &Cli) -> Result<GameBoy> {
         // Load cartridge
-        let cart = {
+        let mut cart = {
             let cart = &args.cfg.emu.cart;
             cart.rom
                 .as_deref()
@@ -157,6 +148,13 @@ mod build {
                 .transpose()
         }
         .context("could not load cartridge")?;
+        // Flash cartridge RAM
+        self::flash(
+            args.cfg.emu.cart.ram().as_deref(),
+            cart.as_mut(),
+            args.cfg.emu.cart.save.unwrap_or_default(),
+        )
+        .context("could not flash RAM")?;
         // Load boot ROM
         let boot = (|| {
             let boot = &args.cfg.emu.boot;
@@ -173,7 +171,7 @@ mod build {
         let mut emu = boot.map_or_else(GameBoy::new, GameBoy::with);
         // Insert cartridge
         if let Some(cart) = cart {
-            emu.load(cart);
+            emu.insert(cart);
         } else {
             // Handle missing cartridge
             ensure!(

@@ -54,16 +54,17 @@ pub use crate::core::api as emu;
 #[rustfmt::skip]
 pub mod prelude {
     // Application
+    pub use crate::app::Frontend;
     pub use crate::app::audio::Audio as _;
     pub use crate::app::joypad::Joypad as _;
     pub use crate::app::serial::Serial as _;
     pub use crate::app::video::Video as _;
 
     // Emulator
-    pub use crate::emu::audio::{Audio as _, Support as _};
-    pub use crate::emu::cart::{Cartridge as _, Support as _};
-    pub use crate::emu::joypad::{Joypad as _, Support as _, };
-    pub use crate::emu::proc::{Processor as _, Support as _};
-    pub use crate::emu::serial::{Serial as _, Support as _};
-    pub use crate::emu::video::{Video as _, Support as _};
+    pub use crate::emu::core::Core;
+    pub use crate::emu::part::audio::Audio as _;
+    pub use crate::emu::part::joypad::Joypad as _;
+    pub use crate::emu::part::proc::Processor as _;
+    pub use crate::emu::part::serial::Serial as _;
+    pub use crate::emu::part::video::Video as _;
 }

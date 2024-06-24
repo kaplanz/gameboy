@@ -1,19 +1,5 @@
 //! Video API.
 
-/// Video support.
-pub trait Support {
-    /// Video interface.
-    type Video: Video;
-
-    /// Gets the core's video.
-    #[must_use]
-    fn video(&self) -> &Self::Video;
-
-    /// Mutably gets the core's video.
-    #[must_use]
-    fn video_mut(&mut self) -> &mut Self::Video;
-}
-
 /// Video interface.
 pub trait Video {
     /// Video output resolution.
@@ -57,8 +43,8 @@ impl Aspect {
     }
 }
 
-/// Pixel data representation.
+/// Pixel color data.
 pub trait Pixel: Copy + Default {}
 
-/// Framebuffer memory model.
+/// Video framebuffer.
 pub type Frame<P, const D: usize> = [P; D];

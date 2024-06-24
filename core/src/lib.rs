@@ -9,6 +9,10 @@
 mod model;
 mod parts;
 
-pub mod api;
+/// Emulator API.
+pub mod api {
+    pub mod core;
+    pub mod part;
+}
 
 pub use crate::model::dmg;

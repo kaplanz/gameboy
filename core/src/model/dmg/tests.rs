@@ -1,8 +1,6 @@
 use rugby_arch::mem::Memory;
 use rugby_arch::Byte;
 
-use self::api::cart::Support as _;
-use self::api::proc::Support as _;
 use self::cart::mbc::Mbc;
 use self::pic::Pic;
 use self::timer::Timer;
@@ -22,7 +20,7 @@ fn setup() -> GameBoy {
     // Create a `GameBoy` instance
     let mut emu = GameBoy::with(boot);
     // Load the cartridge into the emulator
-    emu.load(cart);
+    emu.insert(cart);
 
     emu
 }
@@ -30,7 +28,7 @@ fn setup() -> GameBoy {
 #[test]
 fn boot_disable_works() {
     let mut emu = setup();
-    let bus = emu.cpu_mut();
+    let bus = &mut emu.main.soc.cpu;
 
     // Ensure boot ROM starts enabled (compare against boot ROM).
     (0x0000..=0x00ff)

@@ -2,20 +2,6 @@
 
 use rugby_arch::{Byte, Word};
 
-/// Processor support.
-pub trait Support {
-    /// Compute interface.
-    type Proc: Processor;
-
-    /// Gets the core's processor.
-    #[must_use]
-    fn cpu(&self) -> &Self::Proc;
-
-    /// Mutably gets the core's processor.
-    #[must_use]
-    fn cpu_mut(&mut self) -> &mut Self::Proc;
-}
-
 /// Processor interface.
 pub trait Processor {
     /// Instruction Set Architecture (ISA).

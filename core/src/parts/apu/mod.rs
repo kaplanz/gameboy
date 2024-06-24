@@ -5,7 +5,7 @@ use rugby_arch::mio::{Bus, Mmio};
 use rugby_arch::reg::{Port, Register};
 use rugby_arch::{Block, Byte, Shared};
 
-use crate::api::audio::Audio as Api;
+use crate::api::part::audio::Audio as Api;
 
 /// Wave RAM.
 ///

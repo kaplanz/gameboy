@@ -1,6 +1,6 @@
 //! Frontend API.
 
-use crate::emu::Core;
+use crate::emu::core::Core;
 
 pub mod audio;
 pub mod joypad;
@@ -12,7 +12,7 @@ use self::joypad::Joypad;
 use self::serial::Serial;
 use self::video::Video;
 
-/// Frontend interface.
+/// Emulator frontend.
 pub trait Frontend: Audio + Joypad + Serial + Video {
     /// Emulator core.
     type Core: Core;

@@ -1,6 +1,6 @@
 use rugby_arch::Byte;
 
-use crate::api::video::Pixel;
+use crate::api::part::video::Pixel;
 
 /// Color values.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]

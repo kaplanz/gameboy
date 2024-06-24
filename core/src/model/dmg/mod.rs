@@ -11,12 +11,10 @@ use self::apu::Apu;
 use self::cpu::Cpu;
 use self::joypad::Joypad;
 use self::pcb::Motherboard;
-use self::pic::Pic;
 use self::ppu::Ppu;
 use self::serial::Serial;
-use self::timer::Timer;
-use crate::api::proc::Processor;
-use crate::api::{self, Core};
+use crate::api::core::{self, Core};
+use crate::api::part::proc::Processor;
 
 mod noc;
 mod soc;
@@ -55,12 +53,6 @@ pub struct GameBoy {
 
 impl GameBoy {
     /// Constructs a new `GameBoy`.
-    ///
-    /// # Note
-    ///
-    /// In order to play a [`Cartridge`], it must be [loaded][load] separately.
-    ///
-    /// [load]: api::cart::Support::load
     #[must_use]
     pub fn new() -> Self {
         let mut this = Self::default();
@@ -72,12 +64,6 @@ impl GameBoy {
     }
 
     /// Constructs a new `GameBoy`, initialized with the provided boot ROM.
-    ///
-    /// # Note
-    ///
-    /// In order to play a [`Cartridge`], it must be [loaded][load] separately.
-    ///
-    /// [load]: api::cart::Support::load
     #[must_use]
     pub fn with(boot: Boot) -> Self {
         let mut this = Self::default();
@@ -90,23 +76,61 @@ impl GameBoy {
         this
     }
 
-    /// Simulate the bootup sequence when no [boot ROM](Boot) was provided.
+    /// Simulate the bootup sequence.
+    ///
+    /// This prepares the `GameBoy` to run the contents of a game cartridge.
+    /// When no [boot ROM](Boot) is installed, this must be called before
+    /// cartridge execution.
+    #[rustfmt::skip]
     pub fn boot(&mut self) {
+        let cpu = &mut self.main.soc.cpu;
+
         // Initialize registers
+        #[allow(clippy::items_after_statements)]
         type Select = <Cpu as Port<Word>>::Select;
-        self.main.soc.cpu.store(Select::AF, 0x01b0_u16);
-        self.main.soc.cpu.store(Select::BC, 0x0013_u16);
-        self.main.soc.cpu.store(Select::DE, 0x00d8_u16);
-        self.main.soc.cpu.store(Select::HL, 0x014d_u16);
-        self.main.soc.cpu.store(Select::SP, 0xfffe_u16);
-        self.main.soc.cpu.write(0xff40, 0x91); // enable LCD
-        self.main.soc.cpu.write(0xff50, 0x01); // disable boot
+        cpu.store(Select::AF, 0x01b0_u16);
+        cpu.store(Select::BC, 0x0013_u16);
+        cpu.store(Select::DE, 0x00d8_u16);
+        cpu.store(Select::HL, 0x014d_u16);
+        cpu.store(Select::SP, 0xfffe_u16);
 
-        // Execute bootup sequence
-        self.main.soc.cpu.exec(0xfb); // EI ; enable interrupts
+        // Perform bootup sequence
+        cpu.write(0xff40, 0x91); // enable display
+        cpu.write(0xff50, 0x01); // disable boot ROM
+        cpu.exec(0xfb);          // enable interrupts
+        cpu.goto(0x0100);        // transfer program control
+    }
 
-        // Hand off program control
-        self.main.soc.cpu.goto(0x0100);
+    /// Gets the inserted game cartridge, if any.
+    #[must_use]
+    pub fn cart(&self) -> Option<&Cartridge> {
+        self.cart.as_ref()
+    }
+
+    /// Inserts a game cartridge.
+    ///
+    /// If a cartridge is already inserted, it will first be
+    /// [ejected](Self::eject).
+    pub fn insert(&mut self, cart: Cartridge) {
+        // Disconnect previous cartridge
+        if let Some(cart) = self.eject() {
+            warn!("ejected previous cartridge: {}", cart.header());
+        };
+        // Insert supplied cartridge
+        let ebus = &mut *self.main.noc.ebus.borrow_mut();
+        cart.attach(ebus);
+        self.cart = Some(cart);
+    }
+
+    /// Ejects the inserted game cartridge, if any.
+    pub fn eject(&mut self) -> Option<Cartridge> {
+        // Disconnect from bus
+        let ebus = &mut *self.main.noc.ebus.borrow_mut();
+        if let Some(cart) = &self.cart {
+            cart.detach(ebus);
+        }
+        // Remove inserted cartridge
+        self.cart.take()
     }
 }
 
@@ -129,7 +153,7 @@ impl Block for GameBoy {
 
 impl Core for GameBoy {}
 
-impl api::audio::Support for GameBoy {
+impl core::has::Audio for GameBoy {
     type Audio = Apu;
 
     fn audio(&self) -> &Self::Audio {
@@ -141,57 +165,19 @@ impl api::audio::Support for GameBoy {
     }
 }
 
-impl api::cart::Support for GameBoy {
-    /// Game ROM cartridge.
-    type Cartridge = Cartridge;
-
-    fn cart(&self) -> Option<&Self::Cartridge> {
-        self.cart.as_ref()
-    }
-
-    fn cart_mut(&mut self) -> Option<&mut Self::Cartridge> {
-        self.cart.as_mut()
-    }
-
-    /// Loads a game [`Cartridge`] into the [`GameBoy`].
-    ///
-    /// If a cartridge has already been loaded, it will first be
-    /// [ejected](api::cart::Support::eject).
-    fn load(&mut self, cart: Self::Cartridge) {
-        // Disconnect previous cartridge
-        if let Some(cart) = self.eject() {
-            warn!("ejected previous cartridge: {}", cart.header());
-        };
-        // Insert supplied cartridge
-        let ebus = &mut *self.main.noc.ebus.borrow_mut();
-        cart.attach(ebus);
-        self.cart = Some(cart);
-    }
-
-    fn eject(&mut self) -> Option<Self::Cartridge> {
-        // Disconnect from bus
-        let ebus = &mut *self.main.noc.ebus.borrow_mut();
-        if let Some(cart) = &self.cart {
-            cart.detach(ebus);
-        }
-        // Remove inserted cartridge
-        self.cart.take()
-    }
-}
-
-impl api::proc::Support for GameBoy {
+impl core::has::Processor for GameBoy {
     type Proc = Cpu;
 
-    fn cpu(&self) -> &Self::Proc {
+    fn proc(&self) -> &Self::Proc {
         &self.main.soc.cpu
     }
 
-    fn cpu_mut(&mut self) -> &mut Self::Proc {
+    fn proc_mut(&mut self) -> &mut Self::Proc {
         &mut self.main.soc.cpu
     }
 }
 
-impl api::joypad::Support for GameBoy {
+impl core::has::Joypad for GameBoy {
     type Joypad = Joypad;
 
     fn joypad(&self) -> &Self::Joypad {
@@ -203,7 +189,7 @@ impl api::joypad::Support for GameBoy {
     }
 }
 
-impl api::serial::Support for GameBoy {
+impl core::has::Serial for GameBoy {
     type Serial = Serial;
 
     fn serial(&self) -> &Self::Serial {
@@ -215,7 +201,7 @@ impl api::serial::Support for GameBoy {
     }
 }
 
-impl api::video::Support for GameBoy {
+impl core::has::Video for GameBoy {
     type Video = Ppu;
 
     fn video(&self) -> &Self::Video {
@@ -227,27 +213,18 @@ impl api::video::Support for GameBoy {
     }
 }
 
+/// Debug introspection.
+#[cfg(feature = "debug")]
 impl GameBoy {
-    /// Gets the core's interrupt controller.
+    /// Borrows the core's system-on-chip.
     #[must_use]
-    pub fn pic(&self) -> &Pic {
-        &self.main.soc.pic
+    pub fn chip(&self) -> &Chip {
+        &self.main.soc
     }
 
-    /// Mutably gets the core's interrupt controller.
-    pub fn pic_mut(&mut self) -> &mut Pic {
-        &mut self.main.soc.pic
-    }
-
-    /// Gets the core's timer.
-    #[must_use]
-    pub fn timer(&self) -> &Timer {
-        &self.main.soc.tma
-    }
-
-    /// Mutably gets the core's timer.
-    pub fn timer_mut(&mut self) -> &mut Timer {
-        &mut self.main.soc.tma
+    /// Mutably borrows the core's system-on-chip.
+    pub fn chip_mut(&mut self) -> &mut Chip {
+        &mut self.main.soc
     }
 }
 

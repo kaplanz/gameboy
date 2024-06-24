@@ -10,7 +10,7 @@ use rugby_arch::reg::Register;
 use rugby_arch::{Block, Byte, Shared, Word};
 
 use super::pic::{self, Interrupt};
-use crate::api::joypad::{Event, Input, Joypad as Api, State};
+use crate::api::part::joypad::{Event, Input, Joypad as Api, State};
 
 /// Joypad inputs.
 #[rustfmt::skip]

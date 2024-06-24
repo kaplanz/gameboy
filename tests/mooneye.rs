@@ -20,7 +20,7 @@ fn emulate(rom: &[u8]) -> Result<()> {
     // Create an emulator instance
     let mut emu = GameBoy::new();
     // Load the cartridge
-    emu.load(cart);
+    emu.insert(cart);
 
     // Loop until completion or timeout
     for _ in 0..TIMEOUT {
@@ -41,7 +41,7 @@ fn emulate(rom: &[u8]) -> Result<()> {
 fn check(emu: &GameBoy) -> Result<()> {
     type Select = <Cpu as Port<Word>>::Select;
     // Extract register values
-    let cpu = emu.cpu();
+    let cpu = emu.inside().proc();
     let bc: u16 = cpu.load(Select::BC);
     let de: u16 = cpu.load(Select::DE);
     let hl: u16 = cpu.load(Select::HL);

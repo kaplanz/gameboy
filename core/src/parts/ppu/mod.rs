@@ -9,7 +9,7 @@ use self::exec::hblank::HBlank;
 use self::exec::vblank::VBlank;
 use super::dma::Control as Dma;
 use super::pic::{self, Interrupt};
-use crate::api::video::{self, Aspect, Video as Api};
+use crate::api::part::video::{self, Aspect, Video as Api};
 use crate::dmg::pcb::Sram;
 
 mod blk;

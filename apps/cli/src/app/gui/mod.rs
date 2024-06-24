@@ -9,7 +9,7 @@ use rugby::app::joypad::Joypad;
 use rugby::app::serial::Serial;
 use rugby::app::video::Video;
 use rugby::core::dmg::{self, Button};
-use rugby::emu::joypad::Event;
+use rugby::emu::part::joypad::Event;
 use rugby::pal::Palette;
 
 mod win;

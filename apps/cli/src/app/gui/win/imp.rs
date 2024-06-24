@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 pub use minifb::{Error, Key};
 use minifb::{Result, Scale, ScaleMode, WindowOptions};
-use rugby::emu::joypad::{Event, State};
+use rugby::emu::part::joypad::{Event, State};
 
 /// Color value of an individual pixel.
 pub type Pixel = u32;

@@ -8,7 +8,7 @@ use rugby_arch::{Block, Byte, Shared};
 use super::noc::Mmap;
 use super::ppu::Vram;
 use super::soc::Chip;
-use crate::api::proc::Processor;
+use crate::api::part::proc::Processor;
 
 /// Sharp LH5164N (64K SRAM).
 pub type Sram = Ram<[Byte; 0x2000]>;

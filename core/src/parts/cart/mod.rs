@@ -16,7 +16,6 @@ use thiserror::Error;
 
 use self::header::{Header, Info};
 use self::mbc::Body;
-use crate::api::cart::Cartridge as Api;
 
 pub mod header;
 pub mod mbc;
@@ -100,8 +99,6 @@ impl Cartridge {
         &mut self.body
     }
 }
-
-impl Api for Cartridge {}
 
 impl Block for Cartridge {
     fn reset(&mut self) {

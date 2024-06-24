@@ -16,14 +16,14 @@ fn emulate(rom: &[u8], img: &[u8]) -> Result<()> {
     // Create an emulator instance
     let mut emu = GameBoy::new();
     // Load the cartridge
-    emu.load(cart);
+    emu.insert(cart);
 
     // Loop until timeout
     for _ in 0..TIMEOUT {
         emu.cycle();
     }
     // Calculate difference
-    let delta = image::cmp(emu.video().screen(), img);
+    let delta = image::cmp(emu.inside().video().screen(), img);
     let total = img.len();
 
     // Check for success

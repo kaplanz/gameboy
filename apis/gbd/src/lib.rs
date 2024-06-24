@@ -86,12 +86,15 @@ impl Debugger {
 
     /// Synchronizes the debugger with the console.
     pub fn sync(&mut self, emu: &GameBoy) {
+        let cpu = emu.inside().proc();
+        let ppu = emu.inside().video();
+
         // Update program counter
-        self.pc = emu.cpu().load(cpu::Select16::PC);
+        self.pc = cpu.load(cpu::Select16::PC);
         self.state = State {
-            cpu: emu.cpu().stage().clone(),
-            dot: emu.video().dot(),
-            ppu: emu.video().mode().clone(),
+            cpu: cpu.stage().clone(),
+            dot: ppu.dot(),
+            ppu: ppu.mode().clone(),
         };
     }
 
