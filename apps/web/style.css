@@ -1,5 +1,5 @@
 body {
-  background-color: var(--oc-yellow-0);
+  background-color: #c5c0bd;
 }
 
 main {
@@ -9,12 +9,12 @@ main {
 .gameboy {
   .screen {
     canvas {
-      background-color: #7f860f;
+      background-color: #8ca05a;
     }
   }
 
   .joypad {
-    color: var(--oc-cyan-8);
+    color: #204786;
 
     .dpad {
       display: grid;
@@ -29,7 +29,7 @@ main {
 
     .game {
       input {
-        background-color: var(--oc-pink-7);
+        background-color: #9a2257;
         border: none;
         border-radius: 50%;
         width: 2em;
@@ -39,7 +39,7 @@ main {
 
     .keys {
       input {
-        background-color: var(--oc-gray-5);
+        background-color: #908d92;
         border: none;
         border-radius: 16px;
         width: 4em;
