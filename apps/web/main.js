@@ -11,6 +11,8 @@ console.log("constructed a new console");
 emu.insert(new Cartridge());
 console.log("inserted a game cartridge");
 
+// Emulate 60 frames
+const now = new Date();
 let cycle,
     frame = 0;
 for (cycle = 0; frame < 60; cycle++) {
@@ -34,5 +36,6 @@ for (cycle = 0; frame < 60; cycle++) {
         frame++;
     }
 }
+const delta = new Date() - now;
 
-msg.innerHTML = `drew ${frame} frames in ${cycle} cycles`;
+msg.innerHTML = `drew ${frame} frames in ${delta / 1000} seconds`;
