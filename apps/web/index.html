@@ -27,15 +27,15 @@
     <div class="gameboy">
       <!-- Screen -->
       <div class="screen">
-        <canvas id="lcd" width="160" height="144"></canvas>
+        <canvas id="screen" width="160" height="144"></canvas>
       </div>
       <!-- Joypad -->
       <div class="joypad">
         <div class="dpad">
           <input type="button" id="up">
-          <input type="button" id="down">
-          <input type="button" id="left">
-          <input type="button" id="right">
+          <input type="button" id="lf">
+          <input type="button" id="rt">
+          <input type="button" id="dn">
         </div>
         <div class="game">
           <label for="a">A</label>
@@ -51,10 +51,7 @@
         </div>
       </div>
     </div>
-    <div>
-      <span>Message:</span>
-      <span id="msg"></span>
-    </div>
+    <input type="file" name="rom">
   </main>
   <script type="module" src="main.js"></script>
 </body>

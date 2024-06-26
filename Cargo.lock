@@ -1495,6 +1495,7 @@ dependencies = [
  "console_log",
  "getrandom",
  "js-sys",
+ "log",
  "rugby",
  "wasm-bindgen",
  "wasm-bindgen-test",
